@@ -212,7 +212,7 @@ namespace Nanook.GrindCore.Zip
                 return Array.Empty<byte>();
             }
 
-            encoding ??= GetEncoding(text);
+            encoding ??= GetEncoding(text!);
             isUTF8 = encoding.CodePage == 65001;
 
             if (maxBytes == 0) // No truncation
@@ -221,10 +221,10 @@ namespace Nanook.GrindCore.Zip
             }
 
             byte[] bytes;
-            if (isUTF8 && encoding.GetMaxByteCount(text.Length) > maxBytes)
+            if (isUTF8 && encoding.GetMaxByteCount(text!.Length) > maxBytes)
             {
                 int totalCodePoints = 0;
-#if NET8_0_OR_GREATER
+#if NETCOREAPP
                 foreach (Rune rune in text.EnumerateRunes())
                 {
                     if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)

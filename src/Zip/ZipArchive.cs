@@ -220,7 +220,9 @@ namespace Nanook.GrindCore.Zip
         /// The comment encoding is determined by the <c>entryNameEncoding</c> parameter of the <see cref="ZipArchive(Stream,ZipArchiveMode,bool,Encoding?)"/> constructor.
         /// If the comment byte length is larger than <see cref="ushort.MaxValue"/>, it will be truncated when disposing the archive.
         /// </remarks>
+#if NETCOREAPP
         [AllowNull]
+#endif
         public string Comment
         {
             get => (EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_archiveComment);
@@ -501,7 +503,7 @@ namespace Nanook.GrindCore.Zip
                 //read the central directory
                 ZipCentralDirectoryFileHeader currentHeader;
                 bool saveExtraFieldsAndComments = Mode == ZipArchiveMode.Update;
-                while (ZipCentralDirectoryFileHeader.TryReadBlock(_archiveReader,
+                while (ZipCentralDirectoryFileHeader.TryReadBlock(_archiveReader!,
                                                         saveExtraFieldsAndComments, out currentHeader))
                 {
                     AddEntry(new ZipArchiveEntry(this, currentHeader));
@@ -541,7 +543,7 @@ namespace Nanook.GrindCore.Zip
                 Debug.Assert(_archiveReader != null);
                 // read the EOCD
                 ZipEndOfCentralDirectoryBlock eocd;
-                bool eocdProper = ZipEndOfCentralDirectoryBlock.TryReadBlock(_archiveReader, out eocd);
+                bool eocdProper = ZipEndOfCentralDirectoryBlock.TryReadBlock(_archiveReader!, out eocd);
                 Debug.Assert(eocdProper); // we just found this using the signature finder, so it should be okay
 
                 if (eocd.NumberOfThisDisk != eocd.NumberOfTheDiskWithTheStartOfTheCentralDirectory)
@@ -600,7 +602,7 @@ namespace Nanook.GrindCore.Zip
 
                     // use locator to get to Zip64-EOCD
                     Zip64EndOfCentralDirectoryLocator locator;
-                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveReader, out locator);
+                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveReader!, out locator);
                     Debug.Assert(zip64eocdLocatorProper); // we just found this using the signature finder, so it should be okay
 
                     if (locator.OffsetOfZip64EOCD > long.MaxValue)
@@ -613,7 +615,7 @@ namespace Nanook.GrindCore.Zip
                     // Read Zip64 End of Central Directory Record
 
                     Zip64EndOfCentralDirectoryRecord record;
-                    if (!Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveReader, out record))
+                    if (!Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveReader!, out record))
                         throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
 
                     _numberOfThisDisk = record.NumberOfThisDisk;

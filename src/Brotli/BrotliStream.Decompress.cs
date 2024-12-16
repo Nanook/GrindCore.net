@@ -19,8 +19,8 @@ namespace Nanook.GrindCore.Brotli
         private int _bufferCount;
         private bool _nonEmptyInput;
 
-#if NETSTANDARD2_0_OR_GREATER
-        private void ValidateBufferArguments(byte[] buffer, int offset, int count)
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+        private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
@@ -59,7 +59,7 @@ namespace Nanook.GrindCore.Brotli
         /// <para><see cref="BaseStream" /> returned more bytes than requested in read.</para></exception>
         public override int ReadByte()
         {
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
             byte b = default;
             int bytesRead = Read(new Span<byte>(ref b));
             return bytesRead != 0 ? b : -1;
@@ -75,7 +75,11 @@ namespace Nanook.GrindCore.Brotli
         /// <remarks><para>Use the <see cref="System.IO.Compression.BrotliStream.CanRead" /> property to determine whether the current instance supports reading. Use the <see langword="System.IO.Compression.BrotliStream.ReadAsync" /> method to read asynchronously from the current stream.</para>
         /// <para>This method reads a maximum of <c>buffer.Length</c> bytes from the current stream and stores them in <paramref name="buffer" />. The current position within the Brotli stream is advanced by the number of bytes read; however, if an exception occurs, the current position within the Brotli stream remains unchanged. This method will block until at least one byte of data can be read, in the event that no data is available. <c>Read</c> returns 0 only when there is no more data in the stream and no more is expected (such as a closed socket or end of file). The method is free to return fewer bytes than requested even if the end of the stream has not been reached.</para>
         /// <para>Use <see cref="System.IO.BinaryReader" /> to read primitive data types.</para></remarks>
+#if NETFRAMEWORK
+        public int Read(Span<byte> buffer)
+#else
         public override int Read(Span<byte> buffer)
+#endif
         {
             if (_mode != CompressionMode.Decompress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
@@ -150,7 +154,11 @@ namespace Nanook.GrindCore.Brotli
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
         /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanRead" /> property to determine whether the current instance supports reading.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
+#if NETFRAMEWORK
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+#else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+#endif
         {
             if (_mode != CompressionMode.Decompress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
@@ -159,7 +167,7 @@ namespace Nanook.GrindCore.Brotli
 
             if (cancellationToken.IsCancellationRequested)
             {
-#if NET8_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 return ValueTask.FromCanceled<int>(cancellationToken);
 #else
                 return ValueTaskExtensions.FromCanceled<int>(cancellationToken);

@@ -82,11 +82,11 @@ namespace Nanook.GrindCore
             private static string GetLibraryPath(string libraryName)
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes", GetRuntimeIdentifier(), "native", $"{libraryName}.dll");
+                    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory!, "runtimes", GetRuntimeIdentifier(), "native", $"{libraryName}.dll");
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes", GetRuntimeIdentifier(), "native", $"lib{libraryName}.so");
+                    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory!, "runtimes", GetRuntimeIdentifier(), "native", $"lib{libraryName}.so");
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes", GetRuntimeIdentifier(), "native", $"lib{libraryName}.dylib");
+                    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory!, "runtimes", GetRuntimeIdentifier(), "native", $"lib{libraryName}.dylib");
                 throw new PlatformNotSupportedException("Unsupported platform.");
             }
 

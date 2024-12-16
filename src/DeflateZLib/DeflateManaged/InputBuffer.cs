@@ -164,7 +164,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
             Debug.Assert(output != null);
             Debug.Assert(offset >= 0);
             Debug.Assert(length >= 0);
-            Debug.Assert(offset <= output.Length - length);
+            Debug.Assert(offset <= output!.Length - length);
             Debug.Assert(_bitsInBuffer % 8 == 0);
 
             return CopyTo(output.AsMemory(offset, length));
@@ -203,9 +203,9 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
             Debug.Assert(buffer != null);
             Debug.Assert(offset >= 0);
             Debug.Assert(length >= 0);
-            Debug.Assert(offset <= buffer.Length - length);
+            Debug.Assert(offset <= buffer!.Length - length);
 
-            SetInput(buffer.AsMemory(offset, length));
+            SetInput(buffer!.AsMemory(offset, length));
         }
 
         /// <summary>Skip n bits in the buffer.</summary>

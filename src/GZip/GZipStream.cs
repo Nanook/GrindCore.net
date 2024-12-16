@@ -93,7 +93,11 @@ namespace Nanook.GrindCore.GZip
             return _deflateStream.Read(buffer, offset, count);
         }
 
+#if NETFRAMEWORK
+        public int Read(Span<byte> buffer)
+#else
         public override int Read(Span<byte> buffer)
+#endif
         {
             if (GetType() != typeof(GZipStream))
             {
@@ -133,7 +137,7 @@ namespace Nanook.GrindCore.GZip
             else
             {
                 CheckDeflateStream();
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
                 _deflateStream.WriteCore(new ReadOnlySpan<byte>(in value));
 #else
                 _deflateStream.WriteCore(new ReadOnlySpan<byte>(new byte[] { value }));
@@ -141,7 +145,11 @@ namespace Nanook.GrindCore.GZip
             }
         }
 
+#if NETFRAMEWORK
+        public void Write(ReadOnlySpan<byte> buffer)
+#else
         public override void Write(ReadOnlySpan<byte> buffer)
+#endif
         {
             if (GetType() != typeof(GZipStream))
             {
@@ -157,7 +165,11 @@ namespace Nanook.GrindCore.GZip
             }
         }
 
+#if NETFRAMEWORK
+        public new void CopyTo(Stream destination, int bufferSize)
+#else
         public override void CopyTo(Stream destination, int bufferSize)
+#endif
         {
             CheckDeflateStream();
             _deflateStream.CopyTo(destination, bufferSize);
@@ -179,6 +191,7 @@ namespace Nanook.GrindCore.GZip
             }
         }
 
+#if NETCOREAPP
         public override ValueTask DisposeAsync()
         {
             if (GetType() != typeof(GZipStream))
@@ -195,6 +208,7 @@ namespace Nanook.GrindCore.GZip
 
             return default;
         }
+#endif
 
         public Stream BaseStream => _deflateStream?.BaseStream!;
 
@@ -204,7 +218,11 @@ namespace Nanook.GrindCore.GZip
             return _deflateStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
+#if NETFRAMEWORK
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             if (GetType() != typeof(GZipStream))
             {
@@ -226,7 +244,11 @@ namespace Nanook.GrindCore.GZip
             return _deflateStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
+#if NETFRAMEWORK
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             if (GetType() != typeof(GZipStream))
             {

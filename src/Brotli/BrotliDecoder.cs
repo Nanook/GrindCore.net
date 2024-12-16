@@ -60,7 +60,7 @@ namespace Nanook.GrindCore.Brotli
 
             bytesConsumed = 0;
             bytesWritten = 0;
-            if (Interop.Brotli.BrotliDecoderIsFinished(_state) != Interop.BOOL.FALSE)
+            if (Interop.Brotli.BrotliDecoderIsFinished(_state!) != Interop.BOOL.FALSE)
                 return OperationStatus.Done;
             nuint availableOutput = (nuint)destination.Length;
             nuint availableInput = (nuint)source.Length;

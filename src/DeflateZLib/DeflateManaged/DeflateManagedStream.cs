@@ -95,8 +95,8 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
         {
             throw new NotSupportedException(SR.NotSupported);
         }
-#if NETSTANDARD2_0_OR_GREATER
-        private void ValidateBufferArguments(byte[] buffer, int offset, int count)
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+        private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
@@ -114,7 +114,11 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
             return Read(new Span<byte>(buffer, offset, count));
         }
 
+#if NETFRAMEWORK
+        public int Read(Span<byte> buffer)
+#else
         public override int Read(Span<byte> buffer)
+#endif
         {
             EnsureNotDisposed();
 
@@ -158,7 +162,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
 
         public override int ReadByte()
         {
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
             byte b = default;
             return Read(new Span<byte>(ref b)) == 1 ? b : -1;
 #else
@@ -182,7 +186,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
         {
             if (cancellationToken.IsCancellationRequested)
             {
-#if NET8_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 return ValueTask.FromCanceled<int>(cancellationToken);
 #else
                 return ValueTaskExtensions.FromCanceled<int>(cancellationToken);
@@ -199,7 +203,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
                 if (bytesRead != 0)
                 {
                     // If decompression output buffer is not empty, return immediately.
-#if NET8_0_OR_GREATER
+#if NET5_0_OR_GREATER
                     return ValueTask.FromResult(bytesRead);
 #else
                     return ValueTaskExtensions.FromResult(bytesRead);
@@ -209,7 +213,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
                 if (_inflater.Finished())
                 {
                     // end of compression stream
-#if NET8_0_OR_GREATER
+#if NET5_0_OR_GREATER
                     return ValueTask.FromResult(0);
 #else
                     return ValueTaskExtensions.FromResult(0);
@@ -290,7 +294,11 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
             return ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
+#if NETFRAMEWORK
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             // We use this checking order for compat to earlier versions:
             if (_asyncOperations != 0)

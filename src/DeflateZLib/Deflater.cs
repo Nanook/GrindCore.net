@@ -162,7 +162,7 @@ namespace Nanook.GrindCore.DeflateZLib
             try
             {
                 int bytesRead;
-                ReadDeflateOutput(outputBuffer, ZFlushCode.NoFlush, out bytesRead);
+                ReadDeflateOutput(outputBuffer!, ZFlushCode.NoFlush, out bytesRead);
                 return bytesRead;
             }
             finally
@@ -181,7 +181,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
             lock (SyncLock)
             {
-                fixed (byte* bufPtr = &outputBuffer[0])
+                fixed (byte* bufPtr = &outputBuffer![0])
                 {
                     _zlibStream.NextOut = (nint)bufPtr;
                     _zlibStream.AvailOut = (uint)outputBuffer.Length;
@@ -197,7 +197,7 @@ namespace Nanook.GrindCore.DeflateZLib
         internal bool Finish(byte[] outputBuffer, out int bytesRead)
         {
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
+            Debug.Assert(outputBuffer!.Length > 0, "Can't pass in an empty output buffer!");
 
             ZErrorCode errC = ReadDeflateOutput(outputBuffer, ZFlushCode.Finish, out bytesRead);
             return errC == ZErrorCode.StreamEnd;
@@ -209,7 +209,7 @@ namespace Nanook.GrindCore.DeflateZLib
         internal bool Flush(byte[] outputBuffer, out int bytesRead)
         {
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
+            Debug.Assert(outputBuffer!.Length > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
 
 

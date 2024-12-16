@@ -217,7 +217,9 @@ namespace Nanook.GrindCore.Zip
         ///The comment encoding is determined by the <c>entryNameEncoding</c> parameter of the <see cref="ZipArchive(Stream,ZipArchiveMode,bool,Encoding?)"/> constructor.
         /// If the comment byte length is larger than <see cref="ushort.MaxValue"/>, it will be truncated when disposing the archive.
         /// </remarks>
+#if NETCOREAPP
         [AllowNull]
+#endif
         public string Comment
         {
             get => (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_fileComment);
@@ -390,7 +392,7 @@ namespace Nanook.GrindCore.Zip
                     _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
                     // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
                     // to find start of data, but still using central directory size information
-                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
+                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader!))
                         throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
                     _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
                 }
@@ -591,7 +593,7 @@ namespace Nanook.GrindCore.Zip
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
 
                 Debug.Assert(_archive.ArchiveReader != null);
-                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveReader);
+                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveReader!);
             }
 
             if (!_everOpenedForWrite && _originallyInArchive)
@@ -787,7 +789,7 @@ namespace Nanook.GrindCore.Zip
                 }
                 Debug.Assert(_archive.ArchiveReader != null);
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
+                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader!))
                 {
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
@@ -964,7 +966,7 @@ namespace Nanook.GrindCore.Zip
                     if (_uncompressedSize != 0)
                     {
                         Debug.Assert(_compressedBytes != null);
-                        foreach (byte[] compressedBytes in _compressedBytes)
+                        foreach (byte[] compressedBytes in _compressedBytes!)
                         {
                             _archive.ArchiveStream.Write(compressedBytes, 0, compressedBytes.Length);
                         }
@@ -1236,7 +1238,11 @@ namespace Nanook.GrindCore.Zip
                 _position += count;
             }
 
+#if NETFRAMEWORK
+            public void Write(ReadOnlySpan<byte> source)
+#else
             public override void Write(ReadOnlySpan<byte> source)
+#endif
             {
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);
@@ -1256,23 +1262,23 @@ namespace Nanook.GrindCore.Zip
                 _position += source.Length;
             }
 
-#if NETSTANDARD2_0_OR_GREATER
-        private void ValidateBufferArguments(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+            private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
+            {
+                if (buffer == null)
+                    throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
 
-            if (offset < 0 || offset >= buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset), "Offset is out of range.");
+                if (offset < 0 || offset >= buffer.Length)
+                    throw new ArgumentOutOfRangeException(nameof(offset), "Offset is out of range.");
 
-            if (count < 0 || (offset + count) > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(count), "Count is out of range.");
-        }
+                if (count < 0 || (offset + count) > buffer.Length)
+                    throw new ArgumentOutOfRangeException(nameof(count), "Count is out of range.");
+            }
 #endif
 
             public override void WriteByte(byte value)
             {
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
                 Write(new ReadOnlySpan<byte>(in value));
 #else
                 Write(new ReadOnlySpan<byte>(new byte[] { value }));
@@ -1285,7 +1291,11 @@ namespace Nanook.GrindCore.Zip
                 return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
 
+#if NETFRAMEWORK
+            public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#else
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
             {
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);
