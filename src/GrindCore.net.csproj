@@ -16,6 +16,7 @@
 		<Authors>Nanook</Authors>
 		<Description>Native Compression and Hashing library for dotnet.</Description>
 		<PackageTags>Native;Compression;Hashing;ZLib;Brotli</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/Nanook/GrindCore.net</RepositoryUrl>
 	</PropertyGroup>
