@@ -1,0 +1,39 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: |
+          9.0.x
+          8.0.x
+          6.0.x # Since netstandard2.1 can be targeted with .NET Core 3.0 and later
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Pack NuGet package
+      run: dotnet pack --configuration Release --output ./.nuget --no-restore
+
+    - name: Publish NuGet package
+      if: github.event.pull_request.merged == true || github.ref == 'refs/heads/main'
+      run: dotnet nuget push ./.nuget/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
