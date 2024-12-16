@@ -12,12 +12,6 @@ namespace Nanook.GrindCore
 
         internal static partial class ZLib
         {
-            static ZLib()
-            {
-                MultiplatformLoader.LoadLibrary(Libraries.GrindCoreLib);
-            }
-
-
             [LibraryImport(Libraries.GrindCoreLib, EntryPoint = "GrindCore_DeflateInit2_")]
             internal static unsafe partial ZLibNative.ErrorCode DeflateInit2_(
                 ZLibNative.ZStream* stream,
@@ -94,7 +88,6 @@ namespace Nanook.GrindCore
                 ref uint sourceLen);
         }
 #else
-
         internal static unsafe partial class ZLib
         {
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "GrindCore_DeflateInit2_")]
@@ -171,7 +164,6 @@ namespace Nanook.GrindCore
                 byte* source,
                 ref uint sourceLen);
         }
-
 #endif
     }
 }

@@ -19,12 +19,6 @@ namespace Nanook.GrindCore
 
         internal static partial class Brotli
         {
-            static Brotli()
-            {
-                MultiplatformLoader.LoadLibrary(Libraries.GrindCoreLib);
-            }
-
-
             [LibraryImport(Libraries.GrindCoreLib, EntryPoint = "BrotliDecoderCreateInstance")]
             internal static partial SafeBrotliDecoderHandle BrotliDecoderCreateInstance(IntPtr allocFunc, IntPtr freeFunc, IntPtr opaque);
 
@@ -65,7 +59,6 @@ namespace Nanook.GrindCore
 #else
         internal static unsafe partial class Brotli
         {
-
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "BrotliDecoderCreateInstance")]
             internal static extern SafeBrotliDecoderHandle BrotliDecoderCreateInstance(IntPtr allocFunc, IntPtr freeFunc, IntPtr opaque);
 
