@@ -130,7 +130,11 @@ namespace Nanook.GrindCore.ZLib
         /// <summary>Reads a number of decompressed bytes into the specified byte span.</summary>
         /// <param name="buffer">The span to read the data into.</param>
         /// <returns>The number of bytes that were read into the byte span.</returns>
+#if NETFRAMEWORK
+        public int Read(Span<byte> buffer)
+#else
         public override int Read(Span<byte> buffer)
+#endif
         {
             ThrowIfClosed();
             return _deflateStream.ReadCore(buffer);
@@ -152,7 +156,11 @@ namespace Nanook.GrindCore.ZLib
         /// <param name="buffer">The byte span to read the data into.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous completion of the operation.</returns>
+#if NETFRAMEWORK
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             ThrowIfClosed();
             return _deflateStream.ReadAsyncMemory(buffer, cancellationToken);
@@ -188,7 +196,11 @@ namespace Nanook.GrindCore.ZLib
 
         /// <summary>Writes compressed bytes to the underlying stream from the specified byte span.</summary>
         /// <param name="buffer">The buffer to write data from.</param>
+#if NETFRAMEWORK
+        public void Write(ReadOnlySpan<byte> buffer)
+#else
         public override void Write(ReadOnlySpan<byte> buffer)
+#endif
         {
             ThrowIfClosed();
             _deflateStream.WriteCore(buffer);
@@ -210,7 +222,11 @@ namespace Nanook.GrindCore.ZLib
         /// <param name="buffer">The buffer to write data from.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous completion of the operation.</returns>
+#if NETFRAMEWORK
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             ThrowIfClosed();
             return _deflateStream.WriteAsyncMemory(buffer, cancellationToken);
@@ -227,7 +243,11 @@ namespace Nanook.GrindCore.ZLib
         /// <summary>Reads the bytes from the current stream and writes them to another stream, using the specified buffer size.</summary>
         /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
         /// <param name="bufferSize">The size of the buffer. This value must be greater than zero.</param>
+#if NETFRAMEWORK
+        public new void CopyTo(Stream destination, int bufferSize)
+#else
         public override void CopyTo(Stream destination, int bufferSize)
+#endif
         {
             ThrowIfClosed();
             _deflateStream.CopyTo(destination, bufferSize);
@@ -262,6 +282,7 @@ namespace Nanook.GrindCore.ZLib
             }
         }
 
+#if NETCOREAPP
         /// <summary>Asynchronously releases all resources used by the <see cref="Stream"/>.</summary>
         /// <returns>A task that represents the completion of the disposal operation.</returns>
         public override ValueTask DisposeAsync()
@@ -275,6 +296,7 @@ namespace Nanook.GrindCore.ZLib
 
             return default;
         }
+#endif
 
         /// <summary>Gets a reference to the underlying stream.</summary>
         public Stream BaseStream => _deflateStream?.BaseStream!;

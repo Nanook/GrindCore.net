@@ -95,7 +95,7 @@ namespace Nanook.GrindCore.DeflateZLib
         internal void InitializeDeflater(Stream stream, bool leaveOpen, int windowBits, CompressionLevel compressionLevel)
         {
             Debug.Assert(stream != null);
-            if (!stream.CanWrite)
+            if (!stream!.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
             _deflater = new Deflater(compressionLevel, windowBits);
@@ -197,7 +197,7 @@ namespace Nanook.GrindCore.DeflateZLib
                     do
                     {
                         int compressedBytes;
-                        flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
+                        flushSuccessful = _deflater!.Flush(_buffer!, out compressedBytes);
                         if (flushSuccessful)
                         {
                             await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
@@ -234,7 +234,7 @@ namespace Nanook.GrindCore.DeflateZLib
             // If zlib doesn't have any data, fall back to the base stream implementation, which will do that.
             byte b;
             Debug.Assert(_inflater != null);
-            return _inflater.Inflate(out b) ? b : base.ReadByte();
+            return _inflater!.Inflate(out b) ? b : base.ReadByte();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -243,7 +243,11 @@ namespace Nanook.GrindCore.DeflateZLib
             return ReadCore(new Span<byte>(buffer, offset, count));
         }
 
+#if NETFRAMEWORK
+        public int Read(Span<byte> buffer)
+#else
         public override int Read(Span<byte> buffer)
+#endif
         {
             if (GetType() != typeof(DeflateStream))
             {
@@ -270,7 +274,7 @@ namespace Nanook.GrindCore.DeflateZLib
             {
                 // Try to decompress any data from the inflater into the caller's buffer.
                 // If we're able to decompress any bytes, or if decompression is completed, we're done.
-                bytesRead = _inflater.Inflate(buffer);
+                bytesRead = _inflater!.Inflate(buffer);
                 if (bytesRead != 0 || InflatorIsFinished)
                 {
                     break;
@@ -280,7 +284,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 // data to proceed, read some to populate it.
                 if (_inflater.NeedsInput())
                 {
-                    int n = _stream.Read(_buffer, 0, _buffer!.Length);
+                    int n = _stream.Read(_buffer!, 0, _buffer!.Length);
                     if (n <= 0)
                     {
                         // - Inflater didn't return any data although a non-empty output buffer was passed by the caller.
@@ -376,7 +380,11 @@ namespace Nanook.GrindCore.DeflateZLib
             return ReadAsyncMemory(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
+#if NETFRAMEWORK
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             if (GetType() != typeof(DeflateStream))
             {
@@ -398,7 +406,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
             if (cancellationToken.IsCancellationRequested)
             {
-#if NET8_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 return ValueTask.FromCanceled<int>(cancellationToken);
 #else
                 return ValueTaskExtensions.FromCanceled<int>(cancellationToken);
@@ -420,7 +428,7 @@ namespace Nanook.GrindCore.DeflateZLib
                     {
                         // Try to decompress any data from the inflater into the caller's buffer.
                         // If we're able to decompress any bytes, or if decompression is completed, we're done.
-                        bytesRead = _inflater.Inflate(buffer.Span);
+                        bytesRead = _inflater!.Inflate(buffer.Span);
                         if (bytesRead != 0 || InflatorIsFinished)
                         {
                             break;
@@ -492,7 +500,7 @@ namespace Nanook.GrindCore.DeflateZLib
             }
             else
             {
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
                 WriteCore(new ReadOnlySpan<byte>(in value));
 #else
                 WriteCore(new ReadOnlySpan<byte>(new byte[] { value }));
@@ -500,7 +508,11 @@ namespace Nanook.GrindCore.DeflateZLib
             }
         }
 
+#if NETFRAMEWORK
+        public void Write(ReadOnlySpan<byte> buffer)
+#else
         public override void Write(ReadOnlySpan<byte> buffer)
+#endif
         {
             if (GetType() != typeof(DeflateStream))
             {
@@ -529,7 +541,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 // Pass new bytes through deflater and write them too:
                 fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
                 {
-                    _deflater.SetInput(bufferPtr, buffer.Length);
+                    _deflater!.SetInput(bufferPtr, buffer.Length);
                     WriteDeflaterOutput();
                     _wroteBytes = true;
                 }
@@ -539,9 +551,9 @@ namespace Nanook.GrindCore.DeflateZLib
         private void WriteDeflaterOutput()
         {
             Debug.Assert(_deflater != null && _buffer != null);
-            while (!_deflater.NeedsInput())
+            while (!_deflater!.NeedsInput())
             {
-                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
+                int compressedBytes = _deflater!.GetDeflateOutput(_buffer!);
                 if (compressedBytes > 0)
                 {
                     _stream.Write(_buffer, 0, compressedBytes);
@@ -563,7 +575,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 do
                 {
                     int compressedBytes;
-                    flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
+                    flushSuccessful = _deflater!.Flush(_buffer!, out compressedBytes);
                     if (flushSuccessful)
                     {
                         _stream.Write(_buffer, 0, compressedBytes);
@@ -604,7 +616,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 do
                 {
                     int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                    finished = _deflater!.Finish(_buffer!, out compressedBytes);
 
                     if (compressedBytes > 0)
                         _stream.Write(_buffer, 0, compressedBytes);
@@ -620,7 +632,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 bool finished;
                 do
                 {
-                    finished = _deflater.Finish(_buffer, out _);
+                    finished = _deflater!.Finish(_buffer!, out _);
                 } while (!finished);
             }
         }
@@ -651,7 +663,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 do
                 {
                     int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                    finished = _deflater!.Finish(_buffer!, out compressedBytes);
 
                     if (compressedBytes > 0)
                         await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes)).ConfigureAwait(false);
@@ -667,7 +679,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 bool finished;
                 do
                 {
-                    finished = _deflater.Finish(_buffer, out _);
+                    finished = _deflater!.Finish(_buffer!, out _);
                 } while (!finished);
             }
         }
@@ -718,6 +730,7 @@ namespace Nanook.GrindCore.DeflateZLib
             }
         }
 
+#if NETCOREAPP
         public override ValueTask DisposeAsync()
         {
             return GetType() == typeof(DeflateStream) ?
@@ -769,6 +782,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 }
             }
         }
+#endif
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback!, asyncState!);
@@ -780,8 +794,8 @@ namespace Nanook.GrindCore.DeflateZLib
             TaskToAsyncResult.End<IAsyncResult>(asyncResult);
         }
 
-#if NETSTANDARD2_0_OR_GREATER
-        private void ValidateBufferArguments(byte[] buffer, int offset, int count)
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+        private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
@@ -816,6 +830,21 @@ namespace Nanook.GrindCore.DeflateZLib
             return WriteAsyncMemory(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
+#if NETFRAMEWORK
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        {
+            if (GetType() != typeof(DeflateStream))
+            {
+                // Ensure that existing streams derived from DeflateStream and that override WriteAsync(byte[],...)
+                // get their existing behaviors when the newer Memory-based overload is used.
+                return new ValueTask(base.WriteAsync(buffer.ToArray(), 0, buffer.Length, cancellationToken));
+            }
+            else
+            {
+                return WriteAsyncMemory(buffer, cancellationToken);
+            }
+        }
+#else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             if (GetType() != typeof(DeflateStream))
@@ -829,6 +858,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 return WriteAsyncMemory(buffer, cancellationToken);
             }
         }
+#endif
 
         internal ValueTask WriteAsyncMemory(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
@@ -837,7 +867,7 @@ namespace Nanook.GrindCore.DeflateZLib
             EnsureNotDisposed();
 
             return cancellationToken.IsCancellationRequested ?
-#if NET8_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 ValueTask.FromCanceled(cancellationToken)
 #else
                 ValueTaskExtensions.FromCanceled(cancellationToken)
@@ -853,7 +883,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                     Debug.Assert(_deflater != null);
                     // Pass new bytes through deflater
-                    _deflater.SetInput(buffer);
+                    _deflater!.SetInput(buffer);
 
                     await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
 
@@ -872,17 +902,25 @@ namespace Nanook.GrindCore.DeflateZLib
         private async ValueTask WriteDeflaterOutputAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(_deflater != null && _buffer != null);
-            while (!_deflater.NeedsInput())
+            while (!_deflater!.NeedsInput())
             {
-                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
+                int compressedBytes = _deflater.GetDeflateOutput(_buffer!);
                 if (compressedBytes > 0)
                 {
+#if NETFRAMEWORK
+                    await _stream.WriteAsync(_buffer, 0, compressedBytes, cancellationToken).ConfigureAwait(false);
+#else
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
+#endif
                 }
             }
         }
 
+#if NETFRAMEWORK
+        public new void CopyTo(Stream destination, int bufferSize)
+#else
         public override void CopyTo(Stream destination, int bufferSize)
+#endif
         {
             ValidateCopyToArguments(destination, bufferSize);
 
@@ -928,8 +966,8 @@ namespace Nanook.GrindCore.DeflateZLib
                 Debug.Assert(destination != null);
                 Debug.Assert(bufferSize > 0);
 
-                _deflateStream = deflateStream;
-                _destination = destination;
+                _deflateStream = deflateStream!;
+                _destination = destination!;
                 _cancellationToken = cancellationToken;
                 _arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             }
@@ -941,12 +979,16 @@ namespace Nanook.GrindCore.DeflateZLib
                 {
                     Debug.Assert(_deflateStream._inflater != null);
                     // Flush any existing data in the inflater to the destination stream.
-                    while (!_deflateStream._inflater.Finished())
+                    while (!_deflateStream._inflater!.Finished())
                     {
                         int bytesRead = _deflateStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
                         if (bytesRead > 0)
                         {
+#if NETFRAMEWORK
+                            await _destination.WriteAsync(_arrayPoolBuffer, 0, bytesRead, _cancellationToken).ConfigureAwait(false);
+#else
                             await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), _cancellationToken).ConfigureAwait(false);
+#endif
                         }
                         else if (_deflateStream._inflater.NeedsInput())
                         {
@@ -977,7 +1019,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 {
                     Debug.Assert(_deflateStream._inflater != null);
                     // Flush any existing data in the inflater to the destination stream.
-                    while (!_deflateStream._inflater.Finished())
+                    while (!_deflateStream._inflater!.Finished())
                     {
                         int bytesRead = _deflateStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
                         if (bytesRead > 0)
@@ -1023,7 +1065,11 @@ namespace Nanook.GrindCore.DeflateZLib
                 return WriteAsyncCore(buffer.AsMemory(offset, count), cancellationToken).AsTask();
             }
 
+#if NETFRAMEWORK
+            public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#else
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
             {
                 _deflateStream.EnsureNotDisposed();
 
@@ -1035,7 +1081,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 Debug.Assert(_deflateStream._inflater is not null);
 
                 // Feed the data from base stream into decompression engine.
-                _deflateStream._inflater.SetInput(buffer);
+                _deflateStream._inflater!.SetInput(buffer);
 
                 // While there's more decompressed data available, forward it to the buffer stream.
                 while (!_deflateStream._inflater.Finished())
@@ -1043,7 +1089,11 @@ namespace Nanook.GrindCore.DeflateZLib
                     int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
                     if (bytesRead > 0)
                     {
+#if NETFRAMEWORK
+                        await _destination.WriteAsync(_arrayPoolBuffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+#else
                         await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+#endif
                     }
                     else if (_deflateStream._inflater.NeedsInput())
                     {
@@ -1071,7 +1121,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 Debug.Assert(_deflateStream._inflater != null);
                 // Feed the data from base stream into the decompression engine.
-                _deflateStream._inflater.SetInput(buffer, offset, count);
+                _deflateStream._inflater!.SetInput(buffer, offset, count);
 
                 // While there's more decompressed data available, forward it to the buffer stream.
                 while (!_deflateStream._inflater.Finished())

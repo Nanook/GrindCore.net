@@ -15,8 +15,7 @@ namespace Nanook.GrindCore
             TRUE = 1,
         }
 
-#if NET8_0_OR_GREATER
-
+#if NET7_0_OR_GREATER
         internal static partial class Brotli
         {
             [LibraryImport(Libraries.GrindCoreLib, EntryPoint = "BrotliDecoderCreateInstance")]

@@ -49,10 +49,10 @@ namespace Nanook.GrindCore.Brotli
         /// <para>The encoder ran into invalid data.</para></exception>
         public override void WriteByte(byte value)
         {
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
             WriteCore(new ReadOnlySpan<byte>(in value));
 #else
-                WriteCore(new ReadOnlySpan<byte>(new byte[] { value }));
+            WriteCore(new ReadOnlySpan<byte>(new byte[] { value }));
 #endif
         }
 
@@ -60,7 +60,11 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the current Brotli stream.</param>
         /// <remarks><para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see langword="System.IO.Compression.BrotliStream.WriteAsync" /> method to write asynchronously to the current stream.</para>
         /// <para>If the write operation is successful, the position within the Brotli stream advances by the number of bytes written. If an exception occurs, the position within the Brotli stream remains unchanged.</para></remarks>
+#if NETFRAMEWORK
+        public void Write(ReadOnlySpan<byte> buffer)
+#else
         public override void Write(ReadOnlySpan<byte> buffer)
+#endif
         {
             WriteCore(buffer);
         }
@@ -130,7 +134,11 @@ namespace Nanook.GrindCore.Brotli
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
         /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
+#if NETFRAMEWORK
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+#else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+#endif
         {
             if (_mode != CompressionMode.Compress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
@@ -138,7 +146,7 @@ namespace Nanook.GrindCore.Brotli
             EnsureNotDisposed();
 
             return cancellationToken.IsCancellationRequested ?
-#if NET8_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 ValueTask.FromCanceled(cancellationToken)
 #else
                 ValueTaskExtensions.FromCanceled(cancellationToken)

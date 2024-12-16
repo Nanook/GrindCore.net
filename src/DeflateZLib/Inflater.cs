@@ -186,7 +186,7 @@ namespace Nanook.GrindCore.DeflateZLib
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(inputBuffer != null);
-            Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
+            Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer!.Length);
             Debug.Assert(!IsInputBufferHandleAllocated);
 
             SetInput(inputBuffer.AsMemory(startIndex, count));

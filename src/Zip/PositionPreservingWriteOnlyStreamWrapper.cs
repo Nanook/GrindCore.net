@@ -37,13 +37,21 @@ namespace Nanook.GrindCore.Zip
             _stream.Write(buffer, offset, count);
         }
 
+#if NETFRAMEWORK
+        public void Write(ReadOnlySpan<byte> buffer)
+#else
         public override void Write(ReadOnlySpan<byte> buffer)
+#endif
         {
             _position += buffer.Length;
             _stream.Write(buffer);
         }
 
+#if NETFRAMEWORK || NETCOREAPP3_1
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+#else
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+#endif
         {
             _position += count;
             return _stream.BeginWrite(buffer, offset, count, callback, state);
@@ -63,11 +71,19 @@ namespace Nanook.GrindCore.Zip
             return _stream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
+#if NETFRAMEWORK
+        public Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            _position += buffer.Length;
+            return _stream.WriteAsync(buffer.ToArray(), 0, buffer.Length, cancellationToken);
+        }
+#else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             _position += buffer.Length;
             return _stream.WriteAsync(buffer, cancellationToken);
         }
+#endif
 
         public override bool CanTimeout => _stream.CanTimeout;
         public override int ReadTimeout

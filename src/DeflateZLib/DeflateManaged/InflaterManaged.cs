@@ -352,7 +352,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
 
                         Debug.Assert(_literalLengthTree != null);
                         // TODO: optimize this!!!
-                        symbol = _literalLengthTree.GetNextSymbol(_input);
+                        symbol = _literalLengthTree!.GetNextSymbol(_input);
                         if (symbol < 0)
                         {
                             // running out of input
@@ -425,7 +425,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
                         if (_blockType == BlockType.Dynamic)
                         {
                             Debug.Assert(_distanceTree != null);
-                            _distanceCode = _distanceTree.GetNextSymbol(_input);
+                            _distanceCode = _distanceTree!.GetNextSymbol(_input);
                         }
                         else
                         {
@@ -570,7 +570,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
                         if (_state == InflaterState.ReadingTreeCodesBefore)
                         {
                             Debug.Assert(_codeLengthTree != null);
-                            if ((_lengthCode = _codeLengthTree.GetNextSymbol(_input)) < 0)
+                            if ((_lengthCode = _codeLengthTree!.GetNextSymbol(_input)) < 0)
                             {
                                 return false;
                             }

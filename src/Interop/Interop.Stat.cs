@@ -7,21 +7,22 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Nanook.GrindCore
 {
-#if !NET8_0_OR_GREATER
-        [Flags]
-        internal enum UnixFileMode : uint
-        {
-            UserRead = 0x0100,    // owner has read permission
-            UserWrite = 0x0080,   // owner has write permission
-            UserExecute = 0x0040, // owner has execute permission
-            GroupRead = 0x0020,   // group has read permission
-            GroupWrite = 0x0010,  // group has write permission
-            GroupExecute = 0x0008, // group has execute permission
-            OtherRead = 0x0004,   // others have read permission
-            OtherWrite = 0x0002,  // others have write permission
-            OtherExecute = 0x0001, // others have execute permission
-        }
+#if !NET7_0_OR_GREATER
+    [Flags]
+    internal enum UnixFileMode : uint
+    {
+        UserRead = 0x0100,    // owner has read permission
+        UserWrite = 0x0080,   // owner has write permission
+        UserExecute = 0x0040, // owner has execute permission
+        GroupRead = 0x0020,   // group has read permission
+        GroupWrite = 0x0010,  // group has write permission
+        GroupExecute = 0x0008, // group has execute permission
+        OtherRead = 0x0004,   // others have read permission
+        OtherWrite = 0x0002,  // others have write permission
+        OtherExecute = 0x0001, // others have execute permission
+    }
 #endif
+
     internal static partial class Interop
     {
         internal static partial class Sys

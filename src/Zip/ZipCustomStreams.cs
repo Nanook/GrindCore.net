@@ -101,7 +101,11 @@ namespace Nanook.GrindCore.Zip
             return _baseStream.Read(buffer, offset, count);
         }
 
+#if NETFRAMEWORK
+        public int Read(Span<byte> buffer)
+#else
         public override int Read(Span<byte> buffer)
+#endif
         {
             ThrowIfDisposed();
             ThrowIfCantRead();
@@ -125,7 +129,11 @@ namespace Nanook.GrindCore.Zip
             return _baseStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
+#if NETFRAMEWORK
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             ThrowIfDisposed();
             ThrowIfCantRead();
@@ -158,7 +166,11 @@ namespace Nanook.GrindCore.Zip
             _baseStream.Write(buffer, offset, count);
         }
 
+#if NETFRAMEWORK
+        public void Write(ReadOnlySpan<byte> source)
+#else
         public override void Write(ReadOnlySpan<byte> source)
+#endif
         {
             ThrowIfDisposed();
             ThrowIfCantWrite();
@@ -182,7 +194,11 @@ namespace Nanook.GrindCore.Zip
             return _baseStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
+#if NETFRAMEWORK
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             ThrowIfDisposed();
             ThrowIfCantWrite();
@@ -306,7 +322,11 @@ namespace Nanook.GrindCore.Zip
             return ret;
         }
 
+#if NETFRAMEWORK
+        public int Read(Span<byte> destination)
+#else
         public override int Read(Span<byte> destination)
+#endif
         {
             // parameter validation sent to _superStream.Read
             int origCount = destination.Length;
@@ -331,7 +351,7 @@ namespace Nanook.GrindCore.Zip
 
         public override int ReadByte()
         {
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
             byte b = default;
             return Read(new Span<byte>(ref b)) == 1 ? b : -1;
 #else
@@ -339,8 +359,8 @@ namespace Nanook.GrindCore.Zip
 #endif
         }
 
-#if NETSTANDARD2_0_OR_GREATER
-        private void ValidateBufferArguments(byte[] buffer, int offset, int count)
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+        private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
@@ -359,7 +379,11 @@ namespace Nanook.GrindCore.Zip
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
+#if NETFRAMEWORK
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             ThrowIfDisposed();
             ThrowIfCantRead();
@@ -518,8 +542,9 @@ namespace Nanook.GrindCore.Zip
             ThrowIfDisposed();
             throw new NotSupportedException(SR.SetLengthRequiresSeekingAndWriting);
         }
-#if NETSTANDARD2_0_OR_GREATER
-        private void ValidateBufferArguments(byte[] buffer, int offset, int count)
+
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+        private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
@@ -531,6 +556,7 @@ namespace Nanook.GrindCore.Zip
                 throw new ArgumentOutOfRangeException(nameof(count), "Count is out of range.");
         }
 #endif
+
         public override void Write(byte[] buffer, int offset, int count)
         {
             // we can't pass the argument checking down a level
@@ -554,7 +580,11 @@ namespace Nanook.GrindCore.Zip
             _position += count;
         }
 
+#if NETFRAMEWORK
+        public void Write(ReadOnlySpan<byte> source)
+#else
         public override void Write(ReadOnlySpan<byte> source)
+#endif
         {
             // if we're not actually writing anything, we don't want to trigger as if we did write something
             ThrowIfDisposed();
@@ -575,7 +605,7 @@ namespace Nanook.GrindCore.Zip
         }
 
         public override void WriteByte(byte value) =>
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
             Write(new ReadOnlySpan<byte>(in value));
 #else
             Write(new ReadOnlySpan<byte>(new byte[] { value }));
@@ -587,7 +617,11 @@ namespace Nanook.GrindCore.Zip
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
+#if NETFRAMEWORK
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+#endif
         {
             ThrowIfDisposed();
             Debug.Assert(CanWrite);

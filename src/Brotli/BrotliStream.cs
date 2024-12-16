@@ -94,6 +94,7 @@ namespace Nanook.GrindCore.Brotli
             }
         }
 
+#if NETCOREAPP
         /// <summary>Asynchronously releases the unmanaged resources used by the <see cref="System.IO.Compression.BrotliStream" />.</summary>
         /// <returns>A task that represents the asynchronous dispose operation.</returns>
         /// <remarks><para>This method lets you perform a resource-intensive dispose operation without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
@@ -121,6 +122,7 @@ namespace Nanook.GrindCore.Brotli
                 ReleaseStateForDispose();
             }
         }
+#endif
 
         private void ReleaseStateForDispose()
         {
