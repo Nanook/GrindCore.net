@@ -794,7 +794,7 @@ namespace Nanook.GrindCore.DeflateZLib
             TaskToAsyncResult.End<IAsyncResult>(asyncResult);
         }
 
-#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0 || NETSTANDARD2_1
         private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
         {
             if (buffer == null)

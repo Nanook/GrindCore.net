@@ -108,6 +108,19 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
                 throw new ArgumentOutOfRangeException(nameof(count), "Count is out of range.");
         }
 #endif
+#if NETSTANDARD2_1
+        private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
+        {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
+
+            if (offset < 0 || offset >= buffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset is out of range.");
+
+            if (count < 0 || offset + count > buffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(count), "Count is out of range.");
+        }
+#endif
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);

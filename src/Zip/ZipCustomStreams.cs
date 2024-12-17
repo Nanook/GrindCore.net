@@ -359,7 +359,7 @@ namespace Nanook.GrindCore.Zip
 #endif
         }
 
-#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0 || NETSTANDARD2_1
         private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
         {
             if (buffer == null)
@@ -543,7 +543,7 @@ namespace Nanook.GrindCore.Zip
             throw new NotSupportedException(SR.SetLengthRequiresSeekingAndWriting);
         }
 
-#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0
+#if NETFRAMEWORK || NETCOREAPP3_1 || NET5_0 || NETSTANDARD2_1
         private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
         {
             if (buffer == null)

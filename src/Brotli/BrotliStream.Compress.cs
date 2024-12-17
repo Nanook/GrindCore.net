@@ -15,6 +15,20 @@ namespace Nanook.GrindCore.Brotli
     {
         private BrotliEncoder _encoder;
 
+#if NETSTANDARD2_1
+        private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
+        {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
+
+            if (offset < 0 || offset >= buffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset is out of range.");
+
+            if (count < 0 || offset + count > buffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(count), "Count is out of range.");
+        }
+#endif
+
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression level.</summary>
         /// <param name="stream">The stream to which compressed data is written.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>

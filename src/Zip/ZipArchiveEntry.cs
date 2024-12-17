@@ -1214,6 +1214,19 @@ namespace Nanook.GrindCore.Zip
                 throw new NotSupportedException(SR.SetLengthRequiresSeekingAndWriting);
             }
 
+#if NETSTANDARD2_1
+        private void ValidateBufferArguments(byte[]? buffer, int offset, int count)
+        {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer), "Buffer cannot be null.");
+
+            if (offset < 0 || offset >= buffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset is out of range.");
+
+            if (count < 0 || offset + count > buffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(count), "Count is out of range.");
+        }
+#endif
             // careful: assumes that write is the only way to write to the stream, if writebyte/beginwrite are implemented
             // they must set _everWritten, etc.
             public override void Write(byte[] buffer, int offset, int count)

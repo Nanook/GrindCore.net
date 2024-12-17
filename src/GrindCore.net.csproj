@@ -4,14 +4,14 @@
 		<Nullable>enable</Nullable>
 		<NoWarn>1591,8597,8618</NoWarn>
 		<!-- <TargetFrameworks>net462;net472;net48;netcoreapp3.1;net5.0;net6.0;net7.0;net8.0;net9.0</TargetFrameworks> -->
-		<TargetFrameworks>netcoreapp3.1;net5.0;net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
+		<TargetFrameworks>netcoreapp3.1;net5.0;net6.0;net7.0;net8.0;net9.0;netstandard2.1</TargetFrameworks>
 		<AssemblyName>Nanook.GrindCore</AssemblyName>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<Version>0.0.4-alpha</Version>
 		<RootNamespace>Nanook.GrindCore</RootNamespace>
 		<Configurations>Debug;Release;ReleaseTest</Configurations>
-		<RuntimeIdentifiers>win-x64;win-x86;win-arm64;linux-x64;linux-arm64;linux-arm;osx-x64;osx-arm64</RuntimeIdentifiers>
+		<RuntimeIdentifiers>win-x64;win-x86;win-arm64;linux-x64;linux-x86;linux-arm64;linux-arm;osx-x64;osx-arm64</RuntimeIdentifiers>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>GrindCore</PackageId>
 		<Authors>Nanook</Authors>
@@ -45,6 +45,11 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/linux-x64/native/libGrindCore.so</PackagePath>
+		</Content>
+		<Content Include="runtimes\linux-x86\native\libGrindCore.so">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/linux-x86/native/libGrindCore.so</PackagePath>
 		</Content>
 		<Content Include="runtimes\osx-arm64\native\libGrindCore.dylib">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
