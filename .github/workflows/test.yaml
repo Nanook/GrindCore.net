@@ -12,11 +12,16 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [windows-latest, ubuntu-latest]
         dotnet-version: [8.x, 6.x]
-        runtime-identifier: [win-x64]
+        include:
+          - os: windows-latest
+            runtime-identifier: win-x64
+          - os: ubuntu-latest
+            runtime-identifier: linux-x64
 
     steps:
     - name: Checkout code
