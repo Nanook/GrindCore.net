@@ -27,9 +27,6 @@ jobs:
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
 
-    - name: Clear NuGet cache
-      run: dotnet nuget locals all --clear
-
     - name: List .NET SDKs
       run: dotnet --list-sdks
 
