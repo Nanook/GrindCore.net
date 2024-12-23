@@ -398,3 +398,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Native debug Files
+*.dbg
+*.dwarf
+*.a
+*.lib

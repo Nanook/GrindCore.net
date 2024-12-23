@@ -5,6 +5,8 @@ VisualStudioVersion = 17.12.35514.174
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrindCore.net", "src\GrindCore.net.csproj", "{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrindCore.Tests", "tests\GrindCore.Tests.csproj", "{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,6 +20,12 @@ Global
 		{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}.ReleaseTest|Any CPU.ActiveCfg = ReleaseTest|Any CPU
 		{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}.ReleaseTest|Any CPU.Build.0 = ReleaseTest|Any CPU
+		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.ReleaseTest|Any CPU.ActiveCfg = Release|Any CPU
+		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.ReleaseTest|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x86</RuntimeIdentifier>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-x86' or '$(RuntimeIdentifier)' == 'linux-arm' ">x86</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' != 'win-x86' and '$(RuntimeIdentifier)' != 'linux-x86' and '$(RuntimeIdentifier)' != 'linux-arm' ">x64</PlatformTarget>		
+		<!--<UseCurrentRuntimeIdentifier>true</UseCurrentRuntimeIdentifier>-->
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BouncyCastle.Cryptography" Version="2.5.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+		<PackageReference Include="MSTest" Version="3.7.0" />
+		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\src\GrindCore.net.csproj" />
+	</ItemGroup>
+
+	<!--Unit tests are apparently buggy with native lookups in to runtimes..., workaround = copy files up-->
+	<Target Name="CopyNativeLibraries" AfterTargets="Build">
+		<ItemGroup>
+			<NativeLibraries Include="$(OutputPath)runtimes\$(RuntimeIdentifier)\native\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(NativeLibraries)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+	</Target>
+
+	<ItemGroup>
+		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,50 @@
+name: Run Unit Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        dotnet-version: [9.x, 8.x, 6.x]
+        include:
+          - os: windows-latest
+            runtime-identifier: win-x64
+          - os: ubuntu-latest
+            runtime-identifier: linux-x64
+          - os: macos-latest
+            runtime-identifier: osx-x64
+          - os: macos-latest
+            runtime-identifier: osx-arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ matrix.dotnet-version }}
+
+    - name: Restore dependencies
+      run: dotnet restore tests/GrindCore.Tests.csproj
+
+    - name: Build
+      run: dotnet build tests/GrindCore.Tests.csproj --configuration Release --no-restore -r ${{ matrix.runtime-identifier }}
+
+    - name: Run unit tests
+      run: dotnet test tests/GrindCore.Tests.csproj --configuration Release --no-build --logger "trx;LogFileName=TestResults.trx" -r ${{ matrix.runtime-identifier }}
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestResults
+        path: tests/GrindCore.Tests/TestResults/*.trx

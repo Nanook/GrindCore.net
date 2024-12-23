@@ -50,31 +50,5 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <param name="innerException">The exception that is the cause of the current exception, or a <code>null</code>.</param>
         public ZLibException(string? message, Exception? innerException) : base(message, innerException) { }
 
-        /// <summary>
-        /// Initializes a new ZLibException with serialized data.
-        /// </summary>
-        /// <param name="info">The SerializationInfo that holds the serialized object data about the exception being thrown.</param>
-        /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
-//#if NET8_0_OR_GREATER
-//        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-//        [EditorBrowsable(EditorBrowsableState.Never)]
-//#endif
-//        protected ZLibException(SerializationInfo info, StreamingContext context) : base(info, context)
-//        {
-//            _zlibErrorContext = info.GetString("zlibErrorContext");
-//            _zlibErrorCode = (ZLibNative.ErrorCode)info.GetInt32("zlibErrorCode");
-//            _zlibErrorMessage = info.GetString("zlibErrorMessage");
-//        }
-
-//#if NET8_0_OR_GREATER
-//        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-//#endif
-//        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-//        {
-//            base.GetObjectData(si, context);
-//            si.AddValue("zlibErrorContext", _zlibErrorContext);
-//            si.AddValue("zlibErrorCode", (int)_zlibErrorCode);
-//            si.AddValue("zlibErrorMessage", _zlibErrorMessage);
-//        }
     }
 }
