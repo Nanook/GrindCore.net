@@ -1,4 +1,4 @@
-﻿using Nanook.GrindCore;
+using Nanook.GrindCore;
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;

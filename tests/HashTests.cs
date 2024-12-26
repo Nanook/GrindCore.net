@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using HashAlgorithm=System.Security.Cryptography.HashAlgorithm;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
