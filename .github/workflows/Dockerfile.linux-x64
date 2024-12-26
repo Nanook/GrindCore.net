@@ -1,0 +1,8 @@
+# Use the official .NET 8 SDK Alpine image as the base image
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine
+
+# Set the working directory
+WORKDIR /app
+
+# Default command to keep the container alive
+CMD [ "sh" ]
