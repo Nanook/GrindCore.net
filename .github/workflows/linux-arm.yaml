@@ -38,4 +38,4 @@ jobs:
       run: docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
 
     - name: Run tests in Docker container
-      run: docker run -it --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm /app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime
+      run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm /app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime
