@@ -1,15 +1,15 @@
-﻿using GrindCore.Tests;
-using System;
+﻿using System;
 using System.Linq;
 using System.Reflection;
 using Xunit;
 
-namespace ReflectionExample
+namespace GrindCore.Tests
 {
     class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
+            bool error = false;
             // Reference the assembly containing the test classes
             Assembly assembly = typeof(HashTests).Assembly;
 
@@ -25,36 +25,44 @@ namespace ReflectionExample
                 if (theoryMethods.Any())
                 {
                     // Create an instance of the test class
-                    object testClassInstance = Activator.CreateInstance(type);
-
                     Console.WriteLine($"Class: {type.Name}");
-
-                    foreach (var method in theoryMethods)
+                    object? testClassInstance = Activator.CreateInstance(type);
+                    if (testClassInstance == null)
                     {
-                        // Get the InlineData attributes for the method
-                        var inlineDataAttributes = method.GetCustomAttributes(typeof(InlineDataAttribute), true)
-                            .Cast<InlineDataAttribute>();
-
-                        foreach (var inlineData in inlineDataAttributes)
+                        error = true;
+                        Console.WriteLine($"Fail: {type.Name} could not be loaded");
+                    }
+                    else
+                    {
+                        foreach (var method in theoryMethods)
                         {
-                            // Get the parameters for the method
-                            var parameters = inlineData.GetData(null).First();
+                            // Get the InlineData attributes for the method
+                            var inlineDataAttributes = method.GetCustomAttributes(typeof(InlineDataAttribute), true)
+                                .Cast<InlineDataAttribute>();
 
-                            // Invoke the method with the parameters
-                            try
+                            foreach (var inlineData in inlineDataAttributes)
                             {
-                                method.Invoke(testClassInstance, parameters);
-                                Console.WriteLine($"Pass: {method.Name}({string.Join(", ", parameters)})");
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
-                                PrintExceptionDetails(ex);
+                                // Get the parameters for the method
+                                var parameters = inlineData.GetData(null).First();
+
+                                // Invoke the method with the parameters
+                                try
+                                {
+                                    method.Invoke(testClassInstance, parameters);
+                                    Console.WriteLine($"Pass: {method.Name}({string.Join(", ", parameters)})");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
+                                    error = true;
+                                    PrintExceptionDetails(ex);
+                                }
                             }
                         }
                     }
                 }
             }
+            return error ? 0 : 1;
         }
 
         static void PrintExceptionDetails(Exception ex)

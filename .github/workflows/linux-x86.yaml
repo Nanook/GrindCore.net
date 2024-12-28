@@ -1,6 +1,13 @@
-name: Build and Test on Linux ARM
+name: Build and Test on Linux x86
 
 on:
+  push:
+    branches:
+      - main
+      - test/*
+  pull_request:
+    branches:
+      - main
   workflow_dispatch: # Allows manual triggering of the workflow
   workflow_call: {} # call from parent
 
@@ -15,13 +22,13 @@ jobs:
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '6.0.x'
 
     - name: Install dependencies
       run: dotnet restore
 
     - name: Build project
-      run: dotnet build -c Release tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+      run: dotnet build -c Release tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -r linux-x86 -p:TargetFramework=net6.0 -p:TargetFrameworks=net6.0
 
     - name: Set up Docker Buildx
       run: |
@@ -29,7 +36,7 @@ jobs:
         docker buildx create --use --name mybuilder
 
     - name: Build Docker image
-      run: docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
+      run: docker buildx build --platform linux/386 -t linux-x86 -f .github/workflows/Dockerfile.linux-x86 . --load
 
     - name: Run tests in Docker container
-      run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm /app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime
+      run: docker run --rm --platform linux/386 -v "$(pwd):/app" linux-x86 /app/tests/GrindCore.Tests.Runtime/bin/Release/net6.0/linux-x86/GrindCore.Tests.Runtime

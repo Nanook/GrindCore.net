@@ -4,8 +4,7 @@
 		<Nullable>enable</Nullable>
 		<NoWarn>1591,8597,8618</NoWarn>
 		<!-- <TargetFrameworks>net462;net472;net48;netcoreapp3.1;net5.0;net6.0;net7.0;net8.0;net9.0</TargetFrameworks> -->
-		<TargetFrameworks>net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1</TargetFrameworks>
-		<!--<TargetFrameworks>net8.0</TargetFrameworks>-->
+		<TargetFrameworks>net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1</TargetFrameworks>
 		<AssemblyName>Nanook.GrindCore</AssemblyName>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
