@@ -14,14 +14,9 @@ RUN curl https://download.visualstudio.microsoft.com/download/pr/44135b0f-e6d4-4
     mkdir -p $DOTNET_ROOT && \
     tar zxf dotnet-sdk-8.0.404-linux-arm.tar.gz -C $DOTNET_ROOT
 
-
-
 # Create app directory
 RUN mkdir -p /app
 WORKDIR /app
-
-# Copy the current directory contents into the container at /app
-COPY . /app
 
 # Set default command
 CMD [ "bash" ]
