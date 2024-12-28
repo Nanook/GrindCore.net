@@ -2,11 +2,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35514.174
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrindCore.net", "src\GrindCore.net.csproj", "{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrindCore.net", "src\GrindCore.net.csproj", "{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrindCore.Tests", "tests\GrindCore.Tests.csproj", "{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrindCoreX.Tests", "tests\GrindCore.Tests\GrindCore.Tests.csproj", "{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArmNativeTest", "ArmNativeTest\ArmNativeTest.csproj", "{B25F7D4E-7AC3-4F04-87A6-AD62C0D5FAAF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuntimeTestApp", "tests\GrindCore.Tests.Runtime\GrindCore.Tests.Runtime.csproj", "{800E3E22-A933-4124-9788-0C0997079DAF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,20 +21,23 @@ Global
 		{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}.ReleaseTest|Any CPU.ActiveCfg = ReleaseTest|Any CPU
 		{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}.ReleaseTest|Any CPU.Build.0 = ReleaseTest|Any CPU
-		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.ReleaseTest|Any CPU.ActiveCfg = Release|Any CPU
-		{D8021D3B-CE3E-455A-8A30-2711DBB1E3EC}.ReleaseTest|Any CPU.Build.0 = Release|Any CPU
-		{B25F7D4E-7AC3-4F04-87A6-AD62C0D5FAAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B25F7D4E-7AC3-4F04-87A6-AD62C0D5FAAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B25F7D4E-7AC3-4F04-87A6-AD62C0D5FAAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B25F7D4E-7AC3-4F04-87A6-AD62C0D5FAAF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B25F7D4E-7AC3-4F04-87A6-AD62C0D5FAAF}.ReleaseTest|Any CPU.ActiveCfg = Release|Any CPU
-		{B25F7D4E-7AC3-4F04-87A6-AD62C0D5FAAF}.ReleaseTest|Any CPU.Build.0 = Release|Any CPU
+		{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}.ReleaseTest|Any CPU.ActiveCfg = Release|Any CPU
+		{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}.ReleaseTest|Any CPU.Build.0 = Release|Any CPU
+		{800E3E22-A933-4124-9788-0C0997079DAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{800E3E22-A933-4124-9788-0C0997079DAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{800E3E22-A933-4124-9788-0C0997079DAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{800E3E22-A933-4124-9788-0C0997079DAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{800E3E22-A933-4124-9788-0C0997079DAF}.ReleaseTest|Any CPU.ActiveCfg = Release|Any CPU
+		{800E3E22-A933-4124-9788-0C0997079DAF}.ReleaseTest|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9B10E885-F05E-43E1-BA6F-2470C2C13BAD}
 	EndGlobalSection
 EndGlobal

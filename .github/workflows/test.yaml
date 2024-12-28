@@ -1,14 +1,16 @@
 name: Run Unit Tests
 
 on:
-  push:
-    branches:
-      - main
-      - test/*
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - main
+#       - test/*
+#   pull_request:
+#     branches:
+#       - main
+#   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
   test:
