@@ -25,7 +25,6 @@ jobs:
         run: |
           $path = "C:\Program Files\dotnet\sdk\9.0.101"
           if (Test-Path $path) {
-            & "C:\Program Files\dotnet\dotnet.exe" tool uninstall -g dotnet
             Remove-Item -Recurse -Force $path
           }
 
