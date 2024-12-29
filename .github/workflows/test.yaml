@@ -15,13 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Buildx
         run: |
@@ -33,69 +33,68 @@ jobs:
 
   test_linux_x86:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
 
-    - name: Install dependencies
-      run: dotnet restore
+      - name: Install dependencies
+        run: dotnet restore
 
-    - name: Build project
-      run: dotnet build -c Release tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+      - name: Build project
+        run: dotnet build -c Release tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -r linux-x86 -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
 
-    - name: Set up Docker Buildx
-      run: |
-        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-        docker buildx create --use --name mybuilder
+      - name: Set up Docker Buildx
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          docker buildx create --use --name mybuilder
 
-    - name: Build Docker image
-      run: docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
+      - name: Build Docker image
+        run: docker buildx build --platform linux/386 -t linux-x86 -f .github/workflows/Dockerfile.linux-x86 . --load
 
-    - name: Run tests in Docker container
-      run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm /app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime
+      - name: Run tests in Docker container
+        run: docker run --rm --platform linux/386 -v "$(pwd):/app" linux-x86 /app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-x86/GrindCore.Tests.Runtime
 
   test_linux_x64:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version:9.0 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
 
-    - name: List .NET SDKs
-      run: dotnet --list-sdks
+      - name: List .NET SDKs
+        run: dotnet --list-sdks
 
-    - name: Run linux-x64 unit tests
-      run: dotnet test tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run linux-x64 unit tests
+        run: dotnet test tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
   test_win_x64:
     runs-on: windows-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version:9.0 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
 
-    - name: List .NET SDKs
-      run: dotnet --list-sdks
+      - name: List .NET SDKs
+        run: dotnet --list-sdks
 
-    - name: Run win-x64 unit tests
-      run: dotnet test tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run win-x64 unit tests
+        run: dotnet test tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-    - name: Run win-x86 unit tests
-      run: dotnet test tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run win-x86 unit tests
+        run: dotnet test tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-    - name: Run win-arm64 unit tests
-      run: dotnet test tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run win-arm64 unit tests
+        run: dotnet test tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
