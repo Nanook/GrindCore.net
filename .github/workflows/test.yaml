@@ -38,15 +38,42 @@ jobs:
 
       - name: Run win-x86 unit tests
         shell: pwsh
-        run: |
-          $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
-          $env:Path += ";C:\Program Files (x86)\dotnet"
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" restore -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:DebugType=Full -p:DebugSymbols=true
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:DebugType=Full -p:DebugSymbols=true
-          Get-ChildItem -Path .\tests\GrindCore.Tests\bin\Debug\net9.0\win-x86\ | Select-Object Name, Length | Format-Table
+        run: | # Release mode fails, x86 seems to be flakey
           & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:DebugType=Full -p:DebugSymbols=true
 
+  test_osx_x64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
+
+      - name: List .NET SDKs
+        run: dotnet --list-sdks
+
+      - name: Run osx-x64 unit tests
+        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+
+  test_osx_arm64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
+
+      - name: List .NET SDKs
+        run: dotnet --list-sdks
+
+      - name: Run osx-arm64 unit tests
+        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
   # test_linux_x64:
   #   runs-on: ubuntu-latest
