@@ -101,26 +101,26 @@ jobs:
       # - name: Run win-x64 unit tests
       #   run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-    - name: Uninstall existing .NET SDK (x64)
-      run: |
-        $path = "C:\Program Files\dotnet\sdk\9.0.101"
-        if (Test-Path $path) {
-          & "C:\Program Files\dotnet\dotnet.exe" tool uninstall -g dotnet
-          Remove-Item -Recurse -Force $path
-        }
+      - name: Uninstall existing .NET SDK (x64)
+        run: |
+          $path = "C:\Program Files\dotnet\sdk\9.0.101"
+          if (Test-Path $path) {
+            & "C:\Program Files\dotnet\dotnet.exe" tool uninstall -g dotnet
+            Remove-Item -Recurse -Force $path
+          }
 
-    - name: Install Visual C++ Redistributable
-      run: choco install vcredist2015 -y
+      - name: Install Visual C++ Redistributable
+        run: choco install vcredist2015 -y
 
-    - name: Download and install .NET 9.0 SDK (x86)
-      run: |
-        Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
-        Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
-        Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
+      - name: Download and install .NET 9.0 SDK (x86)
+        run: |
+          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
+          Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
+          Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
 
-      - name: Run win-x64 unit tests
-        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+        - name: Run win-x64 unit tests
+          run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-      # - name: Run win-arm64 unit tests
-      #   run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+        # - name: Run win-arm64 unit tests
+        #   run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
