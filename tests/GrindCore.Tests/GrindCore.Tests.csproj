@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net9.0;net8.0;net6.0</TargetFrameworks>
+		<LangVersion>latest</LangVersion>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<SelfContained>false</SelfContained>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+
+		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x86</RuntimeIdentifier>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64' ">x64</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'linux-arm64' or  '$(RuntimeIdentifier)' == 'osx-arm64' ">arm64</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-x86' ">x86</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-arm' and ('$(TargetFramewework)' == 'net8.0' or '$(TargetFramewework)' == 'net6.0') ">arm</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-x86' and ('$(TargetFramewework)' == 'net8.0' or '$(TargetFramewework)' == 'net6.0') ">arm</PlatformTarget>
+		<RuntimeIdentifiers>$(RuntimeIdentifier)</RuntimeIdentifiers>
+
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+		<PackageReference Include="xunit" Version="2.9.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="3.0.0">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="coverlet.collector" Version="6.0.2">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\GrindCore.net.csproj" />
+	</ItemGroup>
+
+	<!--Unit tests are apparently buggy with native lookups in to runtimes..., workaround = copy files up-->
+	<Target Name="CopyNativeLibraries" AfterTargets="Build">
+		<ItemGroup>
+			<NativeLibraries Include="$(OutputPath)runtimes\$(RuntimeIdentifier)\native\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(NativeLibraries)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+	</Target>
+</Project>

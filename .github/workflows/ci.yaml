@@ -1,13 +1,15 @@
 name: Publish NuGet Package
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [closed]
-    branches:
-      - main
+  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     types: [closed]
+#     branches:
+#       - main
 
 jobs:
   build:

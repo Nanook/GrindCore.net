@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using HashAlgorithm=System.Security.Cryptography.HashAlgorithm;
 using Nanook.GrindCore.MD;
 using Nanook.GrindCore.SHA;

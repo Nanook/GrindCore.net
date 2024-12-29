@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFrameworks>net9.0;net8.0;net6.0</TargetFrameworks>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<SelfContained>false</SelfContained>
+
+		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x86</RuntimeIdentifier>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64' ">x64</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'linux-arm64' or  '$(RuntimeIdentifier)' == 'osx-arm64' ">arm64</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-x86' ">x86</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-arm' and ('$(TargetFramewework)' == 'net8.0' or '$(TargetFramewework)' == 'net6.0') ">arm</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-x86' and ('$(TargetFramewework)' == 'net8.0' or '$(TargetFramewework)' == 'net6.0') ">arm</PlatformTarget>
+		<RuntimeIdentifiers>$(RuntimeIdentifier)</RuntimeIdentifiers>
+
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="xunit.extensibility.core" Version="2.9.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\GrindCore.Tests\GrindCore.Tests.csproj" />
+	</ItemGroup>
+
+	<!--Unit tests are apparently buggy with native lookups in to runtimes..., workaround = copy files up-->
+	<Target Name="CopyNativeLibraries" AfterTargets="Build">
+		<ItemGroup>
+			<NativeLibraries Include="$(OutputPath)runtimes\$(RuntimeIdentifier)\native\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(NativeLibraries)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+	</Target>
+</Project>
