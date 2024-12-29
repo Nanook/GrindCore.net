@@ -11,7 +11,6 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-
   test_win_arm64:
     runs-on: windows-latest
     steps:
@@ -35,9 +34,9 @@ jobs:
       - name: Run win-arm64 unit tests
         shell: pwsh
         run: |
-          $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet\arm64"
-          $env:Path += ";C:\Program Files (x86)\dotnet\arm64"
-          & "C:\Program Files (x86)\dotnet\arm64\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          $env:DOTNET_ROOT = "C:\Program Files\dotnet"
+          $env:Path += ";C:\Program Files\dotnet"
+          & "C:\Program Files\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
   # test_win_x86:
   #   runs-on: windows-latest
