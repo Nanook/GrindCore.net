@@ -57,11 +57,10 @@ jobs:
 
       - name: Install .NET x64 Runtime
         run: |
-          wget https://download.visualstudio.microsoft.com/download/pr/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-runtime-9.0.1-osx-x64.tar.gz -O dotnet-runtime-osx-x64.tar.gz
-          mkdir -p $HOME/dotnet/x64
-          tar zxf dotnet-runtime-osx-x64.tar.gz -C $HOME/dotnet/x64
-          export PATH=$HOME/dotnet/x64:$PATH
-          echo "export PATH=$HOME/dotnet/x64:\$PATH" >> $GITHUB_ENV
+          wget https://download.visualstudio.microsoft.com/download/pr/1fec6f64-0d7f-4b39-acd1-e9e2701a6b1d/b7b6246d0c20cfe703c6c88ffdbb081e/dotnet-sdk-9.0.101-osx-x64.pkg -O dotnet-sdk-9.0.101-osx-x64.pkg
+          sudo installer -pkg dotnet-sdk-9.0.101-osx-x64.pkg -target /
+          export PATH=$PATH:/usr/local/share/dotnet/dotnet
+          echo "export PATH=$PATH:/usr/local/share/dotnet/dotnet" >> $GITHUB_ENV
 
       - name: Run osx-x64 unit tests
         run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
