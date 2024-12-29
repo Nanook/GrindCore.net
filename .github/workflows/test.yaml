@@ -17,26 +17,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '9.0'
-
-      - name: List .NET SDKs
-        run: dotnet --list-sdks
-
       - name: Download and install .NET 9.0 SDK (ARM64)
         run: |
           Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/4d9233cf-ec91-49d9-919c-0ac0070e1bad/f0c3580e34ac9c4afd2197785a11521e/dotnet-sdk-9.0.101-win-arm64.exe" -OutFile "dotnet-sdk-9.0.101-win-arm64.exe"
           Start-Process -FilePath "dotnet-sdk-9.0.101-win-arm64.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
           Remove-Item -Path "dotnet-sdk-9.0.101-win-arm64.exe"
 
+      - name: Set .NET Environment Variables
+        shell: pwsh
+        run: |
+          $env:DOTNET_ROOT = "C:\Program Files\dotnet"
+          $env:Path += ";C:\Program Files\dotnet"
+
+      - name: List .NET SDKs
+        run: |
+          & "C:\Program Files\dotnet\dotnet.exe" --list-sdks
+
       - name: Run win-arm64 unit tests
         shell: pwsh
         run: |
           $env:DOTNET_ROOT = "C:\Program Files\dotnet"
           $env:Path += ";C:\Program Files\dotnet"
-          & "C:\Program Files\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          & "C:\Program Files\dotnet\dotnet.exe" restore tests/GrindCore.Tests/GrindCore.Tests.csproj -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          & "C:\Program Files\dotnet\dotnet.exe" build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          & "C:\Program Files\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 --diag:log.txt
 
   # test_win_x86:
   #   runs-on: windows-latest
