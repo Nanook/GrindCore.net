@@ -1,4 +1,4 @@
-# Use the official .NET 9 SDK Windows image as the base image
+# Use the official .NET 9 SDK Windows ARM64 image as the base image
 FROM mcr.microsoft.com/dotnet/sdk:9.0-windowsservercore-ltsc2022-arm64
 
 # Set the working directory
