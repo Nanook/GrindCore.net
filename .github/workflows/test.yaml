@@ -88,6 +88,7 @@ jobs:
 
       - name: Run build and test inside Docker container (Linux ARM64)
         run: |
+          dotnet restore -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
           docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 sh -c "dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
 
   # test_linux_arm:
