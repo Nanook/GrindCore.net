@@ -1,0 +1,21 @@
+# Use an ARM64 base image
+FROM arm64v8/ubuntu:22.04
+
+# Install curl and libicu
+RUN apt-get update && apt-get install -y curl libicu-dev
+
+# Set environment variables
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV PATH=$PATH:$DOTNET_ROOT
+
+# Download and install .NET SDK 9.0 for ARM64
+RUN curl https://download.visualstudio.microsoft.com/download/pr/93a7156d-01ef-40a1-b6e9-bbe7602f7e8b/3c93e90c63b494972c44f073e15bfc26/dotnet-sdk-9.0.101-linux-arm64.tar.gz -o dotnet-sdk-9.0.101-linux-arm64.tar.gz && \
+    mkdir -p $DOTNET_ROOT && \
+    tar zxf dotnet-sdk-9.0.101-linux-arm64.tar.gz -C $DOTNET_ROOT
+
+# Create app directory
+RUN mkdir -p /app
+WORKDIR /app
+
+# Set default command
+CMD [ "bash" ]
