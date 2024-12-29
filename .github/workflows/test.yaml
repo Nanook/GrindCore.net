@@ -130,4 +130,4 @@ jobs:
         run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
       - name: Run win-x86 Runtime unit tests
-        run: tests/GrindCore.Tests.Runtime/bin/Release/net8.0/win-x86/GrindCore.Tests.Runtime
+        run: tests/GrindCore.Tests.Runtime/bin/Release/net9.0/win-x86/GrindCore.Tests.Runtime
