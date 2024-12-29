@@ -11,38 +11,32 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-
-  test_win_x86:
+  test_win_arm64:
     runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
+
       - name: List .NET SDKs
         run: dotnet --list-sdks
 
-      - name: Uninstall existing .NET SDK (x64)
+      - name: Download and install .NET 9.0 SDK (ARM64)
         run: |
-          $path = "C:\Program Files\dotnet\sdk\9.0.101"
-          if (Test-Path $path) {
-            Remove-Item -Recurse -Force $path
-          }
+          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/3b3f9e0a-0e28-4e56-9c4a-a79a14770219/dotnet-sdk-9.0.101-win-arm64.exe" -OutFile "dotnet-sdk-9.0.101-win-arm64.exe"
+          Start-Process -FilePath "dotnet-sdk-9.0.101-win-arm64.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
+          Remove-Item -Path "dotnet-sdk-9.0.101-win-arm64.exe"
 
-      - name: Install Visual C++ Redistributable
-        run: choco install vcredist2015 -y
-
-      - name: Download and install .NET 9.0 SDK (x86)
-        run: |
-          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
-          Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
-          Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
-
-      - name: Run win-x86 unit tests
+      - name: Run win-arm64 unit tests
         shell: pwsh
         run: |
-          $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
-          $env:Path += ";C:\Program Files (x86)\dotnet"
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          $env:DOTNET_ROOT = "C:\Program Files\dotnet\arm64"
+          $env:Path += ";C:\Program Files\dotnet\arm64"
+          & "C:\Program Files\dotnet\arm64\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
   # test_win_x86:
   #   runs-on: windows-latest
@@ -50,22 +44,31 @@ jobs:
   #     - name: Checkout code
   #       uses: actions/checkout@v3
 
-  #     - name: Setup .NET
-  #       uses: actions/setup-dotnet@v3
-  #       with:
-  #         dotnet-version: '9.0'
-
   #     - name: List .NET SDKs
   #       run: dotnet --list-sdks
 
-  #     - name: Build project in Docker
-  #       run: docker build -t win-x86 -f .github/workflows/Dockerfile.win-x86 .
-
-  #     - name: Run test script inside Docker container (Windows x86)
+  #     - name: Uninstall existing .NET SDK (x64)
   #       run: |
-  #         docker run --rm -v "$(pwd):C:\app" win-x86 powershell -Command `
-  #           "dotnet restore C:\app\tests\GrindCore.Tests\GrindCore.Tests.csproj -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0; `
-  #           dotnet test C:\app\tests\GrindCore.Tests\GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
+  #         $path = "C:\Program Files\dotnet\sdk\9.0.101"
+  #         if (Test-Path $path) {
+  #           Remove-Item -Recurse -Force $path
+  #         }
+
+  #     - name: Install Visual C++ Redistributable
+  #       run: choco install vcredist2015 -y
+
+  #     - name: Download and install .NET 9.0 SDK (x86)
+  #       run: |
+  #         Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
+  #         Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
+  #         Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
+
+  #     - name: Run win-x86 unit tests
+  #       shell: pwsh
+  #       run: |
+  #         $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
+  #         $env:Path += ";C:\Program Files (x86)\dotnet"
+  #         & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
   # test_win_arm64:
   #   runs-on: windows-latest
