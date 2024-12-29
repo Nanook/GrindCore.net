@@ -11,37 +11,37 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-  # test_win_x86:
-  #   runs-on: windows-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+  test_win_x86:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  #     - name: List .NET SDKs
-  #       run: dotnet --list-sdks
+      - name: List .NET SDKs
+        run: dotnet --list-sdks
 
-  #     - name: Uninstall existing .NET SDK (x64)
-  #       run: |
-  #         $path = "C:\Program Files\dotnet\sdk\9.0.101"
-  #         if (Test-Path $path) {
-  #           Remove-Item -Recurse -Force $path
-  #         }
+      - name: Uninstall existing .NET SDK (x64)
+        run: |
+          $path = "C:\Program Files\dotnet\sdk\9.0.101"
+          if (Test-Path $path) {
+            Remove-Item -Recurse -Force $path
+          }
 
-  #     - name: Install Visual C++ Redistributable
-  #       run: choco install vcredist2015 -y
+      - name: Install Visual C++ Redistributable
+        run: choco install vcredist2015 -y
 
-  #     - name: Download and install .NET 9.0 SDK (x86)
-  #       run: |
-  #         Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
-  #         Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
-  #         Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
+      - name: Download and install .NET 9.0 SDK (x86)
+        run: |
+          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
+          Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
+          Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
 
-  #     - name: Run win-x86 unit tests
-  #       shell: pwsh
-  #       run: |
-  #         $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
-  #         $env:Path += ";C:\Program Files (x86)\dotnet"
-  #         & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run win-x86 unit tests
+        shell: pwsh
+        run: |
+          $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
+          $env:Path += ";C:\Program Files (x86)\dotnet"
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
 
 
@@ -109,26 +109,26 @@ jobs:
   #     - name: Run tests in Docker container
   #       run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime"
 
-  test_win_x64:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  # test_win_x64:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '9.0'
+  #     - name: Setup .NET
+  #       uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '9.0'
 
-      - name: List .NET SDKs
-        run: dotnet --list-sdks
+  #     - name: List .NET SDKs
+  #       run: dotnet --list-sdks
 
-      - name: Run win-x64 unit tests
-        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+  #     - name: Run win-x64 unit tests
+  #       run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-      - name: Build win-x86 Runtime unit test
-        # Release mode seems to strop some stuff out, just use debug for compatibility
-        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      # - name: Build win-x86 Runtime unit test
+      #   # Release mode seems to strop some stuff out, just use debug for compatibility
+      #   run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-      - name: Run win-x86 Runtime unit tests
-        run: .\tests\GrindCore.Tests.Runtime\bin\Debug\net9.0\win-x86\GrindCore.Tests.Runtime
+      # - name: Run win-x86 Runtime unit tests
+      #   run: .\tests\GrindCore.Tests.Runtime\bin\Debug\net9.0\win-x86\GrindCore.Tests.Runtime
