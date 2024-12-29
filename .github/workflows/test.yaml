@@ -29,7 +29,7 @@ jobs:
 
       - name: Run test script inside Docker container (Linux arm64)
         run: |
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 bash -c "dotnet restore /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 && dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
+          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 bash -c "dotnet restore /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 && dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
 
   test_linux_arm:
     runs-on: ubuntu-latest
@@ -46,7 +46,7 @@ jobs:
         run: dotnet restore
 
       - name: Build project
-        run: dotnet build -c Release "${{ github.workspace }}/tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj" -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj" -c Release -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
 
       - name: Set up Docker Buildx
         run: |
@@ -76,7 +76,7 @@ jobs:
   #     - name: Run linux-x64 unit tests
   #       run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-  test_win_x64:
+  test_win_x64_x86:
     runs-on: windows-latest
     steps:
       - name: Checkout code
@@ -92,6 +92,9 @@ jobs:
 
       # - name: Run win-x64 unit tests
       #   run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+
+      - name: Install Visual C++ Redistributable
+        run: choco install vcredist2015 -y
 
       - name: Run win-x86 unit tests
         run: |
