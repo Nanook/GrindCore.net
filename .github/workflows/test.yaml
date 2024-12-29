@@ -25,8 +25,8 @@ jobs:
       - name: Install dependencies
         run: dotnet restore -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-      # - name: Build project
-      #   run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Build project
+        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
