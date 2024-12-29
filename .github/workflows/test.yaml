@@ -27,7 +27,7 @@ jobs:
         run: docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
 
       - name: Run build and test inside Docker container (Linux ARM64)
-        run: |
+        run: | # this has been quite unreliable - moving it to the top of the list seems to have worked :S
           docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 sh -c "dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
 
   test_linux_arm:
