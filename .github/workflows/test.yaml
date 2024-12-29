@@ -28,6 +28,7 @@ jobs:
         run: |
           $env:DOTNET_ROOT = "C:\Program Files\dotnet"
           $env:Path += ";C:\Program Files\dotnet"
+          $env:DOTNET_ROLL_FORWARD = "LatestMajor"
 
       - name: List .NET SDKs
         run: |
@@ -38,6 +39,7 @@ jobs:
         run: |
           $env:DOTNET_ROOT = "C:\Program Files\dotnet"
           $env:Path += ";C:\Program Files\dotnet"
+          $env:DOTNET_ROLL_FORWARD = "LatestMajor"
           & "C:\Program Files\dotnet\dotnet.exe" restore tests/GrindCore.Tests/GrindCore.Tests.csproj -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
           & "C:\Program Files\dotnet\dotnet.exe" build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
           & "C:\Program Files\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 --diag:log.txt
