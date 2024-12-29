@@ -77,14 +77,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '9.0'
-
-      - name: Build project # not sure if this is required, but it seems to prevent the docker builds erroring :S
-        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -96,7 +88,7 @@ jobs:
 
       - name: Run build and test inside Docker container (Linux ARM64)
         run: |
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 sh -c "dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
+          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 sh -c "dotnet restore -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 && dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
 
   test_linux_arm:
     runs-on: ubuntu-latest
