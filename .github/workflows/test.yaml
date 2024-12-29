@@ -11,38 +11,29 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-  test_win_arm64:
-    runs-on: windows-latest
+  build-and-run:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download and install .NET 9.0 SDK (ARM64)
-        run: |
-          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/4d9233cf-ec91-49d9-919c-0ac0070e1bad/f0c3580e34ac9c4afd2197785a11521e/dotnet-sdk-9.0.101-win-arm64.exe" -OutFile "dotnet-sdk-9.0.101-win-arm64.exe"
-          Start-Process -FilePath "dotnet-sdk-9.0.101-win-arm64.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
-          Remove-Item -Path "dotnet-sdk-9.0.101-win-arm64.exe"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Set .NET Environment Variables
-        shell: pwsh
-        run: |
-          $env:DOTNET_ROOT = "C:\Program Files\dotnet"
-          $env:Path += ";C:\Program Files\dotnet"
-          $env:DOTNET_ROLL_FORWARD = "LatestMajor"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: List .NET SDKs
+      - name: Build Docker image for Windows ARM64
         run: |
-          & "C:\Program Files\dotnet\dotnet.exe" --list-sdks
+          docker buildx create --use --name mybuilder
+          docker buildx inspect --bootstrap
+          docker buildx build --platform windows/arm64 -t win-arm64 -f .github/workflows/Dockerfile.win-arm64 . --load
 
-      - name: Run win-arm64 unit tests
-        shell: pwsh
+      - name: Run Docker container for Windows ARM64
         run: |
-          $env:DOTNET_ROOT = "C:\Program Files\dotnet"
-          $env:Path += ";C:\Program Files\dotnet"
-          $env:DOTNET_ROLL_FORWARD = "LatestMajor"
-          & "C:\Program Files\dotnet\dotnet.exe" restore tests/GrindCore.Tests/GrindCore.Tests.csproj -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-          & "C:\Program Files\dotnet\dotnet.exe" build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-          & "C:\Program Files\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 --diag:log.txt
+          docker run --rm -v "$(pwd):C:\app" win-arm64 powershell -Command `
+            "dotnet restore C:\app\tests\GrindCore.Tests\GrindCore.Tests.csproj -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0; `
+            dotnet test C:\app\tests\GrindCore.Tests\GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
 
   # test_win_x86:
   #   runs-on: windows-latest
@@ -98,8 +89,6 @@ jobs:
   #         docker run --rm -v "$(pwd):C:\app" win-arm64 powershell -Command `
   #           "dotnet restore C:\app\tests\GrindCore.Tests\GrindCore.Tests.csproj -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0; `
   #           dotnet test C:\app\tests\GrindCore.Tests\GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
-
-
 
 
 
@@ -166,23 +155,6 @@ jobs:
 
   #     - name: Run tests in Docker container
   #       run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime"
-
-  # test_linux_x64:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-
-  #     - name: Setup .NET
-  #       uses: actions/setup-dotnet@v3
-  #       with:
-  #         dotnet-version: '9.0'
-
-  #     - name: List .NET SDKs
-  #       run: dotnet --list-sdks
-
-  #     - name: Run linux-x64 unit tests
-  #       run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
   # test_win_x64:
   #   runs-on: windows-latest
