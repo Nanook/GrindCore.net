@@ -47,7 +47,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup .NET
+      - name: Setup .NET SDK (Arm64)
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0'
@@ -59,8 +59,10 @@ jobs:
         run: |
           wget https://download.visualstudio.microsoft.com/download/pr/1fec6f64-0d7f-4b39-acd1-e9e2701a6b1d/b7b6246d0c20cfe703c6c88ffdbb081e/dotnet-sdk-9.0.101-osx-x64.pkg -O dotnet-sdk-9.0.101-osx-x64.pkg
           sudo installer -pkg dotnet-sdk-9.0.101-osx-x64.pkg -target /
-          export PATH=$PATH:/usr/local/share/dotnet/dotnet
-          echo "export PATH=$PATH:/usr/local/share/dotnet/dotnet" >> $GITHUB_ENV
+          export DOTNET_ROOT="/usr/local/share/dotnet/x64"
+          export PATH="$DOTNET_ROOT:$PATH"
+          echo "DOTNET_ROOT=/usr/local/share/dotnet/x64" >> $GITHUB_ENV
+          echo "PATH=/usr/local/share/dotnet/x64:$PATH" >> $GITHUB_ENV
 
       - name: Run osx-x64 unit tests
         run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
