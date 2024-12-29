@@ -41,9 +41,10 @@ jobs:
         run: |
           $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
           $env:Path += ";C:\Program Files (x86)\dotnet"
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" restore -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" restore -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:DebugType=Full -p:DebugSymbols=true
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:DebugType=Full -p:DebugSymbols=true
+          Get-ChildItem -Path .\tests\GrindCore.Tests.Runtime\bin\Debug\net9.0\win-x86\ -Recurse | Select-Object Name, Length | Format-Table
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:DebugType=Full -p:DebugSymbols=true
 
 
 
