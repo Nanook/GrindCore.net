@@ -11,6 +11,70 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
+  test_linux_arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        run: docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
+
+      - name: Run build and test inside Docker container (Linux ARM64)
+        run: |
+          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 sh -c "dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
+
+  test_linux_arm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install dependencies
+        run: dotnet restore -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+
+      - name: Build project
+        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+
+      - name: Set up Docker Buildx
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          docker buildx create --use --name mybuilder
+
+      - name: Build Docker image
+        run: docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
+
+      - name: Run tests in Docker container
+        run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime"
+
+  test_linux_x64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
+
+      - name: List .NET SDKs
+        run: dotnet --list-sdks
+
+      - name: Run linux-x64 unit tests
+        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+
   test_osx_x64:
     runs-on: macos-latest
     steps:
@@ -53,70 +117,6 @@ jobs:
 
       - name: Run osx-arm64 unit tests
         run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-
-  test_linux_x64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '9.0'
-
-      - name: List .NET SDKs
-        run: dotnet --list-sdks
-
-      - name: Run linux-x64 unit tests
-        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-
-  test_linux_arm64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build Docker image
-        run: docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
-
-      - name: Run build and test inside Docker container (Linux ARM64)
-        run: |
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 sh -c "dotnet restore -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 && dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
-
-  test_linux_arm:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Install dependencies
-        run: dotnet restore -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
-
-      - name: Build project
-        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
-
-      - name: Set up Docker Buildx
-        run: |
-          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker buildx create --use --name mybuilder
-
-      - name: Build Docker image
-        run: docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
-
-      - name: Run tests in Docker container
-        run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime"
 
   test_win_x64:
     runs-on: windows-latest
