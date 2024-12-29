@@ -41,7 +41,9 @@ jobs:
         run: |
           $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
           $env:Path += ";C:\Program Files (x86)\dotnet"
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
 
 
@@ -125,10 +127,3 @@ jobs:
 
   #     - name: Run win-x64 unit tests
   #       run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-
-      # - name: Build win-x86 Runtime unit test
-      #   # Release mode seems to strop some stuff out, just use debug for compatibility
-      #   run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-
-      # - name: Run win-x86 Runtime unit tests
-      #   run: .\tests\GrindCore.Tests.Runtime\bin\Debug\net9.0\win-x86\GrindCore.Tests.Runtime
