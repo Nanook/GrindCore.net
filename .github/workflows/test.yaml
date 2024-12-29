@@ -120,8 +120,26 @@ jobs:
           Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
           Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
 
-        - name: Run win-x86 unit tests
-          run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run win-x86 unit tests
+        shell: pwsh
+        run: |
+          $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
+          $env:Path += ";C:\Program Files (x86)\dotnet"
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests\GrindCore.Tests\GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-        # - name: Run win-arm64 unit tests
-        #   run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+  # test_linux_x64:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+
+  #     - name: Setup .NET
+  #       uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '9.0'
+
+  #     - name: List .NET SDKs
+  #       run: dotnet --list-sdks
+
+  #     - name: Run linux-x64 unit tests
+  #       run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
