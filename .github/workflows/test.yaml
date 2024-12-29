@@ -41,7 +41,7 @@ jobs:
         run: |
           $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet"
           $env:Path += ";C:\Program Files (x86)\dotnet"
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          & "C:\Program Files (x86)\dotnet\dotnet.exe" restore -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
           & "C:\Program Files (x86)\dotnet\dotnet.exe" build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
           & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
