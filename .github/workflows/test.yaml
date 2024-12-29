@@ -1,16 +1,14 @@
 name: Run Unit Tests
 
 on:
-  workflow_dispatch:
-# on:
-#   push:
-#     branches:
-#       - main
-#       - test/*
-#   pull_request:
-#     branches:
-#       - main
-#   workflow_dispatch: # Allows manual triggering of the workflow
+  push:
+    branches:
+      - main
+      - test/*
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
   test_linux_arm64:
