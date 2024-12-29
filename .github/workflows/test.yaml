@@ -76,25 +76,26 @@ jobs:
       - name: Run linux-x64 unit tests
         run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-  # test_win_x64:
-  #   runs-on: windows-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+  test_win_x64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  #     - name: Setup .NET
-  #       uses: actions/setup-dotnet@v3
-  #       with:
-  #         dotnet-version: '9.0'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
 
-  #     - name: List .NET SDKs
-  #       run: dotnet --list-sdks
+      - name: List .NET SDKs
+        run: dotnet --list-sdks
 
-  #     - name: Run win-x64 unit tests
-  #       run: dotnet test "${{ github.workspace }}/tests/GrindCore.Tests.csproj" -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run win-x64 unit tests
+        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-  #     - name: Run win-x86 unit tests
-  #       run: dotnet test "${{ github.workspace }}/tests/GrindCore.Tests.csproj" -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run win-x86 unit tests
+        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-  #     - name: Run win-arm64 unit tests
-  #       run: dotnet test "${{ github.workspace }}/tests/GrindCore.Tests.csproj" -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Run win-arm64 unit tests
+        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+
