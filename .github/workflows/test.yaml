@@ -11,6 +11,7 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
+
   test_win_arm64:
     runs-on: windows-latest
     steps:
@@ -27,16 +28,16 @@ jobs:
 
       - name: Download and install .NET 9.0 SDK (ARM64)
         run: |
-          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/3b3f9e0a-0e28-4e56-9c4a-a79a14770219/dotnet-sdk-9.0.101-win-arm64.exe" -OutFile "dotnet-sdk-9.0.101-win-arm64.exe"
+          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/4d9233cf-ec91-49d9-919c-0ac0070e1bad/f0c3580e34ac9c4afd2197785a11521e/dotnet-sdk-9.0.101-win-arm64.exe" -OutFile "dotnet-sdk-9.0.101-win-arm64.exe"
           Start-Process -FilePath "dotnet-sdk-9.0.101-win-arm64.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
           Remove-Item -Path "dotnet-sdk-9.0.101-win-arm64.exe"
 
       - name: Run win-arm64 unit tests
         shell: pwsh
         run: |
-          $env:DOTNET_ROOT = "C:\Program Files\dotnet\arm64"
-          $env:Path += ";C:\Program Files\dotnet\arm64"
-          & "C:\Program Files\dotnet\arm64\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          $env:DOTNET_ROOT = "C:\Program Files (x86)\dotnet\arm64"
+          $env:Path += ";C:\Program Files (x86)\dotnet\arm64"
+          & "C:\Program Files (x86)\dotnet\arm64\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
   # test_win_x86:
   #   runs-on: windows-latest
