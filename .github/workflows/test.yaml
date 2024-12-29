@@ -127,11 +127,7 @@ jobs:
         run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
       - name: Build win-x86 Runtime unit test
-        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-x86 -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
 
       - name: Run win-x86 Runtime unit tests
-        shell: pwsh
-        run: |
-          $env:DOTNET_ROOT="C:\Program Files (x86)\dotnet"
-          $env:Path="$env:DOTNET_ROOT;$env:Path"
-          .\tests\GrindCore.Tests.Runtime\bin\Release\net9.0\win-x86\GrindCore.Tests.Runtime
+        run: .\tests\GrindCore.Tests.Runtime\bin\Release\net8.0\win-x86\GrindCore.Tests.Runtime
