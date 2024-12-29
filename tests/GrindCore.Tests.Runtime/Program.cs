@@ -9,7 +9,7 @@ namespace GrindCore.Tests
     {
         static int Main(string[] args)
         {
-            bool error = false;
+            int result = 0;
             // Reference the assembly containing the test classes
             Assembly assembly = typeof(HashTests).Assembly;
 
@@ -29,7 +29,7 @@ namespace GrindCore.Tests
                     object? testClassInstance = Activator.CreateInstance(type);
                     if (testClassInstance == null)
                     {
-                        error = true;
+                        result = 1;
                         Console.WriteLine($"Fail: {type.Name} could not be loaded");
                     }
                     else
@@ -54,7 +54,7 @@ namespace GrindCore.Tests
                                 catch (Exception ex)
                                 {
                                     Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
-                                    error = true;
+                                    result = 1;
                                     PrintExceptionDetails(ex);
                                 }
                             }
@@ -62,7 +62,7 @@ namespace GrindCore.Tests
                     }
                 }
             }
-            return error ? 0 : 1;
+            return result;
         }
 
         static void PrintExceptionDetails(Exception ex)

@@ -1,0 +1,8 @@
+# Use the official .NET 9 SDK Windows image as the base image
+FROM mcr.microsoft.com/dotnet/sdk:9.0-windowsservercore-ltsc2022
+
+# Set the working directory
+WORKDIR /app
+
+# Default command to keep the container alive
+CMD ["cmd"]
