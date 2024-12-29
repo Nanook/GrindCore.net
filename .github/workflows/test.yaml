@@ -11,6 +11,7 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
+
   test_linux_arm64:
     runs-on: ubuntu-latest
     steps:
@@ -26,9 +27,9 @@ jobs:
       - name: Build Docker image
         run: docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
 
-      - name: Run test script inside Docker container (Linux arm64)
+      - name: Run build and test inside Docker container (Linux ARM64)
         run: |
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 bash -c "dotnet restore /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 && dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
+          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 sh -c "dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
 
   # test_win_x86:
   #   runs-on: windows-latest
