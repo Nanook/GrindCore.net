@@ -3,15 +3,21 @@ using HashAlgorithm=System.Security.Cryptography.HashAlgorithm;
 using Nanook.GrindCore.MD;
 using Nanook.GrindCore.SHA;
 using Nanook.GrindCore.Blake;
+using Nanook.GrindCore.XXHash;
 
 namespace Nanook.GrindCore
 {
     public enum HashType
     {
+        Blake2sp,
         Blake3,
+        XXHash32,
+        XXHash64,
         MD2,
         MD4,
         MD5,
+        SHA1,
+        SHA2_256,
         SHA2_384,
         SHA2_512,
         SHA3_224,
@@ -26,14 +32,24 @@ namespace Nanook.GrindCore
         {
             switch (type)
             {
+                case HashType.Blake2sp:
+                    return Blake2sp.Create();
                 case HashType.Blake3:
                     return Blake3.Create();
+                case HashType.XXHash32:
+                    return XXHash32.Create();
+                case HashType.XXHash64:
+                    return XXHash64.Create();
                 case HashType.MD2:
                     return MD2.Create();
                 case HashType.MD4:
                     return MD4.Create();
                 case HashType.MD5:
                     return MD5.Create();
+                case HashType.SHA1:
+                    return SHA1.Create();
+                case HashType.SHA2_256:
+                    return SHA2_256.Create();
                 case HashType.SHA2_384:
                     return SHA2_384.Create();
                 case HashType.SHA2_512:

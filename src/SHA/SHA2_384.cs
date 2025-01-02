@@ -6,11 +6,12 @@ namespace Nanook.GrindCore.SHA
 {
     public class SHA2_384 : HashAlgorithm
     {
+        private const int _hashSizeBytes = 48;
         private Interop.SHA384_CTX ctx;
 
         public SHA2_384()
         {
-            HashSizeValue = 384; // SHA2_384 produces a 384-bit hash
+            HashSizeValue = _hashSizeBytes << 3; // SHA2_384 produces a 384-bit hash
             Initialize();
         }
 
@@ -19,7 +20,7 @@ namespace Nanook.GrindCore.SHA
         public static byte[] Compute(byte[] data, int offset, int length)
         {
             Interop.SHA384_CTX ctx = new Interop.SHA384_CTX();
-            byte[] result = new byte[48]; // SHA384_DIGEST_LENGTH is 48
+            byte[] result = new byte[_hashSizeBytes]; // SHA384_DIGEST_LENGTH is 48
 
             unsafe
             {
@@ -57,7 +58,7 @@ namespace Nanook.GrindCore.SHA
 
         protected override byte[] HashFinal()
         {
-            byte[] result = new byte[48]; // SHA384_DIGEST_LENGTH is 48
+            byte[] result = new byte[_hashSizeBytes]; // SHA384_DIGEST_LENGTH is 48
             unsafe
             {
                 fixed (byte* resultPtr = result)

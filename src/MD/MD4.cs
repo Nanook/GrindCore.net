@@ -5,11 +5,12 @@ using System.Security.Cryptography;
 
 public class MD4 : HashAlgorithm
 {
+    private const int _hashSizeBytes = 16;
     private Interop.MD4_CTX ctx;
 
     public MD4()
     {
-        HashSizeValue = 128; // MD4 produces a 128-bit hash
+        HashSizeValue = _hashSizeBytes << 3; // MD4 produces a 128-bit hash
         Initialize();
     }
 
@@ -18,7 +19,7 @@ public class MD4 : HashAlgorithm
     public static byte[] Compute(byte[] data, int offset, int length)
     {
         Interop.MD4_CTX ctx = new Interop.MD4_CTX();
-        byte[] result = new byte[16]; // MD5_DIGEST_LENGTH is 16
+        byte[] result = new byte[_hashSizeBytes]; // MD5_DIGEST_LENGTH is 16
 
         unsafe
         {
@@ -67,7 +68,7 @@ public class MD4 : HashAlgorithm
 
     protected override byte[] HashFinal()
     {
-        byte[] result = new byte[16]; // MD4_DIGEST_LENGTH is 16
+        byte[] result = new byte[_hashSizeBytes]; // MD4_DIGEST_LENGTH is 16
         unsafe
         {
             fixed (byte* resultPtr = result)

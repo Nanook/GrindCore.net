@@ -7,11 +7,12 @@ namespace Nanook.GrindCore.MD
 {
     public class MD5 : HashAlgorithm
     {
+        private const int _hashSizeBytes = 16;
         private Interop.MD5_CTX ctx;
 
         public MD5()
         {
-            HashSizeValue = 128; // MD5 produces a 128-bit hash
+            HashSizeValue = _hashSizeBytes << 3; // MD5 produces a 128-bit hash
             Initialize();
         }
 
@@ -26,7 +27,7 @@ namespace Nanook.GrindCore.MD
             }
 
             Interop.MD5_CTX ctx = new Interop.MD5_CTX();
-            byte[] result = new byte[16]; // MD5_DIGEST_LENGTH is 16
+            byte[] result = new byte[_hashSizeBytes]; // MD5_DIGEST_LENGTH is 16
 
             unsafe
             {
@@ -100,7 +101,7 @@ namespace Nanook.GrindCore.MD
 
         protected override byte[] HashFinal()
         {
-            byte[] result = new byte[16]; // MD5_DIGEST_LENGTH is 16
+            byte[] result = new byte[_hashSizeBytes]; // MD5_DIGEST_LENGTH is 16
             unsafe
             {
                 fixed (byte* resultPtr = result)

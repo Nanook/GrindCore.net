@@ -6,6 +6,7 @@ namespace Nanook.GrindCore.SHA
 {
     public class SHA2_512 : HashAlgorithm
     {
+        private const int _hashSizeBytes = 64;
         private Interop.SHA512_CTX ctx;
 
         public SHA2_512()
@@ -19,7 +20,7 @@ namespace Nanook.GrindCore.SHA
         public static byte[] Compute(byte[] data, int offset, int length)
         {
             Interop.SHA512_CTX ctx = new Interop.SHA512_CTX();
-            byte[] result = new byte[64]; // SHA512_DIGEST_LENGTH is 64
+            byte[] result = new byte[_hashSizeBytes]; // SHA512_DIGEST_LENGTH is 64
 
             unsafe
             {
@@ -57,7 +58,7 @@ namespace Nanook.GrindCore.SHA
 
         protected override byte[] HashFinal()
         {
-            byte[] result = new byte[64]; // SHA512_DIGEST_LENGTH is 64
+            byte[] result = new byte[_hashSizeBytes]; // SHA512_DIGEST_LENGTH is 64
             unsafe
             {
                 fixed (byte* resultPtr = result)

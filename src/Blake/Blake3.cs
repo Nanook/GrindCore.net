@@ -6,6 +6,7 @@ namespace Nanook.GrindCore.Blake
 {
     public class Blake3 : HashAlgorithm
     {
+        private const int _hashSizeBytes = 32;
         private Interop.Blake3Hasher hasher;
 
         public Blake3()
@@ -33,7 +34,7 @@ namespace Nanook.GrindCore.Blake
             }
 
             // Finalize hash
-            byte[] result = new byte[32]; // Adjust size according to your needs
+            byte[] result = new byte[_hashSizeBytes]; // Adjust size according to your needs
             Interop.Blake.SZ_blake3_hasher_finalize(ref hasher, result, (UIntPtr)result.Length);
 
             return result;
@@ -65,7 +66,7 @@ namespace Nanook.GrindCore.Blake
         protected override byte[] HashFinal()
         {
             // Finalize hash
-            byte[] result = new byte[32]; // Adjust size according to your needs
+            byte[] result = new byte[_hashSizeBytes]; // Adjust size according to your needs
             Interop.Blake.SZ_blake3_hasher_finalize(ref hasher, result, (UIntPtr)result.Length);
             return result;
         }
