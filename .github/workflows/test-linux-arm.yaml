@@ -1,6 +1,13 @@
 name: Test Linux ARM
 
 on:
+  push:
+    branches:
+      - main
+      - test/*
+  pull_request:
+    branches:
+      - main
   workflow_call:
   workflow_dispatch: # Allows manual triggering of the workflow
 
