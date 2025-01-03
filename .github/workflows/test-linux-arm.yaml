@@ -1,4 +1,4 @@
-name: Test Linux ARM
+name: Run Unit Tests
 
 on:
   push:
@@ -8,12 +8,11 @@ on:
   pull_request:
     branches:
       - main
-  workflow_call:
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
 
 jobs:
-  test_linux_arm:
-    runs-on: ubuntu-latest
+  build_all_platforms:
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,21 +20,20 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0'
 
-      - name: Install dependencies
-        run: dotnet restore -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
-
-      - name: Build project
-        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
-
-      - name: Set up Docker Buildx
+      - name: Build project for all platforms
         run: |
-          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker buildx create --use --name mybuilder
+          dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64
+          dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm
+          dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64
+          dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64
+          dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64
+          dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64
+          dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -o output/win-x86
 
-      - name: Build Docker image
-        run: docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
-
-      - name: Run tests in Docker container
-        run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime"
+      - name: Archive build outputs
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-outputs
+          path: output/
