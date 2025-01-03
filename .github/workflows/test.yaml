@@ -105,7 +105,7 @@ jobs:
           cp runtimes/linux-arm64/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 bash -c "cd app && ./GrindCore.Tests.Runtime"
+          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 bash -c "/app/GrindCore.Tests.Runtime"
 
   test_linux_arm:
     needs: build_all_platforms
@@ -128,13 +128,13 @@ jobs:
 
       - name: Build and run tests for Linux ARM
         run: |
-          docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
+          docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm64 . --load
           cd output/linux-arm/
           ls
           cp runtimes/linux-arm/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
-          docker run --rm --platform linux/arm/v7 -v "$(pwd)/output/linux-arm:/app" linux-arm bash -c "cd app && ./GrindCore.Tests.Runtime"
+          docker run --rm --platform linux/arm/v7 -v "$(pwd)/output/linux-arm:/app" linux-arm bash -c "/app/GrindCore.Tests.Runtime"
 
 
 #########################
