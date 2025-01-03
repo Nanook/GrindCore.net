@@ -183,42 +183,42 @@ jobs:
   #         docker buildx build --platform darwin/arm64 -t osx-arm64 -f .github/workflows/Dockerfile.osx-arm64 . --load
   #         docker run --rm --platform darwin/arm64 -v "$(pwd)/output/osx-arm64:/app" osx-arm64 /app/GrindCore.Tests
 
-test_win_x64:
-  needs: build_all_platforms
-  runs-on: windows-latest
-  steps:
-    - name: Download Windows x64 build
-      uses: actions/download-artifact@v3
-      with:
-        name: win-x64-build
-        path: output/win-x64/
+  test_win_x64:
+    needs: build_all_platforms
+    runs-on: windows-latest
+    steps:
+      - name: Download Windows x64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: win-x64-build
+          path: output/win-x64/
 
-    - name: Build and run tests for Windows x64
-      run: |
-        Get-ChildItem
-        Set-Location -Path output/win-x64/
-        Get-ChildItem
-        Copy-Item -Path runtimes/win-x64/native/* -Destination . -Recurse
-        Remove-Item -Path runtimes -Recurse -Force
-        .\GrindCore.Tests.Runtime.exe
-      shell: pwsh
+      - name: Build and run tests for Windows x64
+        run: |
+          Get-ChildItem
+          Set-Location -Path output/win-x64/
+          Get-ChildItem
+          Copy-Item -Path runtimes/win-x64/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          .\GrindCore.Tests.Runtime.exe
+        shell: pwsh
 
-test_win_x86:
-  needs: build_all_platforms
-  runs-on: windows-latest
-  steps:
-    - name: Download Windows x86 build
-      uses: actions/download-artifact@v3
-      with:
-        name: win-x86-build
-        path: output/win-x86/
+  test_win_x86:
+    needs: build_all_platforms
+    runs-on: windows-latest
+    steps:
+      - name: Download Windows x86 build
+        uses: actions/download-artifact@v3
+        with:
+          name: win-x86-build
+          path: output/win-x86/
 
-    - name: Build and run tests for Windows x86
-      run: |
-        Get-ChildItem
-        Set-Location -Path output/win-x86/
-        Get-ChildItem
-        Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
-        Remove-Item -Path runtimes -Recurse -Force
-        .\GrindCore.Tests.Runtime.exe
-      shell: pwsh
+      - name: Build and run tests for Windows x86
+        run: |
+          Get-ChildItem
+          Set-Location -Path output/win-x86/
+          Get-ChildItem
+          Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          .\GrindCore.Tests.Runtime.exe
+        shell: pwsh
