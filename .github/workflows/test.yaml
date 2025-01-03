@@ -127,6 +127,11 @@ jobs:
     needs: build_all_platforms
     runs-on: ubuntu-latest
     steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
+          
       - name: Download Linux x64 build
         uses: actions/download-artifact@v3
         with:
@@ -148,6 +153,11 @@ jobs:
     needs: build_all_platforms
     runs-on: macos-latest
     steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
+          
       - name: Download OSX x64 build
         uses: actions/download-artifact@v3
         with:
@@ -169,6 +179,11 @@ jobs:
     needs: build_all_platforms
     runs-on: macos-latest
     steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
+          
       - name: Download OSX ARM64 build
         uses: actions/download-artifact@v3
         with:
