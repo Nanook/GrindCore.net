@@ -11,11 +11,89 @@ on:
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-  test_linux_arm64:
-    runs-on: ubuntu-latest
+  build_all_platforms:
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
+
+      - name: Build project for Linux ARM64
+        run: dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64
+
+      - name: Upload Linux ARM64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-arm64-build
+          path: output/linux-arm64/
+
+      - name: Build project for Linux ARM
+        run: dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0 -o output/linux-arm
+
+      - name: Upload Linux ARM build
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-arm-build
+          path: output/linux-arm/
+
+      - name: Build project for Linux x64
+        run: dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64
+
+      - name: Upload Linux x64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x64-build
+          path: output/linux-x64/
+
+      - name: Build project for OSX x64
+        run: dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64
+
+      - name: Upload OSX x64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: osx-x64-build
+          path: output/osx-x64/
+
+      - name: Build project for OSX ARM64
+        run: dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64
+
+      - name: Upload OSX ARM64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: osx-arm64-build
+          path: output/osx-arm64/
+
+      - name: Build project for Windows x64
+        run: dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64
+
+      - name: Upload Windows x64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: win-x64-build
+          path: output/win-x64/
+
+      - name: Build project for Windows x86
+        run: dotnet publish tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:DebugType=Full -p:DebugSymbols=true -o output/win-x86
+
+      - name: Upload Windows x86 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: win-x86-build
+          path: output/win-x86/
+
+  test_linux_arm64:
+    needs: build_all_platforms
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux ARM64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-arm64-build
+          path: output/linux-arm64/
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -23,144 +101,111 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build Docker image
-        run: docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
-
-      - name: Run build and test inside Docker container (Linux ARM64)
-        run: | # this has been quite unreliable - moving it to the top of the list seems to have worked :S
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 sh -c "dotnet test /app/tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0"
+      - name: Build and run tests for Linux ARM64
+        run: |
+          docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
+          docker run --rm --platform linux/arm64 -v "$(pwd)/output/linux-arm64:/app" linux-arm64 /app/GrindCore.Tests
 
   test_linux_arm:
+    needs: build_all_platforms
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - name: Download Linux ARM build
+        uses: actions/download-artifact@v3
         with:
-          dotnet-version: '8.0.x'
+          name: linux-arm-build
+          path: output/linux-arm/
 
-      - name: Install dependencies
-        run: dotnet restore -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
-
-      - name: Build project
-        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and run tests for Linux ARM
         run: |
-          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker buildx create --use --name mybuilder
-
-      - name: Build Docker image
-        run: docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
-
-      - name: Run tests in Docker container
-        run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime"
+          docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
+          docker run --rm --platform linux/arm/v7 -v "$(pwd)/output/linux-arm:/app" linux-arm /app/GrindCore.Tests
 
   test_linux_x64:
+    needs: build_all_platforms
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - name: Download Linux x64 build
+        uses: actions/download-artifact@v3
         with:
-          dotnet-version: '9.0'
+          name: linux-x64-build
+          path: output/linux-x64/
 
-      - name: List .NET SDKs
-        run: dotnet --list-sdks
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Run linux-x64 unit tests
-        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and run tests for Linux x64
+        run: |
+          docker buildx build --platform linux/amd64 -t linux-x64 -f .github/workflows/Dockerfile.linux-x64 . --load
+          docker run --rm --platform linux/amd64 -v "$(pwd)/output/linux-x64:/app" linux-x64 /app/GrindCore.Tests
 
   test_osx_x64:
-    runs-on: macos-latest
+    needs: build_all_platforms
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET SDK (Arm64)
-        uses: actions/setup-dotnet@v3
+      - name: Download OSX x64 build
+        uses: actions/download-artifact@v3
         with:
-          dotnet-version: '9.0'
+          name: osx-x64-build
+          path: output/osx-x64/
 
-      - name: List .NET SDKs
-        run: dotnet --list-sdks
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Install .NET x64 Runtime
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and run tests for OSX x64
         run: |
-          wget https://download.visualstudio.microsoft.com/download/pr/1fec6f64-0d7f-4b39-acd1-e9e2701a6b1d/b7b6246d0c20cfe703c6c88ffdbb081e/dotnet-sdk-9.0.101-osx-x64.pkg -O dotnet-sdk-9.0.101-osx-x64.pkg
-          sudo installer -pkg dotnet-sdk-9.0.101-osx-x64.pkg -target /
-          export DOTNET_ROOT="/usr/local/share/dotnet/x64"
-          export PATH="$DOTNET_ROOT:$PATH"
-          echo "DOTNET_ROOT=/usr/local/share/dotnet/x64" >> $GITHUB_ENV
-          echo "PATH=/usr/local/share/dotnet/x64:$PATH" >> $GITHUB_ENV
-
-      - name: Run osx-x64 unit tests
-        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          docker buildx build --platform darwin/amd64 -t osx-x64 -f .github/workflows/Dockerfile.osx-x64 . --load
+          docker run --rm --platform darwin/amd64 -v "$(pwd)/output/osx-x64:/app" osx-x64 /app/GrindCore.Tests
 
   test_osx_arm64:
-    runs-on: macos-latest
+    needs: build_all_platforms
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - name: Download OSX ARM64 build
+        uses: actions/download-artifact@v3
         with:
-          dotnet-version: '9.0'
+          name: osx-arm64-build
+          path: output/osx-arm64/
 
-      - name: List .NET SDKs
-        run: dotnet --list-sdks
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Run osx-arm64 unit tests
-        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and run tests for OSX ARM64
+        run: |
+          docker buildx build --platform darwin/arm64 -t osx-arm64 -f .github/workflows/Dockerfile.osx-arm64 . --load
+          docker run --rm --platform darwin/arm64 -v "$(pwd)/output/osx-arm64:/app" osx-arm64 /app/GrindCore.Tests
 
   test_win_x64:
-    runs-on: windows-latest
+    needs: build_all_platforms
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - name: Download Windows x64 build
+        uses: actions/download-artifact@v3
         with:
-          dotnet-version: '9.0'
+          name: win-x64-build
+          path: output/win-x64/
 
-      - name: List .NET SDKs
-        run: dotnet --list-sdks
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Run win-x64 unit tests
-        run: dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-  test_win_x86:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: List .NET SDKs
-        run: dotnet --list-sdks
-
-      - name: Uninstall existing .NET SDK (x64)
+      - name: Build and run tests for Windows x64
         run: |
-          $path = "C:\Program Files\dotnet\sdk\9.0.101"
-          if (Test-Path $path) {
-            Remove-Item -Recurse -Force $path
-          }
-
-      - name: Install Visual C++ Redistributable
-        run: choco install vcredist2015 -y
-
-      - name: Download and install .NET 9.0 SDK (x86)
-        run: |
-          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
-          Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
-          Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
-
-      - name: Run win-x86 unit tests
-        shell: pwsh
-        run: | # Release mode fails, x86 seems to be flakey
-          & "C:\Program Files (x86)\dotnet\dotnet.exe" test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:DebugType=Full -p:DebugSymbols=true
+          docker buildx build --platform windows/amd64 -t win-x64 -f .github/workflows/Dockerfile.win-x64 .

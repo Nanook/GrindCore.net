@@ -1,0 +1,34 @@
+name: Test Linux ARM
+
+on:
+  workflow_call:
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  test_linux_arm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install dependencies
+        run: dotnet restore -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+
+      - name: Build project
+        run: dotnet build tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0
+
+      - name: Set up Docker Buildx
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          docker buildx create --use --name mybuilder
+
+      - name: Build Docker image
+        run: docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
+
+      - name: Run tests in Docker container
+        run: docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/tests/GrindCore.Tests.Runtime/bin/Release/net8.0/linux-arm/GrindCore.Tests.Runtime"
