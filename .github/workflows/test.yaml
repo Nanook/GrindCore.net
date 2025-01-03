@@ -24,13 +24,16 @@ jobs:
 
       - name: Build project for all platforms
         run: |
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64 --self-contained false
           dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -o output/win-x86 --self-contained false
+
+
+#          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
+#          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
+#          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
+#          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64 --self-contained false
+#          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64 --self-contained false
+#          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64 --self-contained false
+#          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:TargetFramework=net9.0 -o output/win-x86 --self-contained false
 
       # - name: Upload Linux ARM64 build
       #   uses: actions/upload-artifact@v3
@@ -38,11 +41,11 @@ jobs:
       #     name: linux-arm64-build
       #     path: output/linux-arm64/
 
-      - name: Upload Linux ARM build
-        uses: actions/upload-artifact@v3
-        with:
-          name: linux-arm-build
-          path: output/linux-arm/
+      # - name: Upload Linux ARM build
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: linux-arm-build
+      #     path: output/linux-arm/
 
       # - name: Upload Linux x64 build
       #   uses: actions/upload-artifact@v3
@@ -62,11 +65,11 @@ jobs:
       #     name: osx-arm64-build
       #     path: output/osx-arm64/
 
-      # - name: Upload Windows x64 build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: win-x64-build
-      #     path: output/win-x64/
+      - name: Upload Windows x64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: win-x64-build
+          path: output/win-x64/
 
       # - name: Upload Windows x86 build
       #   uses: actions/upload-artifact@v3
@@ -95,26 +98,26 @@ jobs:
   #         docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
   #         docker run --rm --platform linux/arm64 -v "$(pwd)/output/linux-arm64:/app" linux-arm64 /app/GrindCore.Tests
 
-  test_linux_arm:
-    needs: build_all_platforms
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Linux ARM build
-        uses: actions/download-artifact@v3
-        with:
-          name: linux-arm-build
-          path: output/linux-arm/
+  # test_linux_arm:
+  #   needs: build_all_platforms
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Download Linux ARM build
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: linux-arm-build
+  #         path: output/linux-arm/
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v2
 
-      - name: Build and run tests for Linux ARM
-        run: |
-          docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
-          docker run --rm --platform linux/arm/v7 -v "$(pwd)/output/linux-arm:/app" linux-arm bash -c "chmod 755 /app/GrindCore.Tests && /app/GrindCore.Tests"
+  #     - name: Build and run tests for Linux ARM
+  #       run: |
+  #         docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm . --load
+  #         docker run --rm --platform linux/arm/v7 -v "$(pwd)/output/linux-arm:/app" linux-arm bash -c "chmod 755 /app/GrindCore.Tests.Runtime && /app/GrindCore.Tests.Runtime"
 
   # test_linux_x64:
   #   needs: build_all_platforms
@@ -179,23 +182,18 @@ jobs:
   #         docker buildx build --platform darwin/arm64 -t osx-arm64 -f .github/workflows/Dockerfile.osx-arm64 . --load
   #         docker run --rm --platform darwin/arm64 -v "$(pwd)/output/osx-arm64:/app" osx-arm64 /app/GrindCore.Tests
 
-  # test_win_x64:
-  #   needs: build_all_platforms
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Download Windows x64 build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: win-x64-build
-  #         path: output/win-x64/
+  test_win_x64:
+    needs: build_all_platforms
+    runs-on: windows-latest
+    steps:
+      - name: Download Windows x64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: win-x64-build
+          path: output/win-x64/
 
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v2
-
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v2
-
-  #     - name: Build and run tests for Windows x64
-  #       run: |
-  #         docker buildx build --platform windows/amd64 -t win-x64 -f .github/workflows/Dockerfile.win-x64 . --load
-  #         docker run --rm --platform windows/amd64 -v "$(pwd)/output/win-x64:/app" win-x
+      - name: Build and run tests for Windows x64
+        run: |
+          dir
+          dir output/win-x64/
+          output/win-x64/GrindCore.Tests.Runtime
