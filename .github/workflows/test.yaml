@@ -24,7 +24,7 @@ jobs:
 
       - name: Initial Tests
         run: |
-          dotnet test tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64
+          dotnet test tests/GrindCore.Tests.Runtime/GrindCore.Tests.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
       - name: Build project for all platforms
         run: |
