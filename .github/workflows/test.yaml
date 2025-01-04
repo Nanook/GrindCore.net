@@ -95,13 +95,12 @@ jobs:
 
       - name: Build and run tests for Linux ARM64
         run: |
-          ls
           docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
           cd output/linux-arm64/
-          ls
           cp runtimes/linux-arm64/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
+          ls -al
           docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 bash -c "/app/GrindCore.Tests.Runtime"
 
   test_linux_arm:
@@ -127,10 +126,10 @@ jobs:
         run: |
           docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm64 . --load
           cd output/linux-arm/
-          ls
           cp runtimes/linux-arm/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
+          ls -al
           docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/GrindCore.Tests.Runtime"
 
   test_linux_x64:
@@ -150,12 +149,11 @@ jobs:
 
       - name: Build and run tests for Linux x64
         run: |
-          ls
           cd output/linux-x64/
-          ls
           cp runtimes/linux-x64/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
+          ls -al
           ./GrindCore.Tests.Runtime
         shell: bash
 
@@ -176,12 +174,11 @@ jobs:
 
       - name: Build and run tests for OSX ARM64
         run: |
-          ls
           cd output/osx-arm64/
-          ls
           cp runtimes/osx-arm64/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
+          ls -al
           ./GrindCore.Tests.Runtime
         shell: bash
 
@@ -206,12 +203,11 @@ jobs:
 
       - name: Build and run tests for OSX x64
         run: |
-          ls
           cd output/osx-x64/
-          ls
           cp runtimes/osx-x64/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
+          ls -al
           ./GrindCore.Tests.Runtime
         shell: bash
 
@@ -227,11 +223,10 @@ jobs:
 
       - name: Build and run tests for Windows x64
         run: |
-          Get-ChildItem
           Set-Location -Path output/win-x64/
-          Get-ChildItem
           Copy-Item -Path runtimes/win-x64/native/* -Destination . -Recurse
           Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
           .\GrindCore.Tests.Runtime.exe
         shell: pwsh
 
@@ -247,10 +242,9 @@ jobs:
 
       - name: Build and run tests for Windows x86
         run: |
-          Get-ChildItem
           Set-Location -Path output/win-x86/
-          Get-ChildItem
           Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
           Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
           .\GrindCore.Tests.Runtime.exe
         shell: pwsh

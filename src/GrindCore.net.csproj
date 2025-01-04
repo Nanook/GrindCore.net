@@ -8,7 +8,7 @@
 		<AssemblyName>Nanook.GrindCore</AssemblyName>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-		<Version>0.0.6-alpha</Version>
+		<Version>0.0.7-alpha</Version>
 		<RootNamespace>Nanook.GrindCore</RootNamespace>
 		<Configurations>Debug;Release;ReleaseTest</Configurations>
 		<RuntimeIdentifiers>win-x64;win-x86;win-arm64;linux-x64;linux-x86;linux-arm64;linux-arm;osx-x64;osx-arm64</RuntimeIdentifiers>
@@ -16,7 +16,7 @@
 		<PackageId>GrindCore</PackageId>
 		<Authors>Nanook</Authors>
 		<Description>Native Compression and Hashing library for dotnet.</Description>
-		<PackageTags>Native;Compression;Hashing;ZLib;Brotli</PackageTags>
+		<PackageTags>Native;Compression;Hashing;ZLib;Deflate,Brotli,Blake3,Blake2sp,MD5,MD4,MD2,SHA1,SHA2,SHA256,SHA384,SHA512,SHA3,SHA3-224,SHA3-256,SHA3-384,SHA3-512,XXHash,XXH32,XXH64</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/Nanook/GrindCore.net</RepositoryUrl>

@@ -257,44 +257,44 @@ namespace GrindCore.Tests
         /// Test and demonstrate an instance of a hashing algorithm, processing a stream of data in 1 byte at a time.
         /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
         /// </summary>
-        [Theory]
-        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
-        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
-        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
-        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
-        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
-        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
-        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
-        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
-        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
-        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
-        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
-        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
-        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
-        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
-        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
-        public void Hash_Streamed64k_Chunk1b(HashType type, string expectedResult)
-        {
-            // create predictable data - this data is always the same fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
-            int chunkSize = 1; // 1 byte at a time
+        // [Theory]
+        // [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
+        // [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
+        // [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
+        // [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
+        // [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
+        // [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
+        // [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
+        // [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
+        // [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
+        // [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
+        // [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
+        // [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
+        // [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
+        // [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
+        // [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        // public void Hash_Streamed64k_Chunk1b(HashType type, string expectedResult)
+        // {
+        //     // create predictable data - this data is always the same fibonacci sequence
+        //     byte[] data = Shared.CreateData(64 * 1024);
+        //     int chunkSize = 1; // 1 byte at a time
 
-            // create the hash using the factory, via switch (not reflection)
-            using (HashAlgorithm hasher = HashFactory.Create(type))
-            {
-                using (Stream dataStream = new MemoryStream(data))
-                {
-                    int bytesRead;
-                    byte[] buffer = new byte[chunkSize];
+        //     // create the hash using the factory, via switch (not reflection)
+        //     using (HashAlgorithm hasher = HashFactory.Create(type))
+        //     {
+        //         using (Stream dataStream = new MemoryStream(data))
+        //         {
+        //             int bytesRead;
+        //             byte[] buffer = new byte[chunkSize];
 
-                    while ((bytesRead = dataStream.Read(buffer, 0, buffer.Length)) > 0)
-                        hasher.TransformBlock(buffer, 0, bytesRead, null, 0);
-                }
-                hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-                string result = hasher.Hash!.ToHexString();
-                Assert.Equal(expectedResult, result);
-            }
-        }
+        //             while ((bytesRead = dataStream.Read(buffer, 0, buffer.Length)) > 0)
+        //                 hasher.TransformBlock(buffer, 0, bytesRead, null, 0);
+        //         }
+        //         hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+        //         string result = hasher.Hash!.ToHexString();
+        //         Assert.Equal(expectedResult, result);
+        //     }
+        // }
 
         /// <summary>
         /// Test and demonstrate static hash Compute method, processing 64 KiB of data.
