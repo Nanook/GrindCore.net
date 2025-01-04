@@ -99,7 +99,7 @@ jobs:
 
       - name: Build and run tests for Linux ARM64
         run: |
-          docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.linux-arm64 . --load
+          docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.dotnet9 . --load
           cd output/linux-arm64/
           cp runtimes/linux-arm64/native/* .
           rm -rf runtimes
@@ -128,7 +128,7 @@ jobs:
 
       - name: Build and run tests for Linux ARM
         run: |
-          docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.linux-arm64 . --load
+          docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.dotnet9 . --load
           cd output/linux-arm/
           cp runtimes/linux-arm/native/* .
           rm -rf runtimes
@@ -238,33 +238,24 @@ jobs:
     needs: build_all_platforms
     runs-on: windows-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Download Windows x86 build
         uses: actions/download-artifact@v3
         with:
           name: win-x86-build
           path: output/win-x86/
 
-      - name: Uninstall existing .NET SDK (x64)
-        run: |
-          $path = "C:\Program Files\dotnet\sdk\9.0.101"
-          if (Test-Path $path) {
-            Remove-Item -Recurse -Force $path
-          }
-
-      - name: Install Visual C++ Redistributable
-        run: choco install vcredist2015 -y
-
-      - name: Download and install .NET 9.0 SDK (x86)
-        run: |
-          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
-          Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
-          Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Build and run tests for Windows x86
         run: |
+          docker buildx build --platform windows/386 -t win-x86 .github/workflows/Dockerfile.dotnet9 . --load
           Set-Location -Path output/win-x86/
           Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
           Remove-Item -Path runtimes -Recurse -Force
           Get-ChildItem
-          .\GrindCore.Tests.Runtime.exe
+          docker run --rm --platform windows/386 -v "${PWD}:/app" win-x86 CMD -c "/app/GrindCore.Tests.Runtime.exe"
         shell: pwsh
