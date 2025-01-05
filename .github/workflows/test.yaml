@@ -266,30 +266,34 @@ jobs:
   #       shell: pwsh
 
   test_win_x86:
-    needs: build_all_platforms
     runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download Windows x86 build
-        uses: actions/download-artifact@v3
-        with:
-          name: win-x86-build
-          path: output/win-x86/
-
-      - name: Uninstall 64-bit .NET SDK
+      - name: Uninstall existing .NET SDK (x64)
         run: |
-          dotnet-core-uninstall remove --sdk --x64
-        shell: pwsh
+          $path = "C:\Program Files\dotnet\sdk\9.0.101"
+          if (Test-Path $path) {
+            Remove-Item -Recurse -Force $path
+          }
 
-      - name: Install 32-bit .NET Runtime
+      - name: Install Visual C++ Redistributable
+        run: choco install vcredist2015 -y
+
+      - name: Download and install .NET 9.0 SDK (x86)
         run: |
-          Invoke-WebRequest -Uri https://download.visualstudio.microsoft.com/download/pr/8f639af4-29e2-474e-ad2d-ad1845c09e21/d6a1fac24aa5bed41dcc8c35017a44f4/dotnet-runtime-9.0.0-linux-arm.tar.gz -OutFile dotnet-runtime.tar.gz
-          tar -xzf dotnet-runtime.tar.gz -C $env:USERPROFILE\dotnet
-          $env:PATH += ";$env:USERPROFILE\dotnet"
-          [System.Environment]::SetEnvironmentVariable('DOTNET_ROOT', "$env:USERPROFILE\dotnet", [System.EnvironmentVariableTarget]::Machine)
-        shell: pwsh
+          Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
+          Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
+          Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
+
+      # - name: Install 32-bit .NET Runtime
+      #   run: |
+      #     Invoke-WebRequest -Uri https://download.visualstudio.microsoft.com/download/pr/8f639af4-29e2-474e-ad2d-ad1845c09e21/d6a1fac24aa5bed41dcc8c35017a44f4/dotnet-runtime-9.0.0-linux-arm.tar.gz -OutFile dotnet-runtime.tar.gz
+      #     tar -xzf dotnet-runtime.tar.gz -C $env:USERPROFILE\dotnet
+      #     $env:PATH += ";$env:USERPROFILE\dotnet"
+      #     [System.Environment]::SetEnvironmentVariable('DOTNET_ROOT', "$env:USERPROFILE\dotnet", [System.EnvironmentVariableTarget]::Machine)
+      #   shell: pwsh
 
       - name: Build and run tests for Windows x86
         run: |
