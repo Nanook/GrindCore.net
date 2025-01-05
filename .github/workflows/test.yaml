@@ -222,27 +222,27 @@ jobs:
           ./GrindCore.Tests.Runtime
         shell: bash
 
-test_win_arm64:
-  needs: build_all_platforms
-  runs-on: windows-latest
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+  test_win_arm64:
+    needs: build_all_platforms
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Download Windows ARM64 build
-      uses: actions/download-artifact@v3
-      with:
-        name: win-arm64-build
-        path: output/win-arm64/
+      - name: Download Windows ARM64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: win-arm64-build
+          path: output/win-arm64/
 
-    - name: Build and run tests for Windows ARM64
-      run: |
-        Set-Location -Path output/win-arm64/
-        Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
-        Remove-Item -Path runtimes -Recurse -Force
-        Get-ChildItem
-        .\GrindCore.Tests.Runtime.exe
-      shell: pwsh
+      - name: Build and run tests for Windows ARM64
+        run: |
+          Set-Location -Path output/win-arm64/
+          Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
+          .\GrindCore.Tests.Runtime.exe
+        shell: pwsh
 
   test_win_x64:
     needs: build_all_platforms
