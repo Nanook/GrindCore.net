@@ -28,7 +28,8 @@ jobs:
 
       - name: Build project for all platforms
         run: |
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained false
+          dotnet publish tests/GrindCore.Tests.WinX86/GrindCore.Tests.WinX86.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0  -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=false -o output/win-x86
+        #  dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained true
 
         # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
         # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
@@ -301,6 +302,7 @@ jobs:
 
       - name: Build and run tests for Windows x86
         run: |
+          Get-ChildItem
           Set-Location -Path output/win-x86/
           Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
           Remove-Item -Path runtimes -Recurse -Force
