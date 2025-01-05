@@ -267,7 +267,7 @@ jobs:
 
   test_win_x86:
     needs: build_all_platforms
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -278,14 +278,24 @@ jobs:
           name: win-x86-build
           path: output/win-x86/
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Uninstall 64-bit .NET SDK
+        run: |
+          dotnet-core-uninstall remove --sdk --x64
+        shell: pwsh
+
+      - name: Install 32-bit .NET Runtime
+        run: |
+          Invoke-WebRequest -Uri https://download.visualstudio.microsoft.com/download/pr/8f639af4-29e2-474e-ad2d-ad1845c09e21/d6a1fac24aa5bed41dcc8c35017a44f4/dotnet-runtime-9.0.0-linux-arm.tar.gz -OutFile dotnet-runtime.tar.gz
+          tar -xzf dotnet-runtime.tar.gz -C $env:USERPROFILE\dotnet
+          $env:PATH += ";$env:USERPROFILE\dotnet"
+          [System.Environment]::SetEnvironmentVariable('DOTNET_ROOT', "$env:USERPROFILE\dotnet", [System.EnvironmentVariableTarget]::Machine)
+        shell: pwsh
 
       - name: Build and run tests for Windows x86
         run: |
-          docker buildx build --platform windows/386 -t win-x86 -f .github/workflows/Dockerfile.dotnet9 . --load
-          cd output/win-x86/
-          cp -r runtimes/win-x86/native/* .
-          rm -rf runtimes
-          ls
-          docker run --rm --platform windows/386 -v "${PWD}:/app" win-x86 CMD -c "/app/GrindCore.Tests.Runtime.exe"
+          Set-Location -Path output/win-x86/
+          Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
+          .\GrindCore.Tests.Runtime.exe
+        shell: pwsh
