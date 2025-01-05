@@ -266,6 +266,7 @@ jobs:
   #       shell: pwsh
 
   test_win_x86:
+    needs: build_all_platforms
     runs-on: windows-latest
     steps:
       - name: Download Windows x86 build
