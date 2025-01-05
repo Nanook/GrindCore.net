@@ -11,11 +11,11 @@ using Nanook.GrindCore.XXHash;
 
 namespace GrindCore.Tests
 {
-    // /// <summary>
-    // /// Example tests to demonstrate usage
-    // /// </summary>
-    // public sealed class HashTests
-    // {
+    /// <summary>
+    /// Example tests to demonstrate usage
+    /// </summary>
+    public sealed class HashTests
+    {
     //     /// <summary>
     //     /// Test and demonstrate an instance of a hashing algorithm, processing 64 KiB of data.
     //     /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
@@ -253,10 +253,10 @@ namespace GrindCore.Tests
         //     }
         // }
 
-        / <summary>
-        / Test and demonstrate an instance of a hashing algorithm, processing a stream of data in 1 byte at a time.
-        / The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
-        / </summary>
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing a stream of data in 1 byte at a time.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
         [Theory]
         [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
         [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
