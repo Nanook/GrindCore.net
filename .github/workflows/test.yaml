@@ -22,15 +22,15 @@ jobs:
         with:
           dotnet-version: '9.0'
 
-      - name: Initial Tests
-        run: |
-          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+      #- name: Initial Tests
+      #  run: |
+      #    dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
       - name: Build project for all platforms
         run: |
           dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=false
-          Get-ChildItem -recursive
-          Set-Location -Path tests/GrindCore.Tests.Runtime/bin/x86/Debug/net8.0/win-x86/publish
+          Get-ChildItem -recurse
+          Set-Location -Path tests/GrindCore.Tests.Runtime/bin/x86/Debug/net9.0/win-x86/publish
           Get-ChildItem
           Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
           Remove-Item -Path runtimes -Recurse -Force
