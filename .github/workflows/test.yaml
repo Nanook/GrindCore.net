@@ -12,7 +12,7 @@ on:
 
 jobs:
   build_all_platforms:
-    runs-on: windows-latest
+    runs-on: linux-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -22,18 +22,12 @@ jobs:
         with:
           dotnet-version: '9.0'
 
-      #- name: Initial Tests
-      #  run: |
-      #    dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-
-      - name: Build project for all platforms
+      - name: Initial Tests
         run: |
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net8.0 -p:TargetFrameworks=net8.0 -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=false
-          Set-Location -Path tests\GrindCore.Tests.Runtime\bin\Debug\net8.0\win-x86\publish
-          Copy-Item -Path runtimes/win-x86/native/* -Destination .
-          # Remove-Item -Path runtimes -Recurse -Force
-          Get-ChildItem
-          .\GrindCore.Tests.Runtime.exe
+          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+
+      #- name: Build project for all platforms
+      #  run: |
         #  dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained true
 
         # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
@@ -271,10 +265,10 @@ jobs:
   #         .\GrindCore.Tests.Runtime.exe
   #       shell: pwsh
 
-  #test_win_x86:
-  #  needs: build_all_platforms
-  #  runs-on: windows-latest
-  #  steps:
+  test_win_x86:
+    needs: build_all_platforms
+    runs-on: windows-latest
+    steps:
   #    - name: Download Windows x86 build
   #      uses: actions/download-artifact@v3
   #      with:
@@ -305,8 +299,15 @@ jobs:
       #     [System.Environment]::SetEnvironmentVariable('DOTNET_ROOT', "$env:USERPROFILE\dotnet", [System.EnvironmentVariableTarget]::Machine)
       #   shell: pwsh
 
-  #    - name: Build and run tests for Windows x86
-  #      run: |
+      - name: Build and run tests for Windows x86
+        run: |
+          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+
+        # Set-Location -Path tests\GrindCore.Tests.Runtime\bin\Debug\net8.0\win-x86\publish
+        # Copy-Item -Path runtimes/win-x86/native/* -Destination .
+        # # Remove-Item -Path runtimes -Recurse -Force
+        # Get-ChildItem
+        # .\GrindCore.Tests.Runtime.exe
   #        Get-ChildItem
   #        Set-Location -Path output/win-x86/
   #        Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
