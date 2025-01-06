@@ -28,7 +28,13 @@ jobs:
 
       - name: Build project for all platforms
         run: |
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0  -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=false -o output/win-x86
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0  -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=false
+          Set-Location -Path tests/GrindCore.Tests.Runtime/bin/x86/Debug/net8.0/win-x86/publish
+          Get-ChildItem
+          Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
+          .\GrindCore.Tests.Runtime.exe
         #  dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained true
 
         # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
@@ -82,11 +88,11 @@ jobs:
       #     name: win-x64-build
       #     path: output/win-x64/
 
-      - name: Upload Windows x86 build
-        uses: actions/upload-artifact@v3
-        with:
-          name: win-x86-build
-          path: output/win-x86/
+      #- name: Upload Windows x86 build
+      #  uses: actions/upload-artifact@v3
+      #  with:
+      #    name: win-x86-build
+      #    path: output/win-x86/
 
   # test_linux_arm64:
   #   needs: build_all_platforms
@@ -266,15 +272,15 @@ jobs:
   #         .\GrindCore.Tests.Runtime.exe
   #       shell: pwsh
 
-  test_win_x86:
-    needs: build_all_platforms
-    runs-on: windows-latest
-    steps:
-      - name: Download Windows x86 build
-        uses: actions/download-artifact@v3
-        with:
-          name: win-x86-build
-          path: output/win-x86/
+  #test_win_x86:
+  #  needs: build_all_platforms
+  #  runs-on: windows-latest
+  #  steps:
+  #    - name: Download Windows x86 build
+  #      uses: actions/download-artifact@v3
+  #      with:
+  #        name: win-x86-build
+  #        path: output/win-x86/
 
       # - name: Uninstall existing .NET SDK (x64)
       #   run: |
@@ -300,12 +306,12 @@ jobs:
       #     [System.Environment]::SetEnvironmentVariable('DOTNET_ROOT', "$env:USERPROFILE\dotnet", [System.EnvironmentVariableTarget]::Machine)
       #   shell: pwsh
 
-      - name: Build and run tests for Windows x86
-        run: |
-          Get-ChildItem
-          Set-Location -Path output/win-x86/
-          Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
-          Remove-Item -Path runtimes -Recurse -Force
-          Get-ChildItem
-          .\GrindCore.Tests.Runtime.exe
-        shell: pwsh
+  #    - name: Build and run tests for Windows x86
+  #      run: |
+  #        Get-ChildItem
+  #        Set-Location -Path output/win-x86/
+  #        Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
+  #        Remove-Item -Path runtimes -Recurse -Force
+  #        Get-ChildItem
+  #        .\GrindCore.Tests.Runtime.exe
+  #      shell: pwsh
