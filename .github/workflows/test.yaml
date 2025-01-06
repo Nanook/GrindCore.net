@@ -12,7 +12,7 @@ on:
 
 jobs:
   build_all_platforms:
-    runs-on: linux-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
