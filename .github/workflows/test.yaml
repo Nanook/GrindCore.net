@@ -271,49 +271,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-  #    - name: Download Windows x86 build
-  #      uses: actions/download-artifact@v3
-  #      with:
-  #        name: win-x86-build
-  #        path: output/win-x86/
 
-      # - name: Uninstall existing .NET SDK (x64)
-      #   run: |
-      #     $path = "C:\Program Files\dotnet\sdk\9.0.101"
-      #     if (Test-Path $path) {
-      #       Remove-Item -Recurse -Force $path
-      #     }
-
-      # - name: Install Visual C++ Redistributable
-      #   run: choco install vcredist2015 -y
-
-      # - name: Download and install .NET 9.0 SDK (x86)
-      #   run: |
-      #     Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/838bc4f1-96ee-43f9-8e47-2dc2656590c0/15cbe313b18ccbeffdb61cff66f5ef26/dotnet-sdk-9.0.101-win-x86.exe" -OutFile "dotnet-sdk-9.0.101-win-x86.exe"
-      #     Start-Process -FilePath "dotnet-sdk-9.0.101-win-x86.exe" -ArgumentList "/install", "/quiet", "/norestart" -Wait
-      #     Remove-Item -Path "dotnet-sdk-9.0.101-win-x86.exe"
-
-      # - name: Install 32-bit .NET Runtime
-      #   run: |
-      #     Invoke-WebRequest -Uri https://download.visualstudio.microsoft.com/download/pr/8f639af4-29e2-474e-ad2d-ad1845c09e21/d6a1fac24aa5bed41dcc8c35017a44f4/dotnet-runtime-9.0.0-linux-arm.tar.gz -OutFile dotnet-runtime.tar.gz
-      #     tar -xzf dotnet-runtime.tar.gz -C $env:USERPROFILE\dotnet
-      #     $env:PATH += ";$env:USERPROFILE\dotnet"
-      #     [System.Environment]::SetEnvironmentVariable('DOTNET_ROOT', "$env:USERPROFILE\dotnet", [System.EnvironmentVariableTarget]::Machine)
-      #   shell: pwsh
-
-      - name: Build and run tests for Windows x86
+      - name: Limited x86 test
         run: |
-          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
-
-        # Set-Location -Path tests\GrindCore.Tests.Runtime\bin\Debug\net8.0\win-x86\publish
-        # Copy-Item -Path runtimes/win-x86/native/* -Destination .
-        # # Remove-Item -Path runtimes -Recurse -Force
-        # Get-ChildItem
-        # .\GrindCore.Tests.Runtime.exe
-  #        Get-ChildItem
-  #        Set-Location -Path output/win-x86/
-  #        Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
-  #        Remove-Item -Path runtimes -Recurse -Force
-  #        Get-ChildItem
-  #        .\GrindCore.Tests.Runtime.exe
-  #      shell: pwsh
+          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
