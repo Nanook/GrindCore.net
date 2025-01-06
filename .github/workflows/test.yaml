@@ -30,9 +30,8 @@ jobs:
         run: |
           dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=false
           Set-Location -Path tests\GrindCore.Tests.Runtime\bin\Debug\net9.0\win-x86\publish
-          Get-ChildItem
-          Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
-          Remove-Item -Path runtimes -Recurse -Force
+          Copy-Item -Path runtimes/win-x86/native/* -Destination .
+          # Remove-Item -Path runtimes -Recurse -Force
           Get-ChildItem
           .\GrindCore.Tests.Runtime.exe
         #  dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained true
