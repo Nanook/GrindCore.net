@@ -269,6 +269,8 @@ jobs:
     needs: build_all_platforms
     runs-on: windows-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
   #    - name: Download Windows x86 build
   #      uses: actions/download-artifact@v3
   #      with:
