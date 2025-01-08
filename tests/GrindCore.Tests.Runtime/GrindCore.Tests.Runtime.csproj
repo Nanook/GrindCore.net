@@ -8,12 +8,11 @@
 		<Nullable>enable</Nullable>
 		<SelfContained>false</SelfContained>
 
-		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x86</RuntimeIdentifier>
+		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x64</RuntimeIdentifier>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64' ">x64</PlatformTarget>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'linux-arm64' or  '$(RuntimeIdentifier)' == 'osx-arm64' ">arm64</PlatformTarget>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-x86' ">x86</PlatformTarget>
-		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-arm' and ('$(TargetFramewework)' == 'net8.0' or '$(TargetFramewework)' == 'net6.0') ">arm</PlatformTarget>
-		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-x86' and ('$(TargetFramewework)' == 'net8.0' or '$(TargetFramewework)' == 'net6.0') ">arm</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-arm' ">arm</PlatformTarget>
 		<RuntimeIdentifiers>$(RuntimeIdentifier)</RuntimeIdentifiers>
 
 	</PropertyGroup>

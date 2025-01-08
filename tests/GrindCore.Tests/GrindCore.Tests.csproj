@@ -10,16 +10,19 @@
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
 
-		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x86</RuntimeIdentifier>
+		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x64</RuntimeIdentifier>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64' ">x64</PlatformTarget>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'linux-arm64' or  '$(RuntimeIdentifier)' == 'osx-arm64' ">arm64</PlatformTarget>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-x86' ">x86</PlatformTarget>
-		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-arm' and ('$(TargetFramewework)' == 'net8.0' or '$(TargetFramewework)' == 'net6.0') ">arm</PlatformTarget>
-		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-x86' and ('$(TargetFramewework)' == 'net8.0' or '$(TargetFramewework)' == 'net6.0') ">arm</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-arm' ">arm</PlatformTarget>
 		<RuntimeIdentifiers>$(RuntimeIdentifier)</RuntimeIdentifiers>
 
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">WIN_X64,TRACE</DefineConstants>
+	</PropertyGroup>
+	
 	<ItemGroup>
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
 		<PackageReference Include="xunit" Version="2.9.2" />

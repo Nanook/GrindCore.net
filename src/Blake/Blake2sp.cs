@@ -4,14 +4,14 @@ using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.Blake
 {
-    public unsafe class Blake3 : HashAlgorithm
+    public unsafe class Blake2sp : HashAlgorithm
     {
         private const int _hashSizeBytes = 32;
-        private Interop.Blake3Hasher _hasher;
+        private Interop.CBlake2sp _state;
 
-        public Blake3()
+        public Blake2sp()
         {
-            HashSizeValue = 256; // Blake3 typically produces a 256-bit hash
+            HashSizeValue = _hashSizeBytes << 3; // Blake2sp typically produces a 256-bit hash
             Initialize();
         }
 
@@ -20,12 +20,12 @@ namespace Nanook.GrindCore.Blake
         public static byte[] Compute(byte[] data, int offset, int length)
         {
             const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
-            Interop.Blake3Hasher hasher = new Interop.Blake3Hasher();
+            Interop.CBlake2sp state = new Interop.CBlake2sp();
 
-            // Initialize hasher
-            Interop.Blake.SZ_blake3_hasher_init(&hasher);
+            // Initialize state
+            Interop.Blake.SZ_Blake2sp_Init(&state);
 
-            // Pin the data array and update hasher in chunks
+            // Pin the data array and update state in chunks
             fixed (byte* dataPtr = data)
             {
                 int bytesRead;
@@ -33,29 +33,29 @@ namespace Nanook.GrindCore.Blake
                 while (remainingSize > 0)
                 {
                     bytesRead = Math.Min(remainingSize, bufferSize);
-                    Interop.Blake.SZ_blake3_hasher_update(&hasher, (IntPtr)(dataPtr + offset + (length - remainingSize)), (UIntPtr)bytesRead);
+                    Interop.Blake.SZ_Blake2sp_Update(&state, dataPtr + offset + (length - remainingSize), (ulong)bytesRead);
                     remainingSize -= bytesRead;
                 }
             }
 
             // Finalize hash
-            byte[] result = new byte[_hashSizeBytes]; // Adjust size according to your needs
+            byte[] result = new byte[_hashSizeBytes]; // Blake2sp typically produces a 32-byte (256-bit) hash
             fixed (byte* resultPtr = result)
-                Interop.Blake.SZ_blake3_hasher_finalize(&hasher, resultPtr, (UIntPtr)result.Length);
+                Interop.Blake.SZ_Blake2sp_Final(&state, resultPtr);
 
             return result;
         }
 
-        public static new Blake3 Create()
+        public static new Blake2sp Create()
         {
-            return new Blake3();
+            return new Blake2sp();
         }
 
         public override void Initialize()
         {
-            _hasher = new Interop.Blake3Hasher();
-            fixed (Interop.Blake3Hasher* hasherPtr = &_hasher)
-                Interop.Blake.SZ_blake3_hasher_init(hasherPtr);
+            _state = new Interop.CBlake2sp();
+            fixed (Interop.CBlake2sp* statePtr = &_state)
+                Interop.Blake.SZ_Blake2sp_Init(statePtr);
         }
 
         protected override void HashCore(byte[] data, int offset, int size)
@@ -65,12 +65,12 @@ namespace Nanook.GrindCore.Blake
             int bytesRead;
             int remainingSize = size;
             fixed (byte* dataPtr = data)
-            fixed (Interop.Blake3Hasher* hasherPtr = &_hasher)
+            fixed (Interop.CBlake2sp* statePtr = &_state)
             {
                 while (remainingSize > 0)
                 {
                     bytesRead = Math.Min(remainingSize, bufferSize);
-                    Interop.Blake.SZ_blake3_hasher_update(hasherPtr, (IntPtr)(dataPtr + offset + (size - remainingSize)), (UIntPtr)bytesRead);
+                    Interop.Blake.SZ_Blake2sp_Update(statePtr, dataPtr + offset + (size - remainingSize), (ulong)bytesRead);
                     remainingSize -= bytesRead;
                 }
             }
@@ -79,10 +79,10 @@ namespace Nanook.GrindCore.Blake
         protected override byte[] HashFinal()
         {
             // Finalize hash
-            byte[] result = new byte[_hashSizeBytes]; // Adjust size according to your needs
+            byte[] result = new byte[_hashSizeBytes]; // Blake2sp typically produces a 32-byte (256-bit) hash
             fixed (byte* resultPtr = result)
-            fixed (Interop.Blake3Hasher* hasherPtr = &_hasher)
-                Interop.Blake.SZ_blake3_hasher_finalize(hasherPtr, resultPtr, (UIntPtr)result.Length);
+            fixed (Interop.CBlake2sp* statePtr = &_state)
+                Interop.Blake.SZ_Blake2sp_Final(statePtr, resultPtr);
             return result;
         }
     }

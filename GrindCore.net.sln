@@ -4,9 +4,9 @@ VisualStudioVersion = 17.12.35514.174
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrindCore.net", "src\GrindCore.net.csproj", "{9A0C1796-9528-4915-86F0-0AC0DBEDA1B2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrindCoreX.Tests", "tests\GrindCore.Tests\GrindCore.Tests.csproj", "{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrindCore.Tests", "tests\GrindCore.Tests\GrindCore.Tests.csproj", "{DE317AF3-2446-4E25-A8BA-73D3D0CB7904}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuntimeTestApp", "tests\GrindCore.Tests.Runtime\GrindCore.Tests.Runtime.csproj", "{800E3E22-A933-4124-9788-0C0997079DAF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrindCore.Tests.Runtime", "tests\GrindCore.Tests.Runtime\GrindCore.Tests.Runtime.csproj", "{800E3E22-A933-4124-9788-0C0997079DAF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

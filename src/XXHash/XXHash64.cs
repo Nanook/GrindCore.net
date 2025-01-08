@@ -1,18 +1,17 @@
+using Nanook.GrindCore.XXHash;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace Nanook.GrindCore.MD
+namespace Nanook.GrindCore.XXHash
 {
-    public unsafe class MD5 : HashAlgorithm
+    public unsafe class XXHash64 : HashAlgorithm
     {
-        private const int _hashSizeBytes = 16;
-        private Interop.MD5_CTX _ctx;
+        private XXH64_CTX _ctx;
 
-        public MD5()
+        public XXHash64()
         {
-            HashSizeValue = _hashSizeBytes << 3; // MD5 produces a 128-bit hash
+            HashSizeValue = 64; // XXH64 produces a 64-bit hash
             Initialize();
         }
 
@@ -21,37 +20,33 @@ namespace Nanook.GrindCore.MD
         public static byte[] Compute(byte[] data, int offset, int length)
         {
             const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
-            Interop.MD5_CTX ctx = new Interop.MD5_CTX();
-            byte[] result = new byte[_hashSizeBytes]; // MD5_DIGEST_LENGTH is 16
+            XXH64_CTX ctx = new XXH64_CTX();
 
             fixed (byte* dataPtr = data)
-            fixed (byte* resultPtr = result)
             {
-                Interop.MD.SZ_MD5_Init(&ctx);
+                XXHash.SZ_XXH64_Reset(&ctx);
                 int bytesRead;
                 int remainingSize = length;
                 while (remainingSize > 0)
                 {
                     bytesRead = Math.Min(remainingSize, bufferSize);
-                    Interop.MD.SZ_MD5_Update(&ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
+                    XXHash.SZ_XXH64_Update(&ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
                     remainingSize -= bytesRead;
                 }
-                Interop.MD.SZ_MD5_Final(resultPtr, &ctx);
+                return XXHash.SZ_XXH64_Digest(&ctx).ToByteArray();
             }
-
-            return result;
         }
 
-        public static new MD5 Create()
+        public static new XXHash64 Create()
         {
-            return new MD5();
+            return new XXHash64();
         }
 
         public override void Initialize()
         {
-            _ctx = new Interop.MD5_CTX();
-            fixed (Interop.MD5_CTX* ctxPtr = &_ctx)
-                Interop.MD.SZ_MD5_Init(ctxPtr);
+            _ctx = new XXH64_CTX();
+            fixed (XXH64_CTX* ctxPtr = &_ctx)
+                XXHash.SZ_XXH64_Reset(ctxPtr);
         }
 
         protected override void HashCore(byte[] data, int offset, int size)
@@ -61,12 +56,12 @@ namespace Nanook.GrindCore.MD
             int bytesRead;
             int remainingSize = size;
             fixed (byte* dataPtr = data)
-            fixed (Interop.MD5_CTX* ctxPtr = &_ctx)
+            fixed (XXH64_CTX* ctxPtr = &_ctx)
             {
                 while (remainingSize > 0)
                 {
                     bytesRead = Math.Min(remainingSize, bufferSize);
-                    Interop.MD.SZ_MD5_Update(ctxPtr, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
+                    XXHash.SZ_XXH64_Update(ctxPtr, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
                     remainingSize -= bytesRead;
                 }
             }
@@ -74,12 +69,8 @@ namespace Nanook.GrindCore.MD
 
         protected override byte[] HashFinal()
         {
-            byte[] result = new byte[_hashSizeBytes]; // MD5_DIGEST_LENGTH is 16
-            fixed (byte* resultPtr = result)
-            fixed (Interop.MD5_CTX* ctxPtr = &_ctx)
-                Interop.MD.SZ_MD5_Final(resultPtr, ctxPtr);
-            return result;
+            fixed (XXH64_CTX* ctxPtr = &_ctx)
+                return XXHash.SZ_XXH64_Digest(ctxPtr).ToByteArray();
         }
-
     }
 }

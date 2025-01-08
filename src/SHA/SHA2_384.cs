@@ -4,13 +4,14 @@ using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.SHA
 {
-    public class SHA2_384 : HashAlgorithm
+    public unsafe class SHA2_384 : HashAlgorithm
     {
-        private Interop.SHA384_CTX ctx;
+        private const int _hashSizeBytes = 48;
+        private Interop.SHA384_CTX _ctx;
 
         public SHA2_384()
         {
-            HashSizeValue = 384; // SHA2_384 produces a 384-bit hash
+            HashSizeValue = _hashSizeBytes << 3; // SHA2_384 produces a 384-bit hash
             Initialize();
         }
 
@@ -18,18 +19,23 @@ namespace Nanook.GrindCore.SHA
 
         public static byte[] Compute(byte[] data, int offset, int length)
         {
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
             Interop.SHA384_CTX ctx = new Interop.SHA384_CTX();
-            byte[] result = new byte[48]; // SHA384_DIGEST_LENGTH is 48
+            byte[] result = new byte[_hashSizeBytes]; // SHA384_DIGEST_LENGTH is 48
 
-            unsafe
+            fixed (byte* dataPtr = data)
+            fixed (byte* resultPtr = result)
             {
-                fixed (byte* dataPtr = data)
-                fixed (byte* resultPtr = result)
+                Interop.SHA.SZ_SHA384_Init(&ctx);
+                int bytesRead;
+                int remainingSize = length;
+                while (remainingSize > 0)
                 {
-                    Interop.SHA.SZ_SHA384_Init(ref ctx);
-                    Interop.SHA.SZ_SHA384_Update(ref ctx, dataPtr + offset, (nuint)length);
-                    Interop.SHA.SZ_SHA384_Final(resultPtr, ref ctx);
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    Interop.SHA.SZ_SHA384_Update(&ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
+                    remainingSize -= bytesRead;
                 }
+                Interop.SHA.SZ_SHA384_Final(resultPtr, &ctx);
             }
 
             return result;
@@ -42,27 +48,37 @@ namespace Nanook.GrindCore.SHA
 
         public override void Initialize()
         {
-            ctx = new Interop.SHA384_CTX();
-            Interop.SHA.SZ_SHA384_Init(ref ctx);
+            _ctx = new Interop.SHA384_CTX();
+            fixed (Interop.SHA384_CTX* ctxPtr = &_ctx)
+            {
+                Interop.SHA.SZ_SHA384_Init(ctxPtr);
+            }
         }
 
         protected override void HashCore(byte[] data, int offset, int size)
         {
-            unsafe
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+
+            int bytesRead;
+            int remainingSize = size;
+            fixed (byte* dataPtr = data)
+            fixed (Interop.SHA384_CTX* ctxPtr = &_ctx)
             {
-                fixed (byte* dataPtr = data)
-                    Interop.SHA.SZ_SHA384_Update(ref ctx, dataPtr + offset, (nuint)size);
+                while (remainingSize > 0)
+                {
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    Interop.SHA.SZ_SHA384_Update(ctxPtr, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
+                    remainingSize -= bytesRead;
+                }
             }
         }
 
         protected override byte[] HashFinal()
         {
-            byte[] result = new byte[48]; // SHA384_DIGEST_LENGTH is 48
-            unsafe
-            {
-                fixed (byte* resultPtr = result)
-                    Interop.SHA.SZ_SHA384_Final(resultPtr, ref ctx);
-            }
+            byte[] result = new byte[_hashSizeBytes]; // SHA384_DIGEST_LENGTH is 48
+            fixed (byte* resultPtr = result)
+            fixed (Interop.SHA384_CTX* ctxPtr = &_ctx)
+                Interop.SHA.SZ_SHA384_Final(resultPtr, ctxPtr);
             return result;
         }
     }

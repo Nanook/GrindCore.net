@@ -1,58 +1,457 @@
 using System;
 using System.Diagnostics;
-using System.Security.Cryptography;
-using Xunit;
+using HashAlgorithm=System.Security.Cryptography.HashAlgorithm;
+using CryptoStream=System.Security.Cryptography.CryptoStream;
+using CryptoStreamMode=System.Security.Cryptography.CryptoStreamMode;
 using Nanook.GrindCore;
+using Nanook.GrindCore.Blake;
+using Nanook.GrindCore.MD;
+using Nanook.GrindCore.SHA;
+using Nanook.GrindCore.XXHash;
 
 namespace GrindCore.Tests
 {
+    /// <summary>
+    /// Example tests to demonstrate usage
+    /// </summary>
     public sealed class HashTests
     {
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing 64 KiB of data.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
         [Theory]
-        [InlineData(HashType.MD2, 0x10000, "739c02d1a383c5b87252e6ceadc7301b")]
-        [InlineData(HashType.MD4, 0x10000, "4f5f5bdedc32a4c4771cce9b53861baf")]
-        [InlineData(HashType.MD5, 0x10000, "8721441d106901d27a5835122e6eae8f")]
-        [InlineData(HashType.SHA2_384, 0x10000, "3af6a866616e4b616a3b4bd39c2c3f1475e1adae103c02d87d7ce8f760c738d5efd94f1476f5b94e6c44951dfd179585")]
-        [InlineData(HashType.SHA2_512, 0x10000, "2cc9df9261e95e3acafce1b3d49ac1079bfed3618ae3e7615251768bf6c1f2ebd42173e0d3790653aa2fd5c69d413db0c4fab99d134c621353f1469fdd9dd757")]
-        [InlineData(HashType.SHA3_224, 0x10000, "56db86f2db22847e884b9c2a1cef3e2203b7121133c565f041c868f2")]
-        [InlineData(HashType.SHA3_256, 0x10000, "83628ca2866070d71859ca650c4cbe7fa5bfafc6e833223424c6f30baff137b9")]
-        [InlineData(HashType.SHA3_384, 0x10000, "8b927bc922c5eee02e43f6332f8b66413418bb46fa913f4d8733fed36f700320a651afe950b5eecec8c2449c4aa88130")]
-        [InlineData(HashType.SHA3_512, 0x10000, "337f525a855f2a00f84e0012dd34268e0fba9e88a8e2dc3bc4f8449afddb2dc697b22faa69b284b4a261f65a90bfb13aa12887b86fa54e3306942ecfb8c3e202")]
-        [InlineData(HashType.Blake3, 0x10000, "fb7ff288a1f6f138c2d29a43cc34a42b75b4b40bf5552207160f06877b7d8d11")]
-        public void TestHash(HashType type, int dataSize, string expectedResult)
+        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
+        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
+        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
+        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
+        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
+        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
+        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
+        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
+        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
+        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
+        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
+        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
+        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
+        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
+        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        public void Hash_ByteArray64k(HashType type, string expectedResult)
         {
-            byte[] data = Shared.CreateData(dataSize);
+            // create predictable data - this data is always the same fibonacci sequence
+            byte[] data = Shared.CreateData(64 * 1024);
 
+            // create the hash using the factory, via switch (not reflection)
             using (HashAlgorithm algorithm = HashFactory.Create(type))
             {
-                byte[] hash = algorithm.ComputeHash(data);
-                string hashString = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-                Assert.Equal(expectedResult, hashString);
+                // calculate the hash using standard dotnet HashAlgorithm base class functionality
+                string result = algorithm.ComputeHash(data).ToHexString();
+                Assert.Equal(expectedResult, result);
             }
         }
 
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing an empty array of data.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
         [Theory]
-        [InlineData(HashType.MD2, 0, "8350e5a3e24c153df2275c9f80692773")]
-        [InlineData(HashType.MD4, 0, "31d6cfe0d16ae931b73c59d7e0c089c0")]
-        [InlineData(HashType.MD5, 0, "d41d8cd98f00b204e9800998ecf8427e")]
-        [InlineData(HashType.SHA2_384, 0, "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b")]
-        [InlineData(HashType.SHA2_512, 0, "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e")]
-        [InlineData(HashType.SHA3_224, 0, "6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7")]
-        [InlineData(HashType.SHA3_256, 0, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a")]
-        [InlineData(HashType.SHA3_384, 0, "0c63a75b845e4f7d01107d852e4c2485c51a50aaaa94fc61995e71bbee983a2ac3713831264adb47fb6bd1e058d5f004")]
-        [InlineData(HashType.SHA3_512, 0, "a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26")]
-        [InlineData(HashType.Blake3, 0, "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262")]
-        public void TestEmptyHash(HashType type, int dataSize, string expectedResult)
+        [InlineData(HashType.Blake2sp, HashConstants.HashResultEmptyBlake2sp)]
+        [InlineData(HashType.Blake3, HashConstants.HashResultEmptyBlake3)]
+        [InlineData(HashType.XXHash32, HashConstants.HashResultEmptyXXHash32)]
+        [InlineData(HashType.XXHash64, HashConstants.HashResultEmptyXXHash64)]
+        [InlineData(HashType.MD2, HashConstants.HashResultEmptyMD2)]
+        [InlineData(HashType.MD4, HashConstants.HashResultEmptyMD4)]
+        [InlineData(HashType.MD5, HashConstants.HashResultEmptyMD5)]
+        [InlineData(HashType.SHA1, HashConstants.HashResultEmptySHA1)]
+        [InlineData(HashType.SHA2_256, HashConstants.HashResultEmptySHA2_256)]
+        [InlineData(HashType.SHA2_384, HashConstants.HashResultEmptySHA2_384)]
+        [InlineData(HashType.SHA2_512, HashConstants.HashResultEmptySHA2_512)]
+        [InlineData(HashType.SHA3_224, HashConstants.HashResultEmptySHA3_224)]
+        [InlineData(HashType.SHA3_256, HashConstants.HashResultEmptySHA3_256)]
+        [InlineData(HashType.SHA3_384, HashConstants.HashResultEmptySHA3_384)]
+        [InlineData(HashType.SHA3_512, HashConstants.HashResultEmptySHA3_512)]
+        public void Hash_ByteArrayEmpty(HashType type, string expectedResult)
         {
-            byte[] data = Shared.CreateData(dataSize);
+            // empty byte array
+            byte[] data = new byte[0];
 
+            // create the hash using the factory, via switch (not reflection)
             using (HashAlgorithm algorithm = HashFactory.Create(type))
             {
-                byte[] hash = algorithm.ComputeHash(data);
-                string hashString = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-                Trace.WriteLine(hashString);
-                Assert.Equal(expectedResult, hashString);
+                // calculate the hash using standard dotnet HashAlgorithm base class functionality
+                string result = algorithm.ComputeHash(data).ToHexString();
+                Assert.Equal(expectedResult, result);
             }
+        }
+
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing a bytearray of data in 1000 byte chunks.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
+        [Theory]
+        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
+        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
+        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
+        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
+        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
+        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
+        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
+        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
+        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
+        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
+        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
+        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
+        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
+        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
+        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        public void Hash_ByteArray64k_Chunk1000b(HashType type, string expectedResult)
+        {
+            // create predictable data - this data is always the same fibonacci sequence
+            byte[] data = Shared.CreateData(64 * 1024);
+            int chunkSize = 1000; // 1000 byte chunk size - breaks 16 byte alignment etc
+
+            // create the hash using the factory, via switch (not reflection)
+            using (HashAlgorithm hasher = HashFactory.Create(type))
+            {
+                int offset = 0;
+                while (offset < data.Length)
+                {
+                    int size = Math.Min(chunkSize, data.Length - offset);
+                    hasher.TransformBlock(data, offset, size, null, 0);
+                    offset += size;
+                }
+                hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                string result = hasher.Hash!.ToHexString();
+                Assert.Equal(expectedResult, result);
+            }
+        }
+
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing a bytearray of data 1 byte at a time.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
+        [Theory]
+        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
+        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
+        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
+        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
+        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
+        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
+        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
+        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
+        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
+        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
+        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
+        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
+        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
+        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
+        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        public void Hash_ByteArray64k_Chunk1b(HashType type, string expectedResult)
+        {
+            // create predictable data - this data is always the same fibonacci sequence
+            byte[] data = Shared.CreateData(64 * 1024);
+            int chunkSize = 1; // 1 byte at a time
+
+            // create the hash using the factory, via switch (not reflection)
+            using (HashAlgorithm hasher = HashFactory.Create(type))
+            {
+                int offset = 0;
+                while (offset < data.Length)
+                {
+                    int size = Math.Min(chunkSize, data.Length - offset);
+                    hasher.TransformBlock(data, offset, size, null, 0);
+                    offset += size;
+                }
+                hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                string result = hasher.Hash!.ToHexString();
+                Assert.Equal(expectedResult, result);
+            }
+        }
+
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing a stream of data in 1000 byte chunks.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
+        [Theory]
+        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
+        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
+        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
+        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
+        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
+        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
+        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
+        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
+        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
+        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
+        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
+        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
+        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
+        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
+        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        public void Hash_Streamed64k_Chunk1000b(HashType type, string expectedResult)
+        {
+            // Create predictable data - this data is always the same Fibonacci sequence
+            byte[] data = Shared.CreateData(64 * 1024);
+            int chunkSize = 1000; // 1000 byte chunk size - breaks 16 byte alignment etc
+
+            // Create the hash using the factory, via switch (not reflection)
+            using (HashAlgorithm hasher = HashFactory.Create(type))
+            {
+                using (Stream dataStream = new MemoryStream(data))
+                {
+                    int bytesRead;
+                    byte[] buffer = new byte[chunkSize];
+
+                    while ((bytesRead = dataStream.Read(buffer, 0, buffer.Length)) > 0)
+                        hasher.TransformBlock(buffer, 0, bytesRead, null, 0);
+                }
+
+                hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                string result = hasher.Hash!.ToHexString();
+                Assert.Equal(expectedResult, result);
+            }
+        }
+
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing a stream of data in 1000 byte chunks.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
+        [Theory]
+        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
+        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
+        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
+        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
+        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
+        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
+        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
+        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
+        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
+        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
+        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
+        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
+        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
+        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
+        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        public void Hash_CryptoStreamed64k(HashType type, string expectedResult)
+        {
+            // Create predictable data - this data is always the same Fibonacci sequence
+            byte[] data = Shared.CreateData(64 * 1024);
+
+            // Create the hash using the factory, via switch (not reflection)
+            using (HashAlgorithm hasher = HashFactory.Create(type))
+            {
+                using (CryptoStream cryptoStream = new CryptoStream(Stream.Null, hasher, CryptoStreamMode.Write))
+                {
+                    using (Stream dataStream = new MemoryStream(data))
+                    {
+                        dataStream.CopyTo(cryptoStream);
+                        cryptoStream.FlushFinalBlock();
+                    }
+                }
+                string result = hasher.Hash!.ToHexString();
+                Assert.Equal(expectedResult, result);
+            }
+        }
+
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing a stream of data in 1 byte at a time.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
+        [Theory]
+        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
+        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
+        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
+        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
+        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
+        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
+        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
+        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
+        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
+        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
+        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
+        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
+        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
+        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
+        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        public void Hash_Streamed64k_Chunk1b(HashType type, string expectedResult)
+        {
+            // create predictable data - this data is always the same fibonacci sequence
+            byte[] data = Shared.CreateData(64 * 1024);
+            int chunkSize = 1; // 1 byte at a time
+
+            // create the hash using the factory, via switch (not reflection)
+            using (HashAlgorithm hasher = HashFactory.Create(type))
+            {
+                using (Stream dataStream = new MemoryStream(data))
+                {
+                    int bytesRead;
+                    byte[] buffer = new byte[chunkSize];
+
+                    while ((bytesRead = dataStream.Read(buffer, 0, buffer.Length)) > 0)
+                        hasher.TransformBlock(buffer, 0, bytesRead, null, 0);
+                }
+                hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                string result = hasher.Hash!.ToHexString();
+                Assert.Equal(expectedResult, result);
+            }
+        }
+
+        /// <summary>
+        /// Test and demonstrate static hash Compute method, processing 64 KiB of data.
+        /// </summary>
+        [Theory]
+        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
+        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
+        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
+        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
+        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
+        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
+        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
+        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
+        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
+        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
+        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
+        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
+        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
+        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
+        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        public void HashCompute_ByteArray64k(HashType type, string expectedResult)
+        {
+            // create predictable data - this data is always the same fibonacci sequence
+            byte[] data = Shared.CreateData(64 * 1024);
+            byte[] result;
+
+            switch (type)
+            {
+                case HashType.Blake2sp:
+                    result = Blake2sp.Compute(data);
+                    break;
+                case HashType.Blake3:
+                    result = Blake3.Compute(data);
+                    break;
+                case HashType.XXHash32:
+                    result = XXHash32.Compute(data);
+                    break;
+                case HashType.XXHash64:
+                    result = XXHash64.Compute(data);
+                    break;
+                case HashType.MD2:
+                    result = MD2.Compute(data);
+                    break;
+                case HashType.MD4:
+                    result = MD4.Compute(data);
+                    break;
+                case HashType.MD5:
+                    result = MD5.Compute(data);
+                    break;
+                case HashType.SHA1:
+                    result = SHA1.Compute(data);
+                    break;
+                case HashType.SHA2_256:
+                    result = SHA2_256.Compute(data);
+                    break;
+                case HashType.SHA2_384:
+                    result = SHA2_384.Compute(data);
+                    break;
+                case HashType.SHA2_512:
+                    result = SHA2_512.Compute(data);
+                    break;
+                case HashType.SHA3_224:
+                    result = SHA3.Compute(data, 224);
+                    break;
+                case HashType.SHA3_256:
+                    result = SHA3.Compute(data, 256);
+                    break;
+                case HashType.SHA3_384:
+                    result = SHA3.Compute(data, 384);
+                    break;
+                case HashType.SHA3_512:
+                    result = SHA3.Compute(data, 512);
+                    break;
+                default:
+                    throw new ArgumentException("Unsupported hash type", nameof(type));
+            }
+
+            Assert.Equal(expectedResult, result.ToHexString());
+        }
+
+        /// <summary>
+        /// Test and demonstrate static hash Compute method, processing 6 bytes at offset 8.
+        /// </summary>
+        [Theory]
+        [InlineData(HashType.Blake2sp, "bc6c1daaea7a6b0645967b49f5f74c613afd86105188d3837a79d3e62894d447")]
+        [InlineData(HashType.Blake3, "e777710dd2c3181d6ea14e4bda8289bea33278d6be5dd56411998e3614535a9a")]
+        [InlineData(HashType.XXHash32, "5a5b3357")]
+        [InlineData(HashType.XXHash64, "e8cd893b963242a1")]
+        [InlineData(HashType.MD2, "f36164764d36c0404fdbb53640c00254")]
+        [InlineData(HashType.MD4, "41bd3a366e5f3ffaf2d965c5d5407f46")]
+        [InlineData(HashType.MD5, "a86f8e2d2784da236a59ccd6a7e28bde")]
+        [InlineData(HashType.SHA1, "50f054bfebd5efe33ab33558631ea285a0027af1")]
+        [InlineData(HashType.SHA2_256, "26101343ebf799735f3c5a9abe389511e6e9abcc560b1b3c703a47136da15f0a")]
+        [InlineData(HashType.SHA2_384, "535439aaf57a7206371eb128e965f3b85cb06e0fa2d0d56e4bc7173b39aa68baa5a8ac8cc6bf05cd06b6dd0a4cb9f72a")]
+        [InlineData(HashType.SHA2_512, "205e468bf4fed324c4773faffb18f6f04d490c21b9f08fb4903bcca77749ebd42382342e8d5405af51a2084608eddd8920d02b9520864a6949051b9c98462335")]
+        [InlineData(HashType.SHA3_224, "de82002920fe92e8c3fa82d965e3bc936c5f1ea43685f1ffcab0d4b0")]
+        [InlineData(HashType.SHA3_256, "7a989069840e0bca92b03e328d55308fff2269e5428d15fff92e73e2d1ffe103")]
+        [InlineData(HashType.SHA3_384, "82ace2cf1b5ce42e9cbb9183bd4ee38ae988e7623cc6d4cbba79e97666b7296bdfa3e1d793dff63e558d149f28524659")]
+        [InlineData(HashType.SHA3_512, "bce8412610443d3e22aeb3d83c4466052c31c41e99e39f32f78448eb1c0d9cdab9daa47f571cc6bd1f311d01f93bf64dbe177c5cbe95399f43ea0262f595a6b9")]
+        public void HashCompute_ByteArray64k_Offset8_Size6b(HashType type, string expectedResult)
+        {
+            // create predictable data - this data is always the same fibonacci sequence
+            byte[] data = Shared.CreateData(64 * 1024);
+            byte[] result;
+
+            switch (type)
+            {
+                case HashType.Blake2sp:
+                    result = Blake2sp.Compute(data, 8, 6);
+                    break;
+                case HashType.Blake3:
+                    result = Blake3.Compute(data, 8, 6);
+                    break;
+                case HashType.XXHash32:
+                    result = XXHash32.Compute(data, 8, 6);
+                    break;
+                case HashType.XXHash64:
+                    result = XXHash64.Compute(data, 8, 6);
+                    break;
+                case HashType.MD2:
+                    result = MD2.Compute(data, 8, 6);
+                    break;
+                case HashType.MD4:
+                    result = MD4.Compute(data, 8, 6);
+                    break;
+                case HashType.MD5:
+                    result = MD5.Compute(data, 8, 6);
+                    break;
+                case HashType.SHA1:
+                    result = SHA1.Compute(data, 8, 6);
+                    break;
+                case HashType.SHA2_256:
+                    result = SHA2_256.Compute(data, 8, 6);
+                    break;
+                case HashType.SHA2_384:
+                    result = SHA2_384.Compute(data, 8, 6);
+                    break;
+                case HashType.SHA2_512:
+                    result = SHA2_512.Compute(data, 8, 6);
+                    break;
+                case HashType.SHA3_224:
+                    result = SHA3.Compute(data, 8, 6, 224);
+                    break;
+                case HashType.SHA3_256:
+                    result = SHA3.Compute(data, 8, 6, 256);
+                    break;
+                case HashType.SHA3_384:
+                    result = SHA3.Compute(data, 8, 6, 384);
+                    break;
+                case HashType.SHA3_512:
+                    result = SHA3.Compute(data, 8, 6, 512);
+                    break;
+                default:
+                    throw new ArgumentException("Unsupported hash type", nameof(type));
+            }
+
+            Assert.Equal(expectedResult, result.ToHexString());
         }
     }
 }

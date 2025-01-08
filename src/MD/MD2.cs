@@ -1,69 +1,111 @@
+using Nanook.GrindCore;
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace Nanook.GrindCore.MD
+public unsafe class MD2 : HashAlgorithm
 {
-    public class MD2 : HashAlgorithm
+    private const int _hashSizeBytes = 16;
+    private Interop.MD2_CTX _ctx;
+    private HashBuffer _buffer;
+
+    public MD2()
     {
-        private Interop.MD2_CTX ctx;
+        HashSizeValue = _hashSizeBytes << 3; // MD2 produces a 128-bit hash
+        _buffer = new HashBuffer(_hashSizeBytes);
+        Initialize();
+    }
 
-        public MD2()
+    public static byte[] Compute(byte[] data) => Compute(data, 0, data.Length);
+
+    public static byte[] Compute(byte[] data, int offset, int length)
+    {
+        const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+        Interop.MD2_CTX ctx = new Interop.MD2_CTX();
+        HashBuffer buffer = new HashBuffer(_hashSizeBytes);
+        byte[] result = new byte[_hashSizeBytes]; // MD2_DIGEST_LENGTH is 16
+
+        fixed (byte* dataPtr = data)
+        fixed (byte* resultPtr = result)
         {
-            HashSizeValue = 128; // MD2 produces a 128-bit hash
-            Initialize();
-        }
-
-        public static byte[] Compute(byte[] data) => Compute(data, 0, data.Length);
-
-        public static byte[] Compute(byte[] data, int offset, int length)
-        {
-            Interop.MD2_CTX ctx = new Interop.MD2_CTX();
-            byte[] result = new byte[16]; // MD2_DIGEST_LENGTH is 16
-
-            unsafe
+            Interop.MD.SZ_MD2_Init(&ctx);
+            Interop.MD2_CTX* ctxPtr = &ctx;
+            int bytesRead;
+            int remainingSize = length;
+            while (remainingSize > 0)
             {
-                fixed (byte* dataPtr = data)
-                fixed (byte* resultPtr = result)
-                {
-                    Interop.MD.SZ_MD2_Init(ref ctx);
-                    Interop.MD.SZ_MD2_Update(ref ctx, dataPtr + offset, (nuint)length);
-                    Interop.MD.SZ_MD2_Final(resultPtr, ref ctx);
-                }
+                bytesRead = Math.Min(remainingSize, bufferSize);
+                buffer.Process(data, offset, bytesRead, (d, o, s) => bufferProcess(ctxPtr, d, o, s));
+                remainingSize -= bytesRead;
+                offset += bytesRead;
             }
-
-            return result;
+            buffer.Complete((d, o, s) => bufferPadProcess(ctxPtr, d, o, s));
+            Interop.MD.SZ_MD2_Final(resultPtr, &ctx);
         }
 
-        public static new MD2 Create()
-        {
-            return new MD2();
-        }
+        return result;
+    }
 
-        public override void Initialize()
-        {
-            ctx = new Interop.MD2_CTX();
-            Interop.MD.SZ_MD2_Init(ref ctx);
-        }
+    public static new MD2 Create()
+    {
+        return new MD2();
+    }
 
-        protected override void HashCore(byte[] data, int offset, int size)
+    public override void Initialize()
+    {
+        _ctx = new Interop.MD2_CTX();
+        fixed (Interop.MD2_CTX* ctxPtr = &_ctx)
+            Interop.MD.SZ_MD2_Init(ctxPtr);
+    }
+
+    private static void bufferPadProcess(Interop.MD2_CTX* ctx, byte[] data, int offset, int size)
+    {
+        byte paddingValue = (byte)(data.Length - size);
+
+        // Pad the buffer with the padding value
+        for (int i = size; i < data.Length; i++)
+            data[i] = paddingValue;
+
+        bufferProcess(ctx, data, offset, size);
+    }
+
+    private static void bufferProcess(Interop.MD2_CTX* ctx, byte[] data, int offset, int size)
+    {
+        const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+        int bytesRead;
+        int remainingSize = size;
+        fixed (byte* dataPtr = data)
         {
-            unsafe
+            while (remainingSize > 0)
             {
-                fixed (byte* dataPtr = data)
-                    Interop.MD.SZ_MD2_Update(ref ctx, dataPtr + offset, (nuint)size);
+                bytesRead = Math.Min(remainingSize, bufferSize);
+                Interop.MD.SZ_MD2_Update(ctx, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
+                remainingSize -= bytesRead;
             }
         }
+    }
 
-        protected override byte[] HashFinal()
+    protected override void HashCore(byte[] data, int offset, int size)
+    {
+        _buffer.Process(data, offset, size, (d, o, s) =>
         {
-            byte[] result = new byte[16]; // MD2_DIGEST_LENGTH is 16
-            unsafe
-            {
-                fixed (byte* resultPtr = result)
-                    Interop.MD.SZ_MD2_Final(resultPtr, ref ctx);
-            }
-            return result;
-        }
+            fixed (Interop.MD2_CTX* ctxPtr = &_ctx)
+                bufferProcess(ctxPtr, d, o, s);
+        });
+    }
+
+    protected override byte[] HashFinal()
+    {
+        _buffer.Complete((d, o, s) =>
+        {
+            fixed (Interop.MD2_CTX* ctxPtr = &_ctx)
+                bufferPadProcess(ctxPtr, d, o, s);
+        });
+
+        byte[] result = new byte[_hashSizeBytes]; // MD2_DIGEST_LENGTH is 16
+        fixed (byte* resultPtr = result)
+        fixed (Interop.MD2_CTX* ctxPtr = &_ctx)
+            Interop.MD.SZ_MD2_Final(resultPtr, ctxPtr);
+        return result;
     }
 }

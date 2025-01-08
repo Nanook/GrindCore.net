@@ -3,13 +3,14 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-public class MD4 : HashAlgorithm
+public unsafe class MD4 : HashAlgorithm
 {
-    private Interop.MD4_CTX ctx;
+    private const int _hashSizeBytes = 16;
+    private Interop.MD4_CTX _ctx;
 
     public MD4()
     {
-        HashSizeValue = 128; // MD4 produces a 128-bit hash
+        HashSizeValue = _hashSizeBytes << 3; // MD4 produces a 128-bit hash
         Initialize();
     }
 
@@ -17,18 +18,23 @@ public class MD4 : HashAlgorithm
 
     public static byte[] Compute(byte[] data, int offset, int length)
     {
+        const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
         Interop.MD4_CTX ctx = new Interop.MD4_CTX();
-        byte[] result = new byte[16]; // MD5_DIGEST_LENGTH is 16
+        byte[] result = new byte[_hashSizeBytes]; // MD4_DIGEST_LENGTH is 16
 
-        unsafe
+        fixed (byte* dataPtr = data)
+        fixed (byte* resultPtr = result)
         {
-            fixed (byte* dataPtr = data)
-            fixed (byte* resultPtr = result)
+            Interop.MD.SZ_MD4_Init(&ctx);
+            int bytesRead;
+            int remainingSize = length;
+            while (remainingSize > 0)
             {
-                Interop.MD.SZ_MD4_Init(ref ctx);
-                Interop.MD.SZ_MD4_Update(ref ctx, dataPtr + offset, (nuint)length);
-                Interop.MD.SZ_MD4_Final(resultPtr, ref ctx);
+                bytesRead = Math.Min(remainingSize, bufferSize);
+                Interop.MD.SZ_MD4_Update(&ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
+                remainingSize -= bytesRead;
             }
+            Interop.MD.SZ_MD4_Final(resultPtr, &ctx);
         }
 
         return result;
@@ -41,8 +47,9 @@ public class MD4 : HashAlgorithm
 
     public override void Initialize()
     {
-        ctx = new Interop.MD4_CTX();
-        Interop.MD.SZ_MD4_Init(ref ctx);
+        _ctx = new Interop.MD4_CTX();
+        fixed (Interop.MD4_CTX* ctxPtr = &_ctx)
+            Interop.MD.SZ_MD4_Init(ctxPtr);
     }
 
     protected override void HashCore(byte[] data, int offset, int size)
@@ -51,29 +58,25 @@ public class MD4 : HashAlgorithm
 
         int bytesRead;
         int remainingSize = size;
-        unsafe
+        fixed (byte* dataPtr = data)
+        fixed (Interop.MD4_CTX* ctxPtr = &_ctx)
         {
-            fixed (byte* dataPtr = data)
+            while (remainingSize > 0)
             {
-                while (remainingSize > 0)
-                {
-                    bytesRead = Math.Min(remainingSize, bufferSize);
-                    Interop.MD.SZ_MD4_Update(ref ctx, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
-                    remainingSize -= bytesRead;
-                }
+                bytesRead = Math.Min(remainingSize, bufferSize);
+                Interop.MD.SZ_MD4_Update(ctxPtr, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
+                remainingSize -= bytesRead;
             }
         }
     }
 
     protected override byte[] HashFinal()
     {
-        byte[] result = new byte[16]; // MD4_DIGEST_LENGTH is 16
-        unsafe
-        {
-            fixed (byte* resultPtr = result)
-                Interop.MD.SZ_MD4_Final(resultPtr, ref ctx);
-        }
+        byte[] result = new byte[_hashSizeBytes]; // MD4_DIGEST_LENGTH is 16
+        fixed (byte* resultPtr = result)
+        fixed (Interop.MD4_CTX* ctxPtr = &_ctx)
+            Interop.MD.SZ_MD4_Final(resultPtr, ctxPtr);
         return result;
     }
-}
 
+}
