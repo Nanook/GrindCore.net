@@ -26,252 +26,259 @@ jobs:
         run: |
           dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
-      #- name: Build project for all platforms
-      #  run: |
-        #  dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:RuntimeIdentifier=win-x86 -p:RuntimeIdentifiers=win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained true
+      - name: Build project for all platforms
+        run: |
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained false
 
-        # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
-        # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
-        # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
-        # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64 --self-contained false
-        # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64 --self-contained false
-        # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-arm64 --self-contained false
-        # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64 --self-contained false
-        # dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained false
+      - name: Upload Linux ARM64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-arm64-build
+          path: output/linux-arm64/
 
-      # - name: Upload Linux ARM64 build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: linux-arm64-build
-      #     path: output/linux-arm64/
+      - name: Upload Linux ARM build
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-arm-build
+          path: output/linux-arm/
 
-      # - name: Upload Linux ARM build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: linux-arm-build
-      #     path: output/linux-arm/
+      - name: Upload Linux x64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x64-build
+          path: output/linux-x64/
 
-      # - name: Upload Linux x64 build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: linux-x64-build
-      #     path: output/linux-x64/
+      - name: Upload OSX ARM64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: osx-arm64-build
+          path: output/osx-arm64/
 
-      # - name: Upload OSX ARM64 build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: osx-arm64-build
-      #     path: output/osx-arm64/
+      - name: Upload OSX x64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: osx-x64-build
+          path: output/osx-x64/
 
-      # - name: Upload OSX x64 build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: osx-x64-build
-      #     path: output/osx-x64/
+      - name: Upload Windows arm64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: win-arm64-build
+          path: output/win-arm64/
 
-      # - name: Upload Windows arm64 build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: win-arm64-build
-      #     path: output/win-arm64/
+      - name: Upload Windows x64 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: win-x64-build
+          path: output/win-x64/
 
-      # - name: Upload Windows x64 build
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: win-x64-build
-      #     path: output/win-x64/
+      - name: Upload Windows x86 build
+        uses: actions/upload-artifact@v3
+        with:
+          name: win-x86-build
+          path: output/win-x86/
 
-      #- name: Upload Windows x86 build
-      #  uses: actions/upload-artifact@v3
-      #  with:
-      #    name: win-x86-build
-      #    path: output/win-x86/
+  test_linux_arm64:
+    needs: build_all_platforms
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  # test_linux_arm64:
-  #   needs: build_all_platforms
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+      - name: Download Linux ARM64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-arm64-build
+          path: output/linux-arm64/
 
-  #     - name: Download Linux ARM64 build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: linux-arm64-build
-  #         path: output/linux-arm64/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v2
+      - name: Build and run tests for Linux ARM64
+        run: |
+          docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.dotnet9 . --load
+          cd output/linux-arm64/
+          cp runtimes/linux-arm64/native/* .
+          rm -rf runtimes
+          chmod 755 GrindCore.Tests.Runtime
+          ls -al
+          docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 bash -c "/app/GrindCore.Tests.Runtime"
 
-  #     - name: Build and run tests for Linux ARM64
-  #       run: |
-  #         docker buildx build --platform linux/arm64 -t linux-arm64 -f .github/workflows/Dockerfile.dotnet9 . --load
-  #         cd output/linux-arm64/
-  #         cp runtimes/linux-arm64/native/* .
-  #         rm -rf runtimes
-  #         chmod 755 GrindCore.Tests.Runtime
-  #         ls -al
-  #         docker run --rm --platform linux/arm64 -v "$(pwd):/app" linux-arm64 bash -c "/app/GrindCore.Tests.Runtime"
+  test_linux_arm:
+    needs: build_all_platforms
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  # test_linux_arm:
-  #   needs: build_all_platforms
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+      - name: Download Linux ARM build
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-arm-build
+          path: output/linux-arm/
 
-  #     - name: Download Linux ARM build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: linux-arm-build
-  #         path: output/linux-arm/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v2
+      - name: Build and run tests for Linux ARM
+        run: |
+          docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.dotnet9 . --load
+          cd output/linux-arm/
+          cp runtimes/linux-arm/native/* .
+          rm -rf runtimes
+          chmod 755 GrindCore.Tests.Runtime
+          ls -al
+          docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/GrindCore.Tests.Runtime"
 
-  #     - name: Build and run tests for Linux ARM
-  #       run: |
-  #         docker buildx build --platform linux/arm/v7 -t linux-arm -f .github/workflows/Dockerfile.dotnet9 . --load
-  #         cd output/linux-arm/
-  #         cp runtimes/linux-arm/native/* .
-  #         rm -rf runtimes
-  #         chmod 755 GrindCore.Tests.Runtime
-  #         ls -al
-  #         docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" linux-arm bash -c "/app/GrindCore.Tests.Runtime"
-
-  # test_linux_x64:
-  #   needs: build_all_platforms
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Setup .NET
-  #       uses: actions/setup-dotnet@v3
-  #       with:
-  #         dotnet-version: '9.0'
+  test_linux_x64:
+    needs: build_all_platforms
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
           
-  #     - name: Download Linux x64 build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: linux-x64-build
-  #         path: output/linux-x64/
+      - name: Download Linux x64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-x64-build
+          path: output/linux-x64/
 
-  #     - name: Build and run tests for Linux x64
-  #       run: |
-  #         cd output/linux-x64/
-  #         cp runtimes/linux-x64/native/* .
-  #         rm -rf runtimes
-  #         chmod 755 GrindCore.Tests.Runtime
-  #         ls -al
-  #         ./GrindCore.Tests.Runtime
-  #       shell: bash
+      - name: Build and run tests for Linux x64
+        run: |
+          cd output/linux-x64/
+          cp runtimes/linux-x64/native/* .
+          rm -rf runtimes
+          chmod 755 GrindCore.Tests.Runtime
+          ls -al
+          ./GrindCore.Tests.Runtime
+        shell: bash
 
-  # test_osx_arm64:
-  #   needs: build_all_platforms
-  #   runs-on: macos-latest
-  #   steps:
-  #     - name: Setup .NET
-  #       uses: actions/setup-dotnet@v3
-  #       with:
-  #         dotnet-version: '9.0'
+  test_osx_arm64:
+    needs: build_all_platforms
+    runs-on: macos-latest
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0'
           
-  #     - name: Download OSX ARM64 build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: osx-arm64-build
-  #         path: output/osx-arm64/
+      - name: Download OSX ARM64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: osx-arm64-build
+          path: output/osx-arm64/
 
-  #     - name: Build and run tests for OSX ARM64
-  #       run: |
-  #         cd output/osx-arm64/
-  #         cp runtimes/osx-arm64/native/* .
-  #         rm -rf runtimes
-  #         chmod 755 GrindCore.Tests.Runtime
-  #         ls -al
-  #         ./GrindCore.Tests.Runtime
-  #       shell: bash
+      - name: Build and run tests for OSX ARM64
+        run: |
+          cd output/osx-arm64/
+          cp runtimes/osx-arm64/native/* .
+          rm -rf runtimes
+          chmod 755 GrindCore.Tests.Runtime
+          ls -al
+          ./GrindCore.Tests.Runtime
+        shell: bash
 
-  # test_osx_x64:
-  #   needs: build_all_platforms
-  #   runs-on: macos-latest
-  #   steps:
-  #     - name: Install .NET x64 Runtime
-  #       run: |
-  #         wget https://download.visualstudio.microsoft.com/download/pr/1fec6f64-0d7f-4b39-acd1-e9e2701a6b1d/b7b6246d0c20cfe703c6c88ffdbb081e/dotnet-sdk-9.0.101-osx-x64.pkg -O dotnet-sdk-9.0.101-osx-x64.pkg
-  #         sudo installer -pkg dotnet-sdk-9.0.101-osx-x64.pkg -target /
-  #         export DOTNET_ROOT="/usr/local/share/dotnet/x64"
-  #         export PATH="$DOTNET_ROOT:$PATH"
-  #         echo "DOTNET_ROOT=/usr/local/share/dotnet/x64" >> $GITHUB_ENV
-  #         echo "PATH=/usr/local/share/dotnet/x64:$PATH" >> $GITHUB_ENV
+  test_osx_x64:
+    needs: build_all_platforms
+    runs-on: macos-latest
+    steps:
+      - name: Install .NET x64 Runtime
+        run: |
+          wget https://download.visualstudio.microsoft.com/download/pr/1fec6f64-0d7f-4b39-acd1-e9e2701a6b1d/b7b6246d0c20cfe703c6c88ffdbb081e/dotnet-sdk-9.0.101-osx-x64.pkg -O dotnet-sdk-9.0.101-osx-x64.pkg
+          sudo installer -pkg dotnet-sdk-9.0.101-osx-x64.pkg -target /
+          export DOTNET_ROOT="/usr/local/share/dotnet/x64"
+          export PATH="$DOTNET_ROOT:$PATH"
+          echo "DOTNET_ROOT=/usr/local/share/dotnet/x64" >> $GITHUB_ENV
+          echo "PATH=/usr/local/share/dotnet/x64:$PATH" >> $GITHUB_ENV
 
-  #     - name: Download OSX x64 build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: osx-x64-build
-  #         path: output/osx-x64/
+      - name: Download OSX x64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: osx-x64-build
+          path: output/osx-x64/
 
-  #     - name: Build and run tests for OSX x64
-  #       run: |
-  #         cd output/osx-x64/
-  #         cp runtimes/osx-x64/native/* .
-  #         rm -rf runtimes
-  #         chmod 755 GrindCore.Tests.Runtime
-  #         ls -al
-  #         ./GrindCore.Tests.Runtime
-  #       shell: bash
+      - name: Build and run tests for OSX x64
+        run: |
+          cd output/osx-x64/
+          cp runtimes/osx-x64/native/* .
+          rm -rf runtimes
+          chmod 755 GrindCore.Tests.Runtime
+          ls -al
+          ./GrindCore.Tests.Runtime
+        shell: bash
 
-  # test_win_arm64:
-  #   needs: build_all_platforms
-  #   runs-on: windows-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-
-  #     - name: Download Windows ARM64 build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: win-arm64-build
-  #         path: output/win-arm64/
-
-  #     - name: Build and run tests for Windows ARM64
-  #       run: |
-  #         Set-Location -Path output/win-arm64/
-  #         Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
-  #         Remove-Item -Path runtimes -Recurse -Force
-  #         Get-ChildItem
-  #         .\GrindCore.Tests.Runtime.exe
-  #       shell: pwsh
-
-  # test_win_x64:
-  #   needs: build_all_platforms
-  #   runs-on: windows-latest
-  #   steps:
-  #     - name: Download Windows x64 build
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: win-x64-build
-  #         path: output/win-x64/
-
-  #     - name: Build and run tests for Windows x64
-  #       run: |
-  #         Set-Location -Path output/win-x64/
-  #         Copy-Item -Path runtimes/win-x64/native/* -Destination . -Recurse
-  #         Remove-Item -Path runtimes -Recurse -Force
-  #         Get-ChildItem
-  #         .\GrindCore.Tests.Runtime.exe
-  #       shell: pwsh
-
-  test_win_x86:
+  test_win_arm64:
     needs: build_all_platforms
     runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Limited x86 test
+      - name: Download Windows ARM64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: win-arm64-build
+          path: output/win-arm64/
+
+      - name: Build and run tests for Windows ARM64
         run: |
-          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          Set-Location -Path output/win-arm64/
+          Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
+          .\GrindCore.Tests.Runtime.exe
+        shell: pwsh
+
+  test_win_x64:
+    needs: build_all_platforms
+    runs-on: windows-latest
+    steps:
+      - name: Download Windows x64 build
+        uses: actions/download-artifact@v3
+        with:
+          name: win-x64-build
+          path: output/win-x64/
+
+      - name: Build and run tests for Windows x64
+        run: |
+          Set-Location -Path output/win-x64/
+          Copy-Item -Path runtimes/win-x64/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
+          .\GrindCore.Tests.Runtime.exe
+        shell: pwsh
+
+  test_win_x86:
+    needs: build_all_platforms
+    runs-on: windows-latest
+    steps:
+      - name: Download Windows x86 build
+        uses: actions/download-artifact@v3
+        with:
+          name: win-x86-build
+          path: output/win-x86/
+
+      - name: Build and run tests for Windows x86
+        run: |
+          Set-Location -Path output/win-x86/
+          Copy-Item -Path runtimes/win-x86/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
+          .\GrindCore.Tests.Runtime.exe
+        shell: pwsh
+

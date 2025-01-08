@@ -4,10 +4,10 @@ using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.Blake
 {
-    public class Blake3 : HashAlgorithm
+    public unsafe class Blake3 : HashAlgorithm
     {
         private const int _hashSizeBytes = 32;
-        private Interop.Blake3Hasher hasher;
+        private Interop.Blake3Hasher _hasher;
 
         public Blake3()
         {
@@ -19,23 +19,29 @@ namespace Nanook.GrindCore.Blake
 
         public static byte[] Compute(byte[] data, int offset, int length)
         {
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
             Interop.Blake3Hasher hasher = new Interop.Blake3Hasher();
 
             // Initialize hasher
-            Interop.Blake.SZ_blake3_hasher_init(ref hasher);
+            Interop.Blake.SZ_blake3_hasher_init(&hasher);
 
-            // Pin the data array and update hasher
-            unsafe
+            // Pin the data array and update hasher in chunks
+            fixed (byte* dataPtr = data)
             {
-                fixed (byte* dataPtr = data)
+                int bytesRead;
+                int remainingSize = length;
+                while (remainingSize > 0)
                 {
-                    Interop.Blake.SZ_blake3_hasher_update(ref hasher, (IntPtr)(dataPtr + offset), (UIntPtr)length);
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    Interop.Blake.SZ_blake3_hasher_update(&hasher, (IntPtr)(dataPtr + offset + (length - remainingSize)), (UIntPtr)bytesRead);
+                    remainingSize -= bytesRead;
                 }
             }
 
             // Finalize hash
             byte[] result = new byte[_hashSizeBytes]; // Adjust size according to your needs
-            Interop.Blake.SZ_blake3_hasher_finalize(ref hasher, result, (UIntPtr)result.Length);
+            fixed (byte* resultPtr = result)
+                Interop.Blake.SZ_blake3_hasher_finalize(&hasher, resultPtr, (UIntPtr)result.Length);
 
             return result;
         }
@@ -47,18 +53,25 @@ namespace Nanook.GrindCore.Blake
 
         public override void Initialize()
         {
-            hasher = new Interop.Blake3Hasher();
-            Interop.Blake.SZ_blake3_hasher_init(ref hasher);
+            _hasher = new Interop.Blake3Hasher();
+            fixed (Interop.Blake3Hasher* hasherPtr = &_hasher)
+                Interop.Blake.SZ_blake3_hasher_init(hasherPtr);
         }
 
         protected override void HashCore(byte[] data, int offset, int size)
         {
-            // Pin the data array and update hasher
-            unsafe
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+
+            int bytesRead;
+            int remainingSize = size;
+            fixed (byte* dataPtr = data)
+            fixed (Interop.Blake3Hasher* hasherPtr = &_hasher)
             {
-                fixed (byte* dataPtr = data)
+                while (remainingSize > 0)
                 {
-                    Interop.Blake.SZ_blake3_hasher_update(ref hasher, (IntPtr)(dataPtr + offset), (UIntPtr)size);
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    Interop.Blake.SZ_blake3_hasher_update(hasherPtr, (IntPtr)(dataPtr + offset + (size - remainingSize)), (UIntPtr)bytesRead);
+                    remainingSize -= bytesRead;
                 }
             }
         }
@@ -67,7 +80,9 @@ namespace Nanook.GrindCore.Blake
         {
             // Finalize hash
             byte[] result = new byte[_hashSizeBytes]; // Adjust size according to your needs
-            Interop.Blake.SZ_blake3_hasher_finalize(ref hasher, result, (UIntPtr)result.Length);
+            fixed (byte* resultPtr = result)
+            fixed (Interop.Blake3Hasher* hasherPtr = &_hasher)
+                Interop.Blake.SZ_blake3_hasher_finalize(hasherPtr, resultPtr, (UIntPtr)result.Length);
             return result;
         }
     }

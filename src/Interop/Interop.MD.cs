@@ -8,75 +8,59 @@ namespace Nanook.GrindCore
     internal static partial class Interop
     {
         [StructLayout(LayoutKind.Sequential)]
-        public struct MD2_CTX
+        public unsafe struct MD2_CTX
         {
             public ulong len;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            public byte[] data;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            public byte[] checksum;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            public byte[] state;
+            public fixed byte data[16];
+            public fixed byte checksum[16];
+            public fixed byte state[16];
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct MD4_CTX
+        internal unsafe struct MD4_CTX
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
-            public uint[] sz;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-            public uint[] counter;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-            public byte[] save;
+            public fixed uint sz[2];
+            public fixed uint counter[4];
+            public fixed byte save[64];
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct MD5_CTX
+        internal unsafe struct MD5_CTX
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
-            public uint[] sz;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-            public uint[] counter;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-            public byte[] save;
+            public fixed uint sz[2];
+            public fixed uint counter[4];
+            public fixed byte save[64];
         }
 
         internal static unsafe partial class MD
         {
             // Libraries.GrindCoreLib should be defined as a constant string pointing to the name of your native library
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD2_Init(ref MD2_CTX m);
+            public static extern void SZ_MD2_Init(MD2_CTX* m);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD2_Update(ref MD2_CTX m, byte* p, nuint len);
+            public static extern void SZ_MD2_Update(MD2_CTX* m, byte* p, nuint len);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD2_Final(byte* res, ref MD2_CTX m);
+            public static extern void SZ_MD2_Final(byte* res, MD2_CTX* m);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD4_Init(ref MD4_CTX m);
+            public static extern void SZ_MD4_Init(MD4_CTX* m);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD4_Update(ref MD4_CTX m, byte* p, nuint len);
+            public static extern void SZ_MD4_Update(MD4_CTX* m, byte* p, nuint len);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD4_Final(byte* res, ref MD4_CTX m);
+            public static extern void SZ_MD4_Final(byte* res, MD4_CTX* m);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD5_Init(ref MD5_CTX m);
+            public static extern void SZ_MD5_Init(MD5_CTX* m);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD5_Update(ref MD5_CTX m, byte* p, nuint len);
+            public static extern void SZ_MD5_Update(MD5_CTX* m, byte* p, nuint len);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_MD5_Final(byte* res, ref MD5_CTX m);
+            public static extern void SZ_MD5_Final(byte* res, MD5_CTX* m);
         }
     }
 }

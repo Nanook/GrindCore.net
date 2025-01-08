@@ -5,10 +5,10 @@ using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.SHA
 {
-    public class SHA3 : HashAlgorithm
+    public unsafe class SHA3 : HashAlgorithm
     {
         private int _hashSizeBytes;
-        private Interop.SHA3_CTX ctx;
+        private Interop.SHA3_CTX _ctx;
 
         public SHA3(int bitSize)
         {
@@ -24,21 +24,26 @@ namespace Nanook.GrindCore.SHA
 
         public static byte[] Compute(byte[] data, int offset, int length, int bitSize)
         {
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
             if (!(new int[] { 224, 256, 384, 512 }).Contains(bitSize))
                 throw new ArgumentException("Unsupported bit size");
 
             Interop.SHA3_CTX ctx = new Interop.SHA3_CTX();
             byte[] result = new byte[bitSize >> 3];
 
-            unsafe
+            fixed (byte* dataPtr = data)
+            fixed (byte* resultPtr = result)
             {
-                fixed (byte* dataPtr = data)
-                fixed (byte* resultPtr = result)
+                Interop.SHA.SZ_SHA3_Init(&ctx, (uint)bitSize);
+                int bytesRead;
+                int remainingSize = length;
+                while (remainingSize > 0)
                 {
-                    Interop.SHA.SZ_SHA3_Init(ref ctx, (uint)bitSize);
-                    Interop.SHA.SZ_SHA3_Update(ref ctx, dataPtr + offset, (nuint)length);
-                    Interop.SHA.SZ_SHA3_Final(resultPtr, ref ctx);
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    Interop.SHA.SZ_SHA3_Update(&ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
+                    remainingSize -= bytesRead;
                 }
+                Interop.SHA.SZ_SHA3_Final(resultPtr, &ctx);
             }
 
             return result;
@@ -51,27 +56,37 @@ namespace Nanook.GrindCore.SHA
 
         public override void Initialize()
         {
-            ctx = new Interop.SHA3_CTX();
-            Interop.SHA.SZ_SHA3_Init(ref ctx, (uint)this.HashSizeValue);
+            _ctx = new Interop.SHA3_CTX();
+            fixed (Interop.SHA3_CTX* ctxPtr = &_ctx)
+            {
+                Interop.SHA.SZ_SHA3_Init(ctxPtr, (uint)this.HashSizeValue);
+            }
         }
 
         protected override void HashCore(byte[] data, int offset, int size)
         {
-            unsafe
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+
+            int bytesRead;
+            int remainingSize = size;
+            fixed (byte* dataPtr = data)
+            fixed (Interop.SHA3_CTX* ctxPtr = &_ctx)
             {
-                fixed (byte* dataPtr = data)
-                    Interop.SHA.SZ_SHA3_Update(ref ctx, dataPtr + offset, (nuint)size);
+                while (remainingSize > 0)
+                {
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    Interop.SHA.SZ_SHA3_Update(ctxPtr, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
+                    remainingSize -= bytesRead;
+                }
             }
         }
 
         protected override byte[] HashFinal()
         {
             byte[] result = new byte[_hashSizeBytes];
-            unsafe
-            {
-                fixed (byte* resultPtr = result)
-                    Interop.SHA.SZ_SHA3_Final(resultPtr, ref ctx);
-            }
+            fixed (byte* resultPtr = result)
+            fixed (Interop.SHA3_CTX* ctxPtr = &_ctx)
+                Interop.SHA.SZ_SHA3_Final(resultPtr, ctxPtr);
             return result;
         }
     }

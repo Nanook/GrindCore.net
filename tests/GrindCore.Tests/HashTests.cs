@@ -50,7 +50,6 @@ namespace GrindCore.Tests
             }
         }
 
-#if !WIN_X86
         /// <summary>
         /// Test and demonstrate an instance of a hashing algorithm, processing an empty array of data.
         /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
@@ -454,6 +453,5 @@ namespace GrindCore.Tests
 
             Assert.Equal(expectedResult, result.ToHexString());
         }
-#endif
     }
 }

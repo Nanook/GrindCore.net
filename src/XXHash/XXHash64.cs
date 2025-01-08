@@ -5,9 +5,9 @@ using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.XXHash
 {
-    public class XXHash64 : HashAlgorithm
+    public unsafe class XXHash64 : HashAlgorithm
     {
-        private XXH64_CTX ctx;
+        private XXH64_CTX _ctx;
 
         public XXHash64()
         {
@@ -19,35 +19,21 @@ namespace Nanook.GrindCore.XXHash
 
         public static byte[] Compute(byte[] data, int offset, int length)
         {
-            var ctx = new XXH64_CTX();
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+            XXH64_CTX ctx = new XXH64_CTX();
 
-            unsafe
+            fixed (byte* dataPtr = data)
             {
-                fixed (byte* dataPtr = data)
-                {
-                    XXHash.SZ_XXH64_Reset(ref ctx);
-                    XXHash.SZ_XXH64_Update(ref ctx, dataPtr + offset, (nuint)length);
-                    return XXHash.SZ_XXH64_Digest(ref ctx).ToByteArray();
-                }
-            }
-        }
-
-        public static byte[] Compute(Stream stream)
-        {
-            var ctx = new XXH64_CTX();
-            const int bufferSize = 64 * 1024; // 64 KiB buffer
-            byte[] buffer = new byte[bufferSize];
-
-            unsafe
-            {
-                XXHash.SZ_XXH64_Reset(ref ctx);
+                XXHash.SZ_XXH64_Reset(&ctx);
                 int bytesRead;
-                while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+                int remainingSize = length;
+                while (remainingSize > 0)
                 {
-                    fixed (byte* bufferPtr = buffer)
-                        XXHash.SZ_XXH64_Update(ref ctx, bufferPtr, (nuint)bytesRead);
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    XXHash.SZ_XXH64_Update(&ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
+                    remainingSize -= bytesRead;
                 }
-                return XXHash.SZ_XXH64_Digest(ref ctx).ToByteArray();
+                return XXHash.SZ_XXH64_Digest(&ctx).ToByteArray();
             }
         }
 
@@ -58,8 +44,9 @@ namespace Nanook.GrindCore.XXHash
 
         public override void Initialize()
         {
-            ctx = new XXH64_CTX();
-            XXHash.SZ_XXH64_Reset(ref ctx);
+            _ctx = new XXH64_CTX();
+            fixed (XXH64_CTX* ctxPtr = &_ctx)
+                XXHash.SZ_XXH64_Reset(ctxPtr);
         }
 
         protected override void HashCore(byte[] data, int offset, int size)
@@ -68,26 +55,22 @@ namespace Nanook.GrindCore.XXHash
 
             int bytesRead;
             int remainingSize = size;
-            unsafe
+            fixed (byte* dataPtr = data)
+            fixed (XXH64_CTX* ctxPtr = &_ctx)
             {
-                fixed (byte* dataPtr = data)
+                while (remainingSize > 0)
                 {
-                    while (remainingSize > 0)
-                    {
-                        bytesRead = Math.Min(remainingSize, bufferSize);
-                        XXHash.SZ_XXH64_Update(ref ctx, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
-                        remainingSize -= bytesRead;
-                    }
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    XXHash.SZ_XXH64_Update(ctxPtr, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
+                    remainingSize -= bytesRead;
                 }
             }
         }
 
         protected override byte[] HashFinal()
         {
-            unsafe
-            {
-                return XXHash.SZ_XXH64_Digest(ref ctx).ToByteArray();
-            }
+            fixed (XXH64_CTX* ctxPtr = &_ctx)
+                return XXHash.SZ_XXH64_Digest(ctxPtr).ToByteArray();
         }
     }
 }

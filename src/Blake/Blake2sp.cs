@@ -4,10 +4,10 @@ using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.Blake
 {
-    public class Blake2sp : HashAlgorithm
+    public unsafe class Blake2sp : HashAlgorithm
     {
         private const int _hashSizeBytes = 32;
-        private Interop.CBlake2sp state;
+        private Interop.CBlake2sp _state;
 
         public Blake2sp()
         {
@@ -19,29 +19,29 @@ namespace Nanook.GrindCore.Blake
 
         public static byte[] Compute(byte[] data, int offset, int length)
         {
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
             Interop.CBlake2sp state = new Interop.CBlake2sp();
 
             // Initialize state
-            Interop.Blake.SZ_Blake2sp_Init(ref state);
+            Interop.Blake.SZ_Blake2sp_Init(&state);
 
-            // Pin the data array and update state
-            unsafe
+            // Pin the data array and update state in chunks
+            fixed (byte* dataPtr = data)
             {
-                fixed (byte* dataPtr = data)
+                int bytesRead;
+                int remainingSize = length;
+                while (remainingSize > 0)
                 {
-                    Interop.Blake.SZ_Blake2sp_Update(ref state, dataPtr + offset, (ulong)length);
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    Interop.Blake.SZ_Blake2sp_Update(&state, dataPtr + offset + (length - remainingSize), (ulong)bytesRead);
+                    remainingSize -= bytesRead;
                 }
             }
 
             // Finalize hash
             byte[] result = new byte[_hashSizeBytes]; // Blake2sp typically produces a 32-byte (256-bit) hash
-            unsafe
-            {
-                fixed (byte* resultPtr = result)
-                {
-                    Interop.Blake.SZ_Blake2sp_Final(ref state, resultPtr);
-                }
-            }
+            fixed (byte* resultPtr = result)
+                Interop.Blake.SZ_Blake2sp_Final(&state, resultPtr);
 
             return result;
         }
@@ -53,18 +53,25 @@ namespace Nanook.GrindCore.Blake
 
         public override void Initialize()
         {
-            state = new Interop.CBlake2sp();
-            Interop.Blake.SZ_Blake2sp_Init(ref state);
+            _state = new Interop.CBlake2sp();
+            fixed (Interop.CBlake2sp* statePtr = &_state)
+                Interop.Blake.SZ_Blake2sp_Init(statePtr);
         }
 
         protected override void HashCore(byte[] data, int offset, int size)
         {
-            // Pin the data array and update state
-            unsafe
+            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+
+            int bytesRead;
+            int remainingSize = size;
+            fixed (byte* dataPtr = data)
+            fixed (Interop.CBlake2sp* statePtr = &_state)
             {
-                fixed (byte* dataPtr = data)
+                while (remainingSize > 0)
                 {
-                    Interop.Blake.SZ_Blake2sp_Update(ref state, dataPtr + offset, (ulong)size);
+                    bytesRead = Math.Min(remainingSize, bufferSize);
+                    Interop.Blake.SZ_Blake2sp_Update(statePtr, dataPtr + offset + (size - remainingSize), (ulong)bytesRead);
+                    remainingSize -= bytesRead;
                 }
             }
         }
@@ -73,13 +80,9 @@ namespace Nanook.GrindCore.Blake
         {
             // Finalize hash
             byte[] result = new byte[_hashSizeBytes]; // Blake2sp typically produces a 32-byte (256-bit) hash
-            unsafe
-            {
-                fixed (byte* resultPtr = result)
-                {
-                    Interop.Blake.SZ_Blake2sp_Final(ref state, resultPtr);
-                }
-            }
+            fixed (byte* resultPtr = result)
+            fixed (Interop.CBlake2sp* statePtr = &_state)
+                Interop.Blake.SZ_Blake2sp_Final(statePtr, resultPtr);
             return result;
         }
     }
