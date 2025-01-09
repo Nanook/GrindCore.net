@@ -241,7 +241,7 @@ jobs:
           Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
           Remove-Item -Path runtimes -Recurse -Force
           Get-ChildItem
-          docker run --rm --platform windows/arm64 -v "$(System.DefaultWorkingDirectory)/output/win-arm64:/app" mcr.microsoft.com/dotnet/sdk:9.0 pwsh -c "cd /app; ./GrindCore.Tests.Runtime.exe"
+          docker run --rm --platform windows/arm64 -v "${PWD}/output/win-arm64:/app" mcr.microsoft.com/dotnet/sdk:9.0 pwsh -c "/app/GrindCore.Tests.Runtime.exe"
         shell: pwsh
 
   test_win_x64:
