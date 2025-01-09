@@ -233,19 +233,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
-          driver: docker-container
-          platforms: windows/arm64
-  
+          driver: docker
+
       - name: Build and run tests for Windows ARM64
         run: |
           Set-Location -Path output/win-arm64/
           Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
           Remove-Item -Path runtimes -Recurse -Force
           Get-ChildItem
-          docker run --rm --platform windows/arm64 -v "$(System.DefaultWorkingDirectory)/output/win-arm64:/app" mcr.microsoft.com/dotnet/sdk:9.0 pwsh -c "app/GrindCore.Tests.Runtime.exe"
+          docker run --rm --platform windows/arm64 -v "$(System.DefaultWorkingDirectory)/output/win-arm64:/app" mcr.microsoft.com/dotnet/sdk:9.0 pwsh -c "cd /app; ./GrindCore.Tests.Runtime.exe"
         shell: pwsh
 
-  test_win_x64:
+test_win_x64:
     needs: build_all_platforms
     runs-on: windows-latest
     steps:
