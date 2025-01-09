@@ -244,7 +244,7 @@ jobs:
           docker run --rm --platform windows/arm64 -v "$(System.DefaultWorkingDirectory)/output/win-arm64:/app" mcr.microsoft.com/dotnet/sdk:9.0 pwsh -c "cd /app; ./GrindCore.Tests.Runtime.exe"
         shell: pwsh
 
-test_win_x64:
+  test_win_x64:
     needs: build_all_platforms
     runs-on: windows-latest
     steps:
