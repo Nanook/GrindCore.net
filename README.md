@@ -2,6 +2,8 @@
 
 Managed C# dotnet wrapper around the Native GrindCore library - [GrindCore GitHub Repository](https://github.com/Nanook/GrindCore)
 
+Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore)
+
 This library is in the early stages of development. There may be many breaking changes over the following months.
 
 ## Overview
@@ -52,11 +54,11 @@ A comprehensive list of test statuses for various platforms is available below. 
 
 GrindCore integrates robust solutions from several key projects:
 
-- **dotnet Runtime GitHub Repository:**
+- **[dotnet Runtime GitHub Repository](https://github.com/dotnet/runtime):**
   - Provides a foundation with multiplatform C compilation based on CMake and C, ensuring seamless integration across different platforms.
   - Supplies zlib/deflate and Brotli from the dotnet 8 code, combined with C# wrappers, to offer efficient and reliable compression algorithms.
-- **7zip mcmilk GitHub Repository:** Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
-- **SharpCompress GitHub Repository:** Expected to provide managed code to process archives and wrap native compression streams, further enhancing the library's capabilities and user experience.
+- **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):** Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
+- **[SharpCompress GitHub Repository](https://github.com/adamhathcock/sharpcompress):** Expected to provide managed code to process archives and wrap native compression streams, further enhancing the library's capabilities and user experience.
 
 ## Addressing Current Issues
 
