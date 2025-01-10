@@ -22,7 +22,7 @@ namespace GrindCore.Tests
 
         static MemoryLeakTests()
         {
-            _data = Shared.CreateData(64 * 1024);
+            _data = DataStream.Create(64 * 1024);
         }
 
         /// <summary>
@@ -67,23 +67,26 @@ namespace GrindCore.Tests
                 sb.Append($"{(i == 0 ? "" : ",")} {afterGcMemory / 1024} KB");
                 total[i] = afterGcMemory;
                 if (i != 0 && afterGcMemory <= total[i - 1])
+                {
                     success = true;
+                    break;
+                }
             }
             Trace.WriteLine(sb.ToString());
             Assert.True(success);
         }
 
         [DllImport("kernel32.dll")]
-        public static extern void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
+        private static extern void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
 
         [DllImport("kernel32.dll")]
-        public static extern IntPtr GetCurrentProcess();
+        private static extern IntPtr GetCurrentProcess();
 
         [DllImport("psapi.dll", SetLastError = true)]
-        public static extern bool GetProcessMemoryInfo(IntPtr hProcess, out PROCESS_MEMORY_COUNTERS counters, uint size);
+        private static extern bool GetProcessMemoryInfo(IntPtr hProcess, out PROCESS_MEMORY_COUNTERS counters, uint size);
 
         [StructLayout(LayoutKind.Sequential, Size = 72)]
-        public struct PROCESS_MEMORY_COUNTERS
+        private struct PROCESS_MEMORY_COUNTERS
         {
             public uint cb;
             public uint PageFaultCount;
@@ -98,7 +101,7 @@ namespace GrindCore.Tests
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct SYSTEM_INFO
+        private struct SYSTEM_INFO
         {
             public ushort processorArchitecture;
             public ushort reserved;

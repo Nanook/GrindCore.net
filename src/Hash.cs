@@ -1,9 +1,10 @@
 using System;
-using HashAlgorithm=System.Security.Cryptography.HashAlgorithm;
+using HashAlgorithm = System.Security.Cryptography.HashAlgorithm;
 using Nanook.GrindCore.MD;
 using Nanook.GrindCore.SHA;
 using Nanook.GrindCore.Blake;
 using Nanook.GrindCore.XXHash;
+using System.Collections.Generic;
 
 namespace Nanook.GrindCore
 {
@@ -26,45 +27,42 @@ namespace Nanook.GrindCore
         SHA3_512
     }
 
-    public class HashFactory
+
+    public class Hash
     {
+        private static readonly Dictionary<HashType, Func<HashAlgorithm>> hashCreators = new Dictionary<HashType, Func<HashAlgorithm>>()
+        {
+            { HashType.Blake2sp, () => Blake2sp.Create() },
+            { HashType.Blake3, () => Blake3.Create() },
+            { HashType.XXHash32, () => XXHash32.Create() },
+            { HashType.XXHash64, () => XXHash64.Create() },
+            { HashType.MD2, () => MD2.Create() },
+            { HashType.MD4, () => MD4.Create() },
+            { HashType.MD5, () => MD5.Create() },
+            { HashType.SHA1, () => SHA1.Create() },
+            { HashType.SHA2_256, () => SHA2_256.Create() },
+            { HashType.SHA2_384, () => SHA2_384.Create() },
+            { HashType.SHA2_512, () => SHA2_512.Create() },
+            { HashType.SHA3_224, () => SHA3.Create(224) },
+            { HashType.SHA3_256, () => SHA3.Create(256) },
+            { HashType.SHA3_384, () => SHA3.Create(384) },
+            { HashType.SHA3_512, () => SHA3.Create(512) }
+        };
+
         public static HashAlgorithm Create(HashType type)
         {
-            switch (type)
-            {
-                case HashType.Blake2sp:
-                    return Blake2sp.Create();
-                case HashType.Blake3:
-                    return Blake3.Create();
-                case HashType.XXHash32:
-                    return XXHash32.Create();
-                case HashType.XXHash64:
-                    return XXHash64.Create();
-                case HashType.MD2:
-                    return MD2.Create();
-                case HashType.MD4:
-                    return MD4.Create();
-                case HashType.MD5:
-                    return MD5.Create();
-                case HashType.SHA1:
-                    return SHA1.Create();
-                case HashType.SHA2_256:
-                    return SHA2_256.Create();
-                case HashType.SHA2_384:
-                    return SHA2_384.Create();
-                case HashType.SHA2_512:
-                    return SHA2_512.Create();
-                case HashType.SHA3_224:
-                    return SHA3.Create(224);
-                case HashType.SHA3_256:
-                    return SHA3.Create(256);
-                case HashType.SHA3_384:
-                    return SHA3.Create(384);
-                case HashType.SHA3_512:
-                    return SHA3.Create(512);
-                default:
-                    throw new ArgumentException("Unsupported hash type", nameof(type));
-            }
+            if (hashCreators.TryGetValue(type, out var creator))
+                return creator();
+
+            throw new ArgumentException("Unsupported hash type", nameof(type));
+        }
+
+        public static byte[] Compute(HashType type, byte[] data) => Compute(type, data, 0, data.Length);
+
+        public static byte[] Compute(HashType type, byte[] data, int offset, int length)
+        {
+            using (var algorithm = Create(type))
+                return algorithm.ComputeHash(data, offset, length);
         }
     }
 }

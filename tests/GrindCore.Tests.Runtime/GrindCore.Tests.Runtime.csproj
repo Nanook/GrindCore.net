@@ -7,6 +7,8 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<SelfContained>false</SelfContained>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>false</IsTestProject>
 
 		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x64</RuntimeIdentifier>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64' ">x64</PlatformTarget>

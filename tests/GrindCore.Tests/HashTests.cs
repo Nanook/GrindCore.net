@@ -16,6 +16,48 @@ namespace GrindCore.Tests
     /// </summary>
     public sealed class HashTests
     {
+        private static byte[] _dataEmpty;
+        private static byte[] _data64KiB;
+        private static byte[] _dataHalfGiB;
+
+        static HashTests()
+        {
+            _dataEmpty = new byte[0];
+            _data64KiB = DataStream.Create(64 * 1024);
+            _dataHalfGiB = DataStream.Create(512 * 1024 * 1024);
+        }
+
+        /// <summary>
+        /// Test and demonstrate an instance of a hashing algorithm, processing one 512GiB array of data.
+        /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
+        /// </summary>
+        [Theory]
+        [InlineData(HashType.Blake2sp, "f154b8559195aa2ae4bfc8f14468004dbeebcc23090545f75df4534113e914b6")]
+        [InlineData(HashType.Blake3, "c3ccdab391aaf3796448cd33df12b43af77f471c239002110e8b9bbfc2abb6b6")]
+        [InlineData(HashType.XXHash32, "0a0b9340")]
+        [InlineData(HashType.XXHash64, "c668fabe6e6e9235")]
+        [InlineData(HashType.MD2, "67aabd667b657b803e589b6efa881cc3")]
+        [InlineData(HashType.MD4, "931853c4f8f053b80e359e8583d08ab3")]
+        [InlineData(HashType.MD5, "a015668048777f4053294805c7464c1e")]
+        [InlineData(HashType.SHA1, "e94e01a6ac07e0756f725bd990a3ea7255a619ab")]
+        [InlineData(HashType.SHA2_256, "24b2e231ac75592e3398dfb633dec8c5f1f2622e336e002601c5e9ca65292034")]
+        [InlineData(HashType.SHA2_384, "eaef364656be00ee25cc5f9eeb03618c166a18f58d7c3c8c6cc26102333f7ef88f4b5f4a4ca549af75e40366d2b4b1b7")]
+        [InlineData(HashType.SHA2_512, "66d6c86811bd9a97ab5495a7f5567a1cf99d34723f91dfcab3bdebb9bc73d64efac6509df0b20207b1452247d21616a552001de368c4c8a687343698626f0959")]
+        [InlineData(HashType.SHA3_224, "58f0af4fa13505abccb78d813269113bedf549a8b97cda06b2b017b1")]
+        [InlineData(HashType.SHA3_256, "09f4feaae6c05dda1ffb85e3091d2f588d45dfdac8428f91ac62394dcf7c7d24")]
+        [InlineData(HashType.SHA3_384, "453e46e18031b60319e063c4ed6017fbde730a9a3c8b9110e078b3bc62e39644c3996a1dfd50d399583fd2fa40a45257")]
+        [InlineData(HashType.SHA3_512, "ea5e7f94964cd553b88a161316ad7b34c958cb2d3975fdfce3e3c9bafd49803bd09b64c9358b8b63e319768b70ba63e2c03d2d0964c99de49718e887c7ff4dcd")]
+        public void Hash_ByteArray512GiB(HashType type, string expectedResult)
+        {
+            // create the hash using the factory, via switch (not reflection)
+            using (HashAlgorithm algorithm = Hash.Create(type))
+            {
+                // calculate the hash using standard dotnet HashAlgorithm base class functionality
+                string result = algorithm.ComputeHash(_dataHalfGiB).ToHexString();
+                Assert.Equal(expectedResult, result);
+            }
+        }
+
         /// <summary>
         /// Test and demonstrate an instance of a hashing algorithm, processing 64 KiB of data.
         /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
@@ -38,14 +80,11 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
         public void Hash_ByteArray64k(HashType type, string expectedResult)
         {
-            // create predictable data - this data is always the same fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
-
             // create the hash using the factory, via switch (not reflection)
-            using (HashAlgorithm algorithm = HashFactory.Create(type))
+            using (HashAlgorithm algorithm = Hash.Create(type))
             {
                 // calculate the hash using standard dotnet HashAlgorithm base class functionality
-                string result = algorithm.ComputeHash(data).ToHexString();
+                string result = algorithm.ComputeHash(_data64KiB).ToHexString();
                 Assert.Equal(expectedResult, result);
             }
         }
@@ -72,14 +111,11 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, HashConstants.HashResultEmptySHA3_512)]
         public void Hash_ByteArrayEmpty(HashType type, string expectedResult)
         {
-            // empty byte array
-            byte[] data = new byte[0];
-
             // create the hash using the factory, via switch (not reflection)
-            using (HashAlgorithm algorithm = HashFactory.Create(type))
+            using (HashAlgorithm algorithm = Hash.Create(type))
             {
                 // calculate the hash using standard dotnet HashAlgorithm base class functionality
-                string result = algorithm.ComputeHash(data).ToHexString();
+                string result = algorithm.ComputeHash(_dataEmpty).ToHexString();
                 Assert.Equal(expectedResult, result);
             }
         }
@@ -106,18 +142,16 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
         public void Hash_ByteArray64k_Chunk1000b(HashType type, string expectedResult)
         {
-            // create predictable data - this data is always the same fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
             int chunkSize = 1000; // 1000 byte chunk size - breaks 16 byte alignment etc
 
             // create the hash using the factory, via switch (not reflection)
-            using (HashAlgorithm hasher = HashFactory.Create(type))
+            using (HashAlgorithm hasher = Hash.Create(type))
             {
                 int offset = 0;
-                while (offset < data.Length)
+                while (offset < _data64KiB.Length)
                 {
-                    int size = Math.Min(chunkSize, data.Length - offset);
-                    hasher.TransformBlock(data, offset, size, null, 0);
+                    int size = Math.Min(chunkSize, _data64KiB.Length - offset);
+                    hasher.TransformBlock(_data64KiB, offset, size, null, 0);
                     offset += size;
                 }
                 hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
@@ -148,18 +182,16 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
         public void Hash_ByteArray64k_Chunk1b(HashType type, string expectedResult)
         {
-            // create predictable data - this data is always the same fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
             int chunkSize = 1; // 1 byte at a time
 
             // create the hash using the factory, via switch (not reflection)
-            using (HashAlgorithm hasher = HashFactory.Create(type))
+            using (HashAlgorithm hasher = Hash.Create(type))
             {
                 int offset = 0;
-                while (offset < data.Length)
+                while (offset < _data64KiB.Length)
                 {
-                    int size = Math.Min(chunkSize, data.Length - offset);
-                    hasher.TransformBlock(data, offset, size, null, 0);
+                    int size = Math.Min(chunkSize, _data64KiB.Length - offset);
+                    hasher.TransformBlock(_data64KiB, offset, size, null, 0);
                     offset += size;
                 }
                 hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
@@ -190,14 +222,12 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
         public void Hash_Streamed64k_Chunk1000b(HashType type, string expectedResult)
         {
-            // Create predictable data - this data is always the same Fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
             int chunkSize = 1000; // 1000 byte chunk size - breaks 16 byte alignment etc
 
             // Create the hash using the factory, via switch (not reflection)
-            using (HashAlgorithm hasher = HashFactory.Create(type))
+            using (HashAlgorithm hasher = Hash.Create(type))
             {
-                using (Stream dataStream = new MemoryStream(data))
+                using (Stream dataStream = new MemoryStream(_data64KiB))
                 {
                     int bytesRead;
                     byte[] buffer = new byte[chunkSize];
@@ -234,15 +264,12 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
         public void Hash_CryptoStreamed64k(HashType type, string expectedResult)
         {
-            // Create predictable data - this data is always the same Fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
-
             // Create the hash using the factory, via switch (not reflection)
-            using (HashAlgorithm hasher = HashFactory.Create(type))
+            using (HashAlgorithm hasher = Hash.Create(type))
             {
                 using (CryptoStream cryptoStream = new CryptoStream(Stream.Null, hasher, CryptoStreamMode.Write))
                 {
-                    using (Stream dataStream = new MemoryStream(data))
+                    using (Stream dataStream = new MemoryStream(_data64KiB))
                     {
                         dataStream.CopyTo(cryptoStream);
                         cryptoStream.FlushFinalBlock();
@@ -275,14 +302,12 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
         public void Hash_Streamed64k_Chunk1b(HashType type, string expectedResult)
         {
-            // create predictable data - this data is always the same fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
             int chunkSize = 1; // 1 byte at a time
 
             // create the hash using the factory, via switch (not reflection)
-            using (HashAlgorithm hasher = HashFactory.Create(type))
+            using (HashAlgorithm hasher = Hash.Create(type))
             {
-                using (Stream dataStream = new MemoryStream(data))
+                using (Stream dataStream = new MemoryStream(_data64KiB))
                 {
                     int bytesRead;
                     byte[] buffer = new byte[chunkSize];
@@ -317,56 +342,54 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
         public void HashCompute_ByteArray64k(HashType type, string expectedResult)
         {
-            // create predictable data - this data is always the same fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
             byte[] result;
 
             switch (type)
             {
                 case HashType.Blake2sp:
-                    result = Blake2sp.Compute(data);
+                    result = Blake2sp.Compute(_data64KiB);
                     break;
                 case HashType.Blake3:
-                    result = Blake3.Compute(data);
+                    result = Blake3.Compute(_data64KiB);
                     break;
                 case HashType.XXHash32:
-                    result = XXHash32.Compute(data);
+                    result = XXHash32.Compute(_data64KiB);
                     break;
                 case HashType.XXHash64:
-                    result = XXHash64.Compute(data);
+                    result = XXHash64.Compute(_data64KiB);
                     break;
                 case HashType.MD2:
-                    result = MD2.Compute(data);
+                    result = MD2.Compute(_data64KiB);
                     break;
                 case HashType.MD4:
-                    result = MD4.Compute(data);
+                    result = MD4.Compute(_data64KiB);
                     break;
                 case HashType.MD5:
-                    result = MD5.Compute(data);
+                    result = MD5.Compute(_data64KiB);
                     break;
                 case HashType.SHA1:
-                    result = SHA1.Compute(data);
+                    result = SHA1.Compute(_data64KiB);
                     break;
                 case HashType.SHA2_256:
-                    result = SHA2_256.Compute(data);
+                    result = SHA2_256.Compute(_data64KiB);
                     break;
                 case HashType.SHA2_384:
-                    result = SHA2_384.Compute(data);
+                    result = SHA2_384.Compute(_data64KiB);
                     break;
                 case HashType.SHA2_512:
-                    result = SHA2_512.Compute(data);
+                    result = SHA2_512.Compute(_data64KiB);
                     break;
                 case HashType.SHA3_224:
-                    result = SHA3.Compute(data, 224);
+                    result = SHA3.Compute(_data64KiB, 224);
                     break;
                 case HashType.SHA3_256:
-                    result = SHA3.Compute(data, 256);
+                    result = SHA3.Compute(_data64KiB, 256);
                     break;
                 case HashType.SHA3_384:
-                    result = SHA3.Compute(data, 384);
+                    result = SHA3.Compute(_data64KiB, 384);
                     break;
                 case HashType.SHA3_512:
-                    result = SHA3.Compute(data, 512);
+                    result = SHA3.Compute(_data64KiB, 512);
                     break;
                 default:
                     throw new ArgumentException("Unsupported hash type", nameof(type));
@@ -376,7 +399,7 @@ namespace GrindCore.Tests
         }
 
         /// <summary>
-        /// Test and demonstrate static hash Compute method, processing 6 bytes at offset 8.
+        /// Test and demonstrate static hash Compute method, processing a subset of data using the static Compute() method.
         /// </summary>
         [Theory]
         [InlineData(HashType.Blake2sp, "bc6c1daaea7a6b0645967b49f5f74c613afd86105188d3837a79d3e62894d447")]
@@ -394,58 +417,56 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_256, "7a989069840e0bca92b03e328d55308fff2269e5428d15fff92e73e2d1ffe103")]
         [InlineData(HashType.SHA3_384, "82ace2cf1b5ce42e9cbb9183bd4ee38ae988e7623cc6d4cbba79e97666b7296bdfa3e1d793dff63e558d149f28524659")]
         [InlineData(HashType.SHA3_512, "bce8412610443d3e22aeb3d83c4466052c31c41e99e39f32f78448eb1c0d9cdab9daa47f571cc6bd1f311d01f93bf64dbe177c5cbe95399f43ea0262f595a6b9")]
-        public void HashCompute_ByteArray64k_Offset8_Size6b(HashType type, string expectedResult)
+        public void HashCompute_ByteArray64k_StaticSubset(HashType type, string expectedResult)
         {
-            // create predictable data - this data is always the same fibonacci sequence
-            byte[] data = Shared.CreateData(64 * 1024);
             byte[] result;
 
             switch (type)
             {
                 case HashType.Blake2sp:
-                    result = Blake2sp.Compute(data, 8, 6);
+                    result = Blake2sp.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.Blake3:
-                    result = Blake3.Compute(data, 8, 6);
+                    result = Blake3.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.XXHash32:
-                    result = XXHash32.Compute(data, 8, 6);
+                    result = XXHash32.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.XXHash64:
-                    result = XXHash64.Compute(data, 8, 6);
+                    result = XXHash64.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.MD2:
-                    result = MD2.Compute(data, 8, 6);
+                    result = MD2.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.MD4:
-                    result = MD4.Compute(data, 8, 6);
+                    result = MD4.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.MD5:
-                    result = MD5.Compute(data, 8, 6);
+                    result = MD5.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.SHA1:
-                    result = SHA1.Compute(data, 8, 6);
+                    result = SHA1.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.SHA2_256:
-                    result = SHA2_256.Compute(data, 8, 6);
+                    result = SHA2_256.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.SHA2_384:
-                    result = SHA2_384.Compute(data, 8, 6);
+                    result = SHA2_384.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.SHA2_512:
-                    result = SHA2_512.Compute(data, 8, 6);
+                    result = SHA2_512.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.SHA3_224:
-                    result = SHA3.Compute(data, 8, 6, 224);
+                    result = SHA3.Compute(_data64KiB, 8, 6, 224);
                     break;
                 case HashType.SHA3_256:
-                    result = SHA3.Compute(data, 8, 6, 256);
+                    result = SHA3.Compute(_data64KiB, 8, 6, 256);
                     break;
                 case HashType.SHA3_384:
-                    result = SHA3.Compute(data, 8, 6, 384);
+                    result = SHA3.Compute(_data64KiB, 8, 6, 384);
                     break;
                 case HashType.SHA3_512:
-                    result = SHA3.Compute(data, 8, 6, 512);
+                    result = SHA3.Compute(_data64KiB, 8, 6, 512);
                     break;
                 default:
                     throw new ArgumentException("Unsupported hash type", nameof(type));

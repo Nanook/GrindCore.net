@@ -1,8 +1,8 @@
 # GrindCore
 
-Managed C# dotnet wrapper around the Native GrindCore library - [GrindCore GitHub Repository](https://github.com/Nanook/GrindCore)
+A compression and Hashing library built the System.IO.Compression way... A managed dotnet wrapper around a Native library ([GrindCore](https://github.com/Nanook/GrindCore) Native).
 
-Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore)
+Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore) and supports multiple platforms.
 
 This library is in the early stages of development. There may be many breaking changes over the following months.
 
