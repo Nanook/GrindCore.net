@@ -25,7 +25,9 @@ namespace GrindCore.Tests
         {
             _dataEmpty = new byte[0];
             _data64KiB = DataStream.Create(64 * 1024);
+#if WIN_X64
             _dataHalfGiB = DataStream.Create(512 * 1024 * 1024);
+#endif
         }
 
 #if WIN_X64
