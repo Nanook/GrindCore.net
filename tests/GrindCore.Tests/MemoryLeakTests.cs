@@ -9,12 +9,15 @@ using Nanook.GrindCore.SHA;
 using Nanook.GrindCore.XXHash;
 using Xunit;
 using System.Text;
+using GrindCore.Tests.Utility;
 
 #if WIN_X64
 namespace GrindCore.Tests
 {
     /// <summary>
-    /// Example tests to demonstrate usage
+    /// Memory leak tests to try and identify memory leaks. There's probably a much better approach.
+    /// Run something many times, afterwards read the memory usage for the whole process - deduct the total managed heap size.
+    /// Repeat this and if the memory drops exit with success. Run up to 10 times
     /// </summary>
     public sealed class MemoryLeakTests
     {
@@ -22,28 +25,28 @@ namespace GrindCore.Tests
 
         static MemoryLeakTests()
         {
-            _data = DataStream.Create(64 * 1024);
+            _data = TestDataStream.Create(64 * 1024);
         }
 
         /// <summary>
         /// Loop hashes to test for memory leaks.
         /// </summary>
         [Theory]
-        [InlineData(HashType.Blake2sp, HashConstants.HashResult64kBlake2sp)]
-        [InlineData(HashType.Blake3, HashConstants.HashResult64kBlake3)]
-        [InlineData(HashType.XXHash32, HashConstants.HashResult64kXXHash32)]
-        [InlineData(HashType.XXHash64, HashConstants.HashResult64kXXHash64)]
-        [InlineData(HashType.MD2, HashConstants.HashResult64kMD2)]
-        [InlineData(HashType.MD4, HashConstants.HashResult64kMD4)]
-        [InlineData(HashType.MD5, HashConstants.HashResult64kMD5)]
-        [InlineData(HashType.SHA1, HashConstants.HashResult64kSHA1)]
-        [InlineData(HashType.SHA2_256, HashConstants.HashResult64kSHA2_256)]
-        [InlineData(HashType.SHA2_384, HashConstants.HashResult64kSHA2_384)]
-        [InlineData(HashType.SHA2_512, HashConstants.HashResult64kSHA2_512)]
-        [InlineData(HashType.SHA3_224, HashConstants.HashResult64kSHA3_224)]
-        [InlineData(HashType.SHA3_256, HashConstants.HashResult64kSHA3_256)]
-        [InlineData(HashType.SHA3_384, HashConstants.HashResult64kSHA3_384)]
-        [InlineData(HashType.SHA3_512, HashConstants.HashResult64kSHA3_512)]
+        [InlineData(HashType.Blake2sp, DataStreamHashConstants.HashResult64kBlake2sp)]
+        [InlineData(HashType.Blake3, DataStreamHashConstants.HashResult64kBlake3)]
+        [InlineData(HashType.XXHash32, DataStreamHashConstants.HashResult64kXXHash32)]
+        [InlineData(HashType.XXHash64, DataStreamHashConstants.HashResult64kXXHash64)]
+        [InlineData(HashType.MD2, DataStreamHashConstants.HashResult64kMD2)]
+        [InlineData(HashType.MD4, DataStreamHashConstants.HashResult64kMD4)]
+        [InlineData(HashType.MD5, DataStreamHashConstants.HashResult64kMD5)]
+        [InlineData(HashType.SHA1, DataStreamHashConstants.HashResult64kSHA1)]
+        [InlineData(HashType.SHA2_256, DataStreamHashConstants.HashResult64kSHA2_256)]
+        [InlineData(HashType.SHA2_384, DataStreamHashConstants.HashResult64kSHA2_384)]
+        [InlineData(HashType.SHA2_512, DataStreamHashConstants.HashResult64kSHA2_512)]
+        [InlineData(HashType.SHA3_224, DataStreamHashConstants.HashResult64kSHA3_224)]
+        [InlineData(HashType.SHA3_256, DataStreamHashConstants.HashResult64kSHA3_256)]
+        [InlineData(HashType.SHA3_384, DataStreamHashConstants.HashResult64kSHA3_384)]
+        [InlineData(HashType.SHA3_512, DataStreamHashConstants.HashResult64kSHA3_512)]
         public void MemLeak_Hash_ByteArray64k(HashType type, string expectedResult)
         {
             ulong[] total = new ulong[10];
@@ -51,18 +54,57 @@ namespace GrindCore.Tests
             StringBuilder sb = new StringBuilder($"{type}: "); 
             for (int i = 0; i < total.Length; i++)
             {
-                ulong initialMemory = 0;
-                ulong beforeGcMemory = 0;
+                ulong initialMemory = getUnmanagedMemoryUsed();
 
-                MemoryLeakTest tst = new MemoryLeakTest();
+                // Run the hash function 1000 more times
+                for (int c = 0; c < 1000; c++)
+                {
+                    string result = HashFactory.Compute(type, _data).ToHexString();
+                    Assert.Equal(expectedResult, result);
+                }
 
-                initialMemory = GetMemoryUsage();
+                ulong afterGcMemory = getUnmanagedMemoryUsed();
 
-                tst.MemLeak_Hash_ByteArray64k(_data, type, expectedResult, 1000);
+                sb.Append($"{(i == 0 ? "" : ",")} {afterGcMemory / 1024} KB");
+                total[i] = afterGcMemory;
+                if (i != 0 && afterGcMemory <= total[i - 1])
+                {
+                    success = true;
+                    break;
+                }
+            }
+            Trace.WriteLine(sb.ToString());
+            Assert.True(success);
+        }
 
-                beforeGcMemory = GetMemoryUsage();
+        /// <summary>
+        /// Loop byte compression to test for memory leaks.
+        /// </summary>
+        [Theory]
+        [InlineData(CompressionStreamType.Brotli, CompressionLevel.Optimal, 0x19b, "e39f3f4d64825537")]
+        [InlineData(CompressionStreamType.Deflate, CompressionLevel.Optimal, 0x3cd, "eefbb1f99743a612")]
+        [InlineData(CompressionStreamType.GZip, CompressionLevel.Optimal, 0x3df, "acf7f3fdc709207f")]
+        [InlineData(CompressionStreamType.ZLib, CompressionLevel.Optimal, 0x3d3, "d94ee8404fc070f8")]
+        public void MemLeak_CompressionStream_ByteArray64k(CompressionStreamType type, CompressionLevel level, int compressedSize, string xxh64)
+        {
+            ulong[] total = new ulong[10];
+            bool success = false;
+            StringBuilder sb = new StringBuilder($"{type}: ");
+            for (int i = 0; i < total.Length; i++)
+            {
+                ulong initialMemory = getUnmanagedMemoryUsed();
 
-                ulong afterGcMemory = GetMemoryUsage();
+                // Run the hash function 1000 more times
+                for (int c = 0; c < 1000; c++)
+                {
+                    var compressed = CompressionStreamFactory.Compress(type, _data, level);
+                    Assert.Equal(compressedSize, compressed.Length);
+                    Assert.Equal(xxh64, XXHash64.Compute(compressed).ToHexString());
+                    var decompressed = CompressionStreamFactory.Decompress(type, compressed);
+                    Assert.Equal(_data, decompressed);
+                }
+
+                ulong afterGcMemory = getUnmanagedMemoryUsed();
 
                 sb.Append($"{(i == 0 ? "" : ",")} {afterGcMemory / 1024} KB");
                 total[i] = afterGcMemory;
@@ -116,7 +158,7 @@ namespace GrindCore.Tests
             public ushort processorRevision;
         }
 
-        private ulong GetMemoryUsage()
+        private ulong getUnmanagedMemoryUsed()
         {
             // Perform garbage collection
             GC.Collect();
@@ -143,70 +185,6 @@ namespace GrindCore.Tests
             return unmanagedMemory;
         }
 
-    }
-    public sealed class MemoryLeakTest
-    {
-
-        public void MemLeak_Hash_ByteArray64k(byte[] data, HashType type, string expectedResult, int count)
-        {
-            // Run the hash function 1000 more times
-            for (int i = 0; i < count; i++)
-            {
-
-                byte[] result;
-                switch (type)
-                {
-                    case HashType.Blake2sp:
-                        result = Blake2sp.Compute(data);
-                        break;
-                    case HashType.Blake3:
-                        result = Blake3.Compute(data);
-                        break;
-                    case HashType.XXHash32:
-                        result = XXHash32.Compute(data);
-                        break;
-                    case HashType.XXHash64:
-                        result = XXHash64.Compute(data);
-                        break;
-                    case HashType.MD2:
-                        result = MD2.Compute(data);
-                        break;
-                    case HashType.MD4:
-                        result = MD4.Compute(data);
-                        break;
-                    case HashType.MD5:
-                        result = MD5.Compute(data);
-                        break;
-                    case HashType.SHA1:
-                        result = SHA1.Compute(data);
-                        break;
-                    case HashType.SHA2_256:
-                        result = SHA2_256.Compute(data);
-                        break;
-                    case HashType.SHA2_384:
-                        result = SHA2_384.Compute(data);
-                        break;
-                    case HashType.SHA2_512:
-                        result = SHA2_512.Compute(data);
-                        break;
-                    case HashType.SHA3_224:
-                        result = SHA3.Compute(data, 224);
-                        break;
-                    case HashType.SHA3_256:
-                        result = SHA3.Compute(data, 256);
-                        break;
-                    case HashType.SHA3_384:
-                        result = SHA3.Compute(data, 384);
-                        break;
-                    case HashType.SHA3_512:
-                        result = SHA3.Compute(data, 512);
-                        break;
-                    default:
-                        throw new ArgumentException("Unsupported hash type", nameof(type));
-                }
-                Assert.Equal(expectedResult, result.ToHexString());
-            }
-        }
     }
 }
 #endif

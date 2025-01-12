@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GrindCore.Tests
+namespace GrindCore.Tests.Utility
 {
-    internal class DataStream : Stream
+    /// <summary>
+    /// Generates predictable Fibonacci bytes
+    /// </summary>
+    internal class TestDataStream : Stream
     {
         private long _position = 0;
         private byte _prev = 0;
@@ -28,7 +31,7 @@ namespace GrindCore.Tests
         {
             // Initialize a new byte array with the specified size
             byte[] data = new byte[size];
-            using (DataStream ds = new DataStream())
+            using (TestDataStream ds = new TestDataStream())
             {
                 int bufferSize = 64 * 1024; // 64k blocks
                 byte[] buffer = new byte[bufferSize];

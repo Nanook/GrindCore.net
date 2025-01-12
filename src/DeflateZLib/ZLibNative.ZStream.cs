@@ -6,7 +6,7 @@ using System;
 
 namespace Nanook.GrindCore.DeflateZLib
 {
-    public static partial class ZLibNative
+    internal static partial class ZLibNative
     {
         /// <summary>
         /// ZLib stream descriptor data structure

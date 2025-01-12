@@ -112,5 +112,6 @@ namespace Nanook.GrindCore.XXHash
             fixed (XXH64_CTX* ctxPtr = &_ctx)
                 return XXHash.SZ_XXH64_Digest(ctxPtr).ToByteArray();
         }
+
     }
 }

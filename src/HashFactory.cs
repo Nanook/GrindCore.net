@@ -28,7 +28,7 @@ namespace Nanook.GrindCore
     }
 
 
-    public class Hash
+    public class HashFactory
     {
         private static readonly Dictionary<HashType, Func<HashAlgorithm>> hashCreators = new Dictionary<HashType, Func<HashAlgorithm>>()
         {

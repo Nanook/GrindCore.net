@@ -18,9 +18,14 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 
 ### Compression
 
-- ZLib, Deflate
-- Brotli
-- Zip
+- Streams
+  - GZip
+  - ZLib
+  - Deflate
+  - Brotli
+
+- Archives
+  - Zip
 
 ### Hashing
 

@@ -13,7 +13,7 @@ namespace Nanook.GrindCore.DeflateZLib
     ///
     /// See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.
     /// </summary>
-    public static partial class ZLibNative
+    internal static partial class ZLibNative
     {
         // This is the NULL pointer for using with ZLib pointers;
         // we prefer it to IntPtr.Zero to mimic the definition of Z_NULL in zlib.h:
@@ -168,69 +168,6 @@ namespace Nanook.GrindCore.DeflateZLib
 
         public const byte GZip_Header_ID1 = 31;
         public const byte GZip_Header_ID2 = 139;
-
-        public static unsafe int Compress(byte[] dest, int destOffset, int destLen, byte[] source, int sourceOffset, int sourceLen)
-        {
-            fixed (byte* d = dest, s = source)
-            {
-                uint destLen2 = (uint)destLen;
-                int ret = Interop.ZLib.Compress(d + destOffset, ref destLen2, s + sourceOffset, (uint)sourceLen);
-                return (int)destLen2;
-            }
-        }
-
-        public static unsafe int Compress2(byte[] dest, int destOffset, int destLen, byte[] source, int sourceOffset, int sourceLen, int level)
-        {
-            fixed (byte* d = dest, s = source)
-            {
-                uint destLen2 = (uint)destLen;
-                int ret = Interop.ZLib.Compress2(d + destOffset, ref destLen2, s + sourceOffset, (uint)sourceLen, level);
-                return (int)destLen2;
-            }
-        }
-
-        public static unsafe int Compress3(byte[] dest, int destOffset, int destLen, byte[] source, int sourceOffset, int sourceLen, int level, int strategy, bool header)
-        {
-            fixed (byte* d = dest, s = source)
-            {
-                uint destLen2 = (uint)destLen;
-                int ret = Interop.ZLib.Compress3(d + destOffset, ref destLen2, s + sourceOffset, (uint)sourceLen, level, header ? 15 : -15, 9, strategy);
-                return (int)destLen2;
-            }
-        }
-
-        public static unsafe int Uncompress(byte[] dest, int destOffset, int destLen, byte[] source, int sourceOffset, int sourceLen)
-        {
-            fixed (byte* d = dest, s = source)
-            {
-                uint sourceLen2 = (uint)sourceLen;
-                uint destLen2 = (uint)destLen;
-                Interop.ZLib.Uncompress(d + destOffset, ref destLen2, s + sourceOffset, sourceLen2);
-                return (int)destLen2;
-            }
-        }
-
-        public static unsafe int Uncompress2(byte[] dest, int destOffset, int destLen, byte[] source, int sourceOffset, int sourceLen)
-        {
-            fixed (byte* d = dest, s = source)
-            {
-                uint sourceLen2 = (uint)sourceLen;
-                uint destLen2 = (uint)destLen;
-                Interop.ZLib.Uncompress2(d + destOffset, ref destLen2, s + sourceOffset, ref sourceLen2);
-                return (int)destLen2;
-            }
-        }
-
-        public static unsafe int Uncompress3(byte[] dest, int destOffset, int destLen, byte[] source, int sourceOffset, int sourceLen)
-        {
-            fixed (byte* d = dest, s = source)
-            {
-                uint sourceLen2 = (uint)sourceLen;
-                uint destLen2 = (uint)destLen;
-                Interop.ZLib.Uncompress3(d + destOffset, ref destLen2, s + sourceOffset, ref sourceLen2);
-                return (int)destLen2;
-            }
-        }
 
         /**
          * Do not remove the nested typing of types inside of <code>Nanook.GrindCore.ZLibNative</code>.
