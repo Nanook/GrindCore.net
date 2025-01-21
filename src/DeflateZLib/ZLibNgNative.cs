@@ -14,7 +14,7 @@ namespace Nanook.GrindCore.DeflateZLib
     ///
     /// See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.
     /// </summary>
-    internal static partial class ZLibNative
+    internal static partial class ZLibNgNative
     {
 
 
@@ -29,7 +29,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <code>false</code>, which can for instance happen if the underlying ZLib <code>XxxxEnd</code>
         /// routines return an failure error code.
         /// </summary>
-        public sealed class ZLibStreamHandle : SafeHandle
+        public sealed class ZLibNgStreamHandle : SafeHandle
         {
             public enum State { NotInitialized, InitializedForDeflate, InitializedForInflate, Disposed }
 
@@ -38,7 +38,7 @@ namespace Nanook.GrindCore.DeflateZLib
             private volatile State _initializationState;
 
 
-            public ZLibStreamHandle()
+            public ZLibNgStreamHandle()
                 : base(new IntPtr(-1), true)
             {
                 _initializationState = State.NotInitialized;
@@ -93,7 +93,7 @@ namespace Nanook.GrindCore.DeflateZLib
             private void EnsureNotDisposed()
             {
                 if (InitializationState == State.Disposed)
-                    throw new ObjectDisposedException(nameof(ZLibStreamHandle));
+                    throw new ObjectDisposedException(nameof(ZLibNgStreamHandle));
             }
 
             private void EnsureState(State requiredState)
@@ -110,7 +110,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DN8_ZLib_v1_3_1_DeflateInit2_(stream, level, Interop.ZLib.CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                    ErrorCode errC = Interop.ZLib.DN9_ZLibNg_v2_2_1_DeflateInit2_(stream, level, Interop.ZLib.CompressionMethod.Deflated, windowBits, memLevel, strategy);
                     _initializationState = State.InitializedForDeflate;
 
                     return errC;
@@ -125,7 +125,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    return Interop.ZLib.DN8_ZLib_v1_3_1_Deflate(stream, flush);
+                    return Interop.ZLib.DN9_ZLibNg_v2_2_1_Deflate(stream, flush);
                 }
             }
 
@@ -137,7 +137,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DN8_ZLib_v1_3_1_DeflateEnd(stream);
+                    ErrorCode errC = Interop.ZLib.DN9_ZLibNg_v2_2_1_DeflateEnd(stream);
                     _initializationState = State.Disposed;
 
                     return errC;
@@ -152,7 +152,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DN8_ZLib_v1_3_1_InflateInit2_(stream, windowBits);
+                    ErrorCode errC = Interop.ZLib.DN9_ZLibNg_v2_2_1_InflateInit2_(stream, windowBits);
                     _initializationState = State.InitializedForInflate;
 
                     return errC;
@@ -167,7 +167,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    return Interop.ZLib.DN8_ZLib_v1_3_1_Inflate(stream, flush);
+                    return Interop.ZLib.DN9_ZLibNg_v2_2_1_Inflate(stream, flush);
                 }
             }
 
@@ -179,7 +179,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DN8_ZLib_v1_3_1_InflateEnd(stream);
+                    ErrorCode errC = Interop.ZLib.DN9_ZLibNg_v2_2_1_InflateEnd(stream);
                     _initializationState = State.Disposed;
 
                     return errC;
@@ -190,17 +190,17 @@ namespace Nanook.GrindCore.DeflateZLib
             public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
         }
 
-        public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, Interop.ZLib.CompressionLevel level,
+        public static ErrorCode CreateZLibStreamForDeflate(out ZLibNgStreamHandle zLibStreamHandle, Interop.ZLib.CompressionLevel level,
             int windowBits, int memLevel, CompressionStrategy strategy)
         {
-            zLibStreamHandle = new ZLibStreamHandle();
+            zLibStreamHandle = new ZLibNgStreamHandle();
             return zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
         }
 
 
-        public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
+        public static ErrorCode CreateZLibStreamForInflate(out ZLibNgStreamHandle zLibStreamHandle, int windowBits)
         {
-            zLibStreamHandle = new ZLibStreamHandle();
+            zLibStreamHandle = new ZLibNgStreamHandle();
             return zLibStreamHandle.InflateInit2_(windowBits);
         }
 

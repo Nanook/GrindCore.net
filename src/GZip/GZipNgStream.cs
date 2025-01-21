@@ -18,35 +18,35 @@ using Nanook.GrindCore.GZip;
 
 namespace Nanook.GrindCore.GZip
 {
-    public class GZipStream : Stream
+    public class GZipNgStream : Stream
     {
-        private DeflateStream _deflateStream;
+        private DeflateNgStream _DeflateNgStream;
 
-        public GZipStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
+        public GZipNgStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
         {
         }
 
-        public GZipStream(Stream stream, CompressionMode mode, bool leaveOpen)
+        public GZipNgStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
-            _deflateStream = new DeflateStream(stream, mode, leaveOpen, Interop.ZLib.GZip_DefaultWindowBits);
-        }
-
-        // Implies mode = Compress
-        public GZipStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
-        {
+            _DeflateNgStream = new DeflateNgStream(stream, mode, leaveOpen, Interop.ZLib.GZip_DefaultWindowBits);
         }
 
         // Implies mode = Compress
-        public GZipStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
+        public GZipNgStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
         {
-            _deflateStream = new DeflateStream(stream, compressionLevel, leaveOpen, Interop.ZLib.GZip_DefaultWindowBits);
         }
 
-        public override bool CanRead => _deflateStream?.CanRead ?? false;
+        // Implies mode = Compress
+        public GZipNgStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
+        {
+            _DeflateNgStream = new DeflateNgStream(stream, compressionLevel, leaveOpen, Interop.ZLib.GZip_DefaultWindowBits);
+        }
 
-        public override bool CanWrite => _deflateStream?.CanWrite ?? false;
+        public override bool CanRead => _DeflateNgStream?.CanRead ?? false;
 
-        public override bool CanSeek => _deflateStream?.CanSeek ?? false;
+        public override bool CanWrite => _DeflateNgStream?.CanWrite ?? false;
+
+        public override bool CanSeek => _DeflateNgStream?.CanSeek ?? false;
 
         public override long Length
         {
@@ -61,8 +61,8 @@ namespace Nanook.GrindCore.GZip
 
         public override void Flush()
         {
-            CheckDeflateStream();
-            _deflateStream.Flush();
+            CheckDeflateNgStream();
+            _DeflateNgStream.Flush();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -77,20 +77,20 @@ namespace Nanook.GrindCore.GZip
 
         public override int ReadByte()
         {
-            CheckDeflateStream();
-            return _deflateStream.ReadByte();
+            CheckDeflateNgStream();
+            return _DeflateNgStream.ReadByte();
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback!, asyncState!);
 
         public override int EndRead(IAsyncResult asyncResult) =>
-            _deflateStream.EndRead(asyncResult);
+            _DeflateNgStream.EndRead(asyncResult);
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            CheckDeflateStream();
-            return _deflateStream.Read(buffer, offset, count);
+            CheckDeflateNgStream();
+            return _DeflateNgStream.Read(buffer, offset, count);
         }
 
 #if NETFRAMEWORK
@@ -99,17 +99,17 @@ namespace Nanook.GrindCore.GZip
         public override int Read(Span<byte> buffer)
 #endif
         {
-            if (GetType() != typeof(GZipStream))
+            if (GetType() != typeof(GZipNgStream))
             {
-                // GZipStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
+                // GZipNgStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
                 // to this Read(Span<byte>) overload being introduced.  In that case, this Read(Span<byte>) overload
                 // should use the behavior of Read(byte[],int,int) overload.
                 return base.Read(buffer);
             }
             else
             {
-                CheckDeflateStream();
-                return _deflateStream.ReadCore(buffer);
+                CheckDeflateNgStream();
+                return _DeflateNgStream.ReadCore(buffer);
             }
         }
 
@@ -117,30 +117,30 @@ namespace Nanook.GrindCore.GZip
             TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback!, asyncState!);
 
         public override void EndWrite(IAsyncResult asyncResult) =>
-            _deflateStream.EndWrite(asyncResult);
+            _DeflateNgStream.EndWrite(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            CheckDeflateStream();
-            _deflateStream.Write(buffer, offset, count);
+            CheckDeflateNgStream();
+            _DeflateNgStream.Write(buffer, offset, count);
         }
 
         public override void WriteByte(byte value)
         {
-            if (GetType() != typeof(GZipStream))
+            if (GetType() != typeof(GZipNgStream))
             {
-                // GZipStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // GZipNgStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
                 // to this WriteByte override being introduced.  In that case, this WriteByte override
                 // should use the behavior of the Write(byte[],int,int) overload.
                 base.WriteByte(value);
             }
             else
             {
-                CheckDeflateStream();
+                CheckDeflateNgStream();
 #if NET7_0_OR_GREATER
-                _deflateStream.WriteCore(new ReadOnlySpan<byte>(in value));
+                _DeflateNgStream.WriteCore(new ReadOnlySpan<byte>(in value));
 #else
-                _deflateStream.WriteCore(new ReadOnlySpan<byte>(new byte[] { value }));
+                _DeflateNgStream.WriteCore(new ReadOnlySpan<byte>(new byte[] { value }));
 #endif
             }
         }
@@ -151,17 +151,17 @@ namespace Nanook.GrindCore.GZip
         public override void Write(ReadOnlySpan<byte> buffer)
 #endif
         {
-            if (GetType() != typeof(GZipStream))
+            if (GetType() != typeof(GZipNgStream))
             {
-                // GZipStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // GZipNgStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
                 // to this Write(ReadOnlySpan<byte>) overload being introduced.  In that case, this Write(ReadOnlySpan<byte>) overload
                 // should use the behavior of Write(byte[],int,int) overload.
                 base.Write(buffer);
             }
             else
             {
-                CheckDeflateStream();
-                _deflateStream.WriteCore(buffer);
+                CheckDeflateNgStream();
+                _DeflateNgStream.WriteCore(buffer);
             }
         }
 
@@ -171,19 +171,19 @@ namespace Nanook.GrindCore.GZip
         public override void CopyTo(Stream destination, int bufferSize)
 #endif
         {
-            CheckDeflateStream();
-            _deflateStream.CopyTo(destination, bufferSize);
+            CheckDeflateNgStream();
+            _DeflateNgStream.CopyTo(destination, bufferSize);
         }
 
         protected override void Dispose(bool disposing)
         {
             try
             {
-                if (disposing && _deflateStream != null)
+                if (disposing && _DeflateNgStream != null)
                 {
-                    _deflateStream.Dispose();
+                    _DeflateNgStream.Dispose();
                 }
-                _deflateStream = null!;
+                _DeflateNgStream = null!;
             }
             finally
             {
@@ -194,15 +194,15 @@ namespace Nanook.GrindCore.GZip
 #if NETCOREAPP
         public override ValueTask DisposeAsync()
         {
-            if (GetType() != typeof(GZipStream))
+            if (GetType() != typeof(GZipNgStream))
             {
                 return base.DisposeAsync();
             }
 
-            DeflateStream? ds = _deflateStream;
+            DeflateNgStream? ds = _DeflateNgStream;
             if (ds != null)
             {
-                _deflateStream = null!;
+                _DeflateNgStream = null!;
                 return ds.DisposeAsync();
             }
 
@@ -210,12 +210,12 @@ namespace Nanook.GrindCore.GZip
         }
 #endif
 
-        public Stream BaseStream => _deflateStream?.BaseStream!;
+        public Stream BaseStream => _DeflateNgStream?.BaseStream!;
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            CheckDeflateStream();
-            return _deflateStream.ReadAsync(buffer, offset, count, cancellationToken);
+            CheckDeflateNgStream();
+            return _DeflateNgStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
 #if NETFRAMEWORK
@@ -224,24 +224,24 @@ namespace Nanook.GrindCore.GZip
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
 #endif
         {
-            if (GetType() != typeof(GZipStream))
+            if (GetType() != typeof(GZipNgStream))
             {
-                // GZipStream is not sealed, and a derived type may have overridden ReadAsync(byte[], int, int) prior
+                // GZipNgStream is not sealed, and a derived type may have overridden ReadAsync(byte[], int, int) prior
                 // to this ReadAsync(Memory<byte>) overload being introduced.  In that case, this ReadAsync(Memory<byte>) overload
                 // should use the behavior of ReadAsync(byte[],int,int) overload.
                 return base.ReadAsync(buffer, cancellationToken);
             }
             else
             {
-                CheckDeflateStream();
-                return _deflateStream.ReadAsyncMemory(buffer, cancellationToken);
+                CheckDeflateNgStream();
+                return _DeflateNgStream.ReadAsyncMemory(buffer, cancellationToken);
             }
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            CheckDeflateStream();
-            return _deflateStream.WriteAsync(buffer, offset, count, cancellationToken);
+            CheckDeflateNgStream();
+            return _DeflateNgStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
 #if NETFRAMEWORK
@@ -250,36 +250,36 @@ namespace Nanook.GrindCore.GZip
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
 #endif
         {
-            if (GetType() != typeof(GZipStream))
+            if (GetType() != typeof(GZipNgStream))
             {
-                // GZipStream is not sealed, and a derived type may have overridden WriteAsync(byte[], int, int) prior
+                // GZipNgStream is not sealed, and a derived type may have overridden WriteAsync(byte[], int, int) prior
                 // to this WriteAsync(ReadOnlyMemory<byte>) overload being introduced.  In that case, this
                 // WriteAsync(ReadOnlyMemory<byte>) overload should use the behavior of Write(byte[],int,int) overload.
                 return base.WriteAsync(buffer, cancellationToken);
             }
             else
             {
-                CheckDeflateStream();
-                return _deflateStream.WriteAsyncMemory(buffer, cancellationToken);
+                CheckDeflateNgStream();
+                return _DeflateNgStream.WriteAsyncMemory(buffer, cancellationToken);
             }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            CheckDeflateStream();
-            return _deflateStream.FlushAsync(cancellationToken);
+            CheckDeflateNgStream();
+            return _DeflateNgStream.FlushAsync(cancellationToken);
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            CheckDeflateStream();
-            return _deflateStream.CopyToAsync(destination, bufferSize, cancellationToken);
+            CheckDeflateNgStream();
+            return _DeflateNgStream.CopyToAsync(destination, bufferSize, cancellationToken);
         }
 
-        private void CheckDeflateStream()
+        private void CheckDeflateNgStream()
         {
-            if (_deflateStream is null)
-                throw new ObjectDisposedException(nameof(_deflateStream));
+            if (_DeflateNgStream is null)
+                throw new ObjectDisposedException(nameof(_DeflateNgStream));
         }
     }
 }

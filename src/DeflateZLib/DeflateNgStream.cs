@@ -12,38 +12,38 @@ using System;
 
 namespace Nanook.GrindCore.DeflateZLib
 {
-    public partial class DeflateStream : Stream
+    public partial class DeflateNgStream : Stream
     {
         private const int DefaultBufferSize = 8192;
 
         private Stream _stream;
         private CompressionMode _mode;
         private bool _leaveOpen;
-        private Inflater? _inflater;
-        private Deflater? _deflater;
+        private InflaterNg? _inflater;
+        private DeflaterNg? _deflater;
         private byte[]? _buffer;
         private int _activeAsyncOperation; // 1 == true, 0 == false
         private bool _wroteBytes;
 
-        internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, Interop.ZLib.Deflate_DefaultWindowBits, uncompressedSize)
+        internal DeflateNgStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, Interop.ZLib.Deflate_DefaultWindowBits, uncompressedSize)
         {
         }
 
-        public DeflateStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
+        public DeflateNgStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
         {
         }
 
-        public DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen) : this(stream, mode, leaveOpen, Interop.ZLib.Deflate_DefaultWindowBits)
-        {
-        }
-
-        // Implies mode = Compress
-        public DeflateStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
+        public DeflateNgStream(Stream stream, CompressionMode mode, bool leaveOpen) : this(stream, mode, leaveOpen, Interop.ZLib.Deflate_DefaultWindowBits)
         {
         }
 
         // Implies mode = Compress
-        public DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, compressionLevel, leaveOpen, Interop.ZLib.Deflate_DefaultWindowBits)
+        public DeflateNgStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
+        {
+        }
+
+        // Implies mode = Compress
+        public DeflateNgStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, compressionLevel, leaveOpen, Interop.ZLib.Deflate_DefaultWindowBits)
         {
         }
 
@@ -51,7 +51,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
+        internal DeflateNgStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
         {
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
@@ -62,7 +62,7 @@ namespace Nanook.GrindCore.DeflateZLib
                     if (!stream.CanRead)
                         throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-                    _inflater = new Inflater(windowBits, uncompressedSize);
+                    _inflater = new InflaterNg(windowBits, uncompressedSize);
                     _stream = stream;
                     _mode = CompressionMode.Decompress;
                     _leaveOpen = leaveOpen;
@@ -80,7 +80,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Internal constructor to specify the compressionlevel as well as the windowbits
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
+        internal DeflateNgStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
         {
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
@@ -89,7 +89,7 @@ namespace Nanook.GrindCore.DeflateZLib
         }
 
         /// <summary>
-        /// Sets up this DeflateStream to be used for Zlib Deflation/Compression
+        /// Sets up this DeflateNgStream to be used for Zlib Deflation/Compression
         /// </summary>
         [MemberNotNull(nameof(_stream))]
         internal void InitializeDeflater(Stream stream, bool leaveOpen, int windowBits, CompressionLevel compressionLevel)
@@ -98,7 +98,7 @@ namespace Nanook.GrindCore.DeflateZLib
             if (!stream!.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
-            _deflater = new Deflater(compressionLevel, windowBits);
+            _deflater = new DeflaterNg(compressionLevel, windowBits);
 
             _stream = stream;
             _mode = CompressionMode.Compress;
@@ -249,9 +249,9 @@ namespace Nanook.GrindCore.DeflateZLib
         public override int Read(Span<byte> buffer)
 #endif
         {
-            if (GetType() != typeof(DeflateStream))
+            if (GetType() != typeof(DeflateNgStream))
             {
-                // DeflateStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
+                // DeflateNgStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
                 // to this Read(Span<byte>) overload being introduced.  In that case, this Read(Span<byte>) overload
                 // should use the behavior of Read(byte[],int,int) overload.
                 return base.Read(buffer);
@@ -326,7 +326,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
         private bool InflatorIsFinished =>
             // If the stream is finished then we have a few potential cases here:
-            // 1. DeflateStream => return
+            // 1. DeflateNgStream => return
             // 2. GZipStream that is finished but may have an additional GZipStream appended => feed more input
             // 3. GZipStream that is finished and appended with garbage => return
             _inflater!.Finished() &&
@@ -341,18 +341,18 @@ namespace Nanook.GrindCore.DeflateZLib
         private void EnsureDecompressionMode()
         {
             if (_mode != CompressionMode.Decompress)
-                ThrowCannotReadFromDeflateStreamException();
+                ThrowCannotReadFromDeflateNgStreamException();
 
-            static void ThrowCannotReadFromDeflateStreamException() =>
+            static void ThrowCannotReadFromDeflateNgStreamException() =>
                 throw new InvalidOperationException(SR.CannotReadFromDeflateStream);
         }
 
         private void EnsureCompressionMode()
         {
             if (_mode != CompressionMode.Compress)
-                ThrowCannotWriteToDeflateStreamException();
+                ThrowCannotWriteToDeflateNgStreamException();
 
-            static void ThrowCannotWriteToDeflateStreamException() =>
+            static void ThrowCannotWriteToDeflateNgStreamException() =>
                 throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }
 
@@ -386,9 +386,9 @@ namespace Nanook.GrindCore.DeflateZLib
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
 #endif
         {
-            if (GetType() != typeof(DeflateStream))
+            if (GetType() != typeof(DeflateNgStream))
             {
-                // Ensure that existing streams derived from DeflateStream and that override ReadAsync(byte[],...)
+                // Ensure that existing streams derived from DeflateNgStream and that override ReadAsync(byte[],...)
                 // get their existing behaviors when the newer Memory-based overload is used.
                 return base.ReadAsync(buffer, cancellationToken);
             }
@@ -491,9 +491,9 @@ namespace Nanook.GrindCore.DeflateZLib
 
         public override void WriteByte(byte value)
         {
-            if (GetType() != typeof(DeflateStream))
+            if (GetType() != typeof(DeflateNgStream))
             {
-                // DeflateStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // DeflateNgStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
                 // to this WriteByte override being introduced.  In that case, this WriteByte override
                 // should use the behavior of the Write(byte[],int,int) overload.
                 base.WriteByte(value);
@@ -514,9 +514,9 @@ namespace Nanook.GrindCore.DeflateZLib
         public override void Write(ReadOnlySpan<byte> buffer)
 #endif
         {
-            if (GetType() != typeof(DeflateStream))
+            if (GetType() != typeof(DeflateNgStream))
             {
-                // DeflateStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // DeflateNgStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
                 // to this Write(ReadOnlySpan<byte>) overload being introduced.  In that case, this Write(ReadOnlySpan<byte>) overload
                 // should use the behavior of Write(byte[],int,int) overload.
                 base.Write(buffer);
@@ -625,7 +625,7 @@ namespace Nanook.GrindCore.DeflateZLib
             else
             {
                 // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
+                // the object get disposed because eventually ZLibNgNative.ReleaseHandle will get called during
                 // the dispose operation and although it frees the stream but it return error code because the
                 // stream state was still marked as in use. The symptoms of this problem will not be seen except
                 // if running any diagnostic tools which check for disposing safe handle objects
@@ -672,7 +672,7 @@ namespace Nanook.GrindCore.DeflateZLib
             else
             {
                 // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
+                // the object get disposed because eventually ZLibNgNative.ReleaseHandle will get called during
                 // the dispose operation and although it frees the stream, it returns an error code because the
                 // stream state was still marked as in use. The symptoms of this problem will not be seen except
                 // if running any diagnostic tools which check for disposing safe handle objects.
@@ -733,7 +733,7 @@ namespace Nanook.GrindCore.DeflateZLib
 #if NETCOREAPP
         public override ValueTask DisposeAsync()
         {
-            return GetType() == typeof(DeflateStream) ?
+            return GetType() == typeof(DeflateNgStream) ?
                 Core() :
                 base.DisposeAsync();
 
@@ -833,9 +833,9 @@ namespace Nanook.GrindCore.DeflateZLib
 #if NETFRAMEWORK
         public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (GetType() != typeof(DeflateStream))
+            if (GetType() != typeof(DeflateNgStream))
             {
-                // Ensure that existing streams derived from DeflateStream and that override WriteAsync(byte[],...)
+                // Ensure that existing streams derived from DeflateNgStream and that override WriteAsync(byte[],...)
                 // get their existing behaviors when the newer Memory-based overload is used.
                 return new ValueTask(base.WriteAsync(buffer.ToArray(), 0, buffer.Length, cancellationToken));
             }
@@ -847,9 +847,9 @@ namespace Nanook.GrindCore.DeflateZLib
 #else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (GetType() != typeof(DeflateStream))
+            if (GetType() != typeof(DeflateNgStream))
             {
-                // Ensure that existing streams derived from DeflateStream and that override WriteAsync(byte[],...)
+                // Ensure that existing streams derived from DeflateNgStream and that override WriteAsync(byte[],...)
                 // get their existing behaviors when the newer Memory-based overload is used.
                 return base.WriteAsync(buffer, cancellationToken);
             }
@@ -950,23 +950,23 @@ namespace Nanook.GrindCore.DeflateZLib
 
         private sealed class CopyToStream : Stream
         {
-            private readonly DeflateStream _deflateStream;
+            private readonly DeflateNgStream _DeflateNgStream;
             private readonly Stream _destination;
             private readonly CancellationToken _cancellationToken;
             private byte[] _arrayPoolBuffer;
 
-            public CopyToStream(DeflateStream deflateStream, Stream destination, int bufferSize) :
-                this(deflateStream, destination, bufferSize, CancellationToken.None)
+            public CopyToStream(DeflateNgStream DeflateNgStream, Stream destination, int bufferSize) :
+                this(DeflateNgStream, destination, bufferSize, CancellationToken.None)
             {
             }
 
-            public CopyToStream(DeflateStream deflateStream, Stream destination, int bufferSize, CancellationToken cancellationToken)
+            public CopyToStream(DeflateNgStream DeflateNgStream, Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                Debug.Assert(deflateStream != null);
+                Debug.Assert(DeflateNgStream != null);
                 Debug.Assert(destination != null);
                 Debug.Assert(bufferSize > 0);
 
-                _deflateStream = deflateStream!;
+                _DeflateNgStream = DeflateNgStream!;
                 _destination = destination!;
                 _cancellationToken = cancellationToken;
                 _arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
@@ -974,14 +974,14 @@ namespace Nanook.GrindCore.DeflateZLib
 
             public async Task CopyFromSourceToDestinationAsync()
             {
-                _deflateStream.AsyncOperationStarting();
+                _DeflateNgStream.AsyncOperationStarting();
                 try
                 {
-                    Debug.Assert(_deflateStream._inflater != null);
+                    Debug.Assert(_DeflateNgStream._inflater != null);
                     // Flush any existing data in the inflater to the destination stream.
-                    while (!_deflateStream._inflater!.Finished())
+                    while (!_DeflateNgStream._inflater!.Finished())
                     {
-                        int bytesRead = _deflateStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
+                        int bytesRead = _DeflateNgStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
                         if (bytesRead > 0)
                         {
 #if NETFRAMEWORK
@@ -990,7 +990,7 @@ namespace Nanook.GrindCore.DeflateZLib
                             await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), _cancellationToken).ConfigureAwait(false);
 #endif
                         }
-                        else if (_deflateStream._inflater.NeedsInput())
+                        else if (_DeflateNgStream._inflater.NeedsInput())
                         {
                             // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
                             break;
@@ -998,15 +998,15 @@ namespace Nanook.GrindCore.DeflateZLib
                     }
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
-                    await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
-                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
+                    await _DeflateNgStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
+                    if (s_useStrictValidation && !_DeflateNgStream._inflater.Finished())
                     {
                         ThrowTruncatedInvalidData();
                     }
                 }
                 finally
                 {
-                    _deflateStream.AsyncOperationCompleting();
+                    _DeflateNgStream.AsyncOperationCompleting();
 
                     ArrayPool<byte>.Shared.Return(_arrayPoolBuffer);
                     _arrayPoolBuffer = null!;
@@ -1017,16 +1017,16 @@ namespace Nanook.GrindCore.DeflateZLib
             {
                 try
                 {
-                    Debug.Assert(_deflateStream._inflater != null);
+                    Debug.Assert(_DeflateNgStream._inflater != null);
                     // Flush any existing data in the inflater to the destination stream.
-                    while (!_deflateStream._inflater!.Finished())
+                    while (!_DeflateNgStream._inflater!.Finished())
                     {
-                        int bytesRead = _deflateStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
+                        int bytesRead = _DeflateNgStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
                         if (bytesRead > 0)
                         {
                             _destination.Write(_arrayPoolBuffer, 0, bytesRead);
                         }
-                        else if (_deflateStream._inflater.NeedsInput())
+                        else if (_DeflateNgStream._inflater.NeedsInput())
                         {
                             // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
                             break;
@@ -1034,8 +1034,8 @@ namespace Nanook.GrindCore.DeflateZLib
                     }
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
-                    _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
-                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
+                    _DeflateNgStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
+                    if (s_useStrictValidation && !_DeflateNgStream._inflater.Finished())
                     {
                         ThrowTruncatedInvalidData();
                     }
@@ -1050,7 +1050,7 @@ namespace Nanook.GrindCore.DeflateZLib
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 Debug.Assert(buffer != _arrayPoolBuffer);
-                _deflateStream.EnsureNotDisposed();
+                _DeflateNgStream.EnsureNotDisposed();
                 if (count <= 0)
                 {
                     return Task.CompletedTask;
@@ -1071,22 +1071,22 @@ namespace Nanook.GrindCore.DeflateZLib
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
 #endif
             {
-                _deflateStream.EnsureNotDisposed();
+                _DeflateNgStream.EnsureNotDisposed();
 
                 return WriteAsyncCore(buffer, cancellationToken);
             }
 
             private async ValueTask WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                Debug.Assert(_deflateStream._inflater is not null);
+                Debug.Assert(_DeflateNgStream._inflater is not null);
 
                 // Feed the data from base stream into decompression engine.
-                _deflateStream._inflater!.SetInput(buffer);
+                _DeflateNgStream._inflater!.SetInput(buffer);
 
                 // While there's more decompressed data available, forward it to the buffer stream.
-                while (!_deflateStream._inflater.Finished())
+                while (!_DeflateNgStream._inflater.Finished())
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                    int bytesRead = _DeflateNgStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
                     if (bytesRead > 0)
                     {
 #if NETFRAMEWORK
@@ -1095,7 +1095,7 @@ namespace Nanook.GrindCore.DeflateZLib
                         await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
 #endif
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
+                    else if (_DeflateNgStream._inflater.NeedsInput())
                     {
                         // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
                         break;
@@ -1106,7 +1106,7 @@ namespace Nanook.GrindCore.DeflateZLib
             public override void Write(byte[] buffer, int offset, int count)
             {
                 Debug.Assert(buffer != _arrayPoolBuffer);
-                _deflateStream.EnsureNotDisposed();
+                _DeflateNgStream.EnsureNotDisposed();
 
                 if (count <= 0)
                 {
@@ -1119,19 +1119,19 @@ namespace Nanook.GrindCore.DeflateZLib
                     throw new InvalidDataException(SR.GenericInvalidData);
                 }
 
-                Debug.Assert(_deflateStream._inflater != null);
+                Debug.Assert(_DeflateNgStream._inflater != null);
                 // Feed the data from base stream into the decompression engine.
-                _deflateStream._inflater!.SetInput(buffer, offset, count);
+                _DeflateNgStream._inflater!.SetInput(buffer, offset, count);
 
                 // While there's more decompressed data available, forward it to the buffer stream.
-                while (!_deflateStream._inflater.Finished())
+                while (!_DeflateNgStream._inflater.Finished())
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                    int bytesRead = _DeflateNgStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
                     if (bytesRead > 0)
                     {
                         _destination.Write(_arrayPoolBuffer, 0, bytesRead);
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
+                    else if (_DeflateNgStream._inflater.NeedsInput())
                     {
                         // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
                         break;

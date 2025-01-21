@@ -17,7 +17,7 @@ namespace Nanook.GrindCore.DeflateZLib
     /// <summary>
     /// Provides a wrapper around the ZLib decompression API.
     /// </summary>
-    internal sealed class Inflater : IDisposable
+    internal sealed class InflaterNg : IDisposable
     {
         private const int MinWindowBits = -15;              // WindowBits must be between -8..-15 to ignore the header, 8..15 for
         private const int MaxWindowBits = 47;               // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
@@ -26,7 +26,7 @@ namespace Nanook.GrindCore.DeflateZLib
         private bool _finished;                             // Whether the end of the stream has been reached
         private bool _isDisposed;                           // Prevents multiple disposals
         private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
-        private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
+        private ZLibNgNative.ZLibNgStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
         private MemoryHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
@@ -36,7 +36,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
         /// </summary>
-        internal Inflater(int windowBits, long uncompressedSize = -1)
+        internal InflaterNg(int windowBits, long uncompressedSize = -1)
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
             _finished = false;
@@ -233,7 +233,7 @@ namespace Nanook.GrindCore.DeflateZLib
             GC.SuppressFinalize(this);
         }
 
-        ~Inflater()
+        ~InflaterNg()
         {
             Dispose(false);
         }
@@ -247,7 +247,7 @@ namespace Nanook.GrindCore.DeflateZLib
             ZErrorCode error;
             try
             {
-                error = ZLibNative.CreateZLibStreamForInflate(out _zlibStream, windowBits);
+                error = ZLibNgNative.CreateZLibStreamForInflate(out _zlibStream, windowBits);
             }
             catch (Exception exception) // could not load the ZLib dll
             {

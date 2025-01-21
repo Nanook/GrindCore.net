@@ -11,7 +11,7 @@ using Nanook.GrindCore.DeflateZLib;
 namespace Nanook.GrindCore.ZLib
 {
     /// <summary>Provides methods and properties used to compress and decompress streams by using the zlib data format specification.</summary>
-    public sealed class ZLibStream : Stream
+    public sealed class ZLibNgStream : Stream
     {
         /// <summary>The underlying deflate stream.</summary>
         private DeflateStream _deflateStream;
@@ -19,7 +19,7 @@ namespace Nanook.GrindCore.ZLib
         /// <summary>Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream and compression mode.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        public ZLibStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
+        public ZLibNgStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
         {
         }
 
@@ -27,7 +27,7 @@ namespace Nanook.GrindCore.ZLib
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <see langword="false" />.</param>
-        public ZLibStream(Stream stream, CompressionMode mode, bool leaveOpen)
+        public ZLibNgStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
             _deflateStream = new DeflateStream(stream, mode, leaveOpen, Interop.ZLib.ZLib_DefaultWindowBits);
         }
@@ -35,7 +35,7 @@ namespace Nanook.GrindCore.ZLib
         /// <summary>Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream and compression level.</summary>
         /// <param name="stream">The stream to which compressed data is written.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
-        public ZLibStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
+        public ZLibNgStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
         {
         }
 
@@ -43,7 +43,7 @@ namespace Nanook.GrindCore.ZLib
         /// <param name="stream">The stream to which compressed data is written.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <see langword="false" />.</param>
-        public ZLibStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
+        public ZLibNgStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
         {
             _deflateStream = new DeflateStream(stream, compressionLevel, leaveOpen, Interop.ZLib.ZLib_DefaultWindowBits);
         }

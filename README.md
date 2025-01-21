@@ -21,6 +21,7 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 - Streams
   - GZip
   - ZLib
+  - ZLib-NG
   - Deflate
   - Brotli
 

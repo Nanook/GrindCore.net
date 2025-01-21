@@ -14,9 +14,9 @@ namespace Nanook.GrindCore.DeflateZLib
     /// <summary>
     /// Provides a wrapper around the ZLib compression API.
     /// </summary>
-    internal sealed class Deflater : IDisposable
+    internal sealed class DeflaterNg : IDisposable
     {
-        private readonly ZLibNative.ZLibStreamHandle _zlibStream;
+        private readonly ZLibNgNative.ZLibNgStreamHandle _zlibStream;
         private MemoryHandle _inputBufferHandle;
         private bool _isDisposed;
         private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
@@ -29,7 +29,7 @@ namespace Nanook.GrindCore.DeflateZLib
         // on the stream explicitly.
         private object SyncLock => this;
 
-        internal Deflater(CompressionLevel compressionLevel, int windowBits)
+        internal DeflaterNg(CompressionLevel compressionLevel, int windowBits)
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
             Interop.ZLib.CompressionLevel zlibCompressionLevel;
@@ -37,7 +37,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
             switch (compressionLevel)
             {
-                // See the note in ZLibNative.CompressionLevel for the recommended combinations.
+                // See the note in ZLibNgNative.CompressionLevel for the recommended combinations.
 
                 case CompressionLevel.Optimal:
                     zlibCompressionLevel = Interop.ZLib.CompressionLevel.DefaultCompression;
@@ -68,7 +68,7 @@ namespace Nanook.GrindCore.DeflateZLib
             ZErrorCode errC;
             try
             {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, zlibCompressionLevel,
+                errC = ZLibNgNative.CreateZLibStreamForDeflate(out _zlibStream, zlibCompressionLevel,
                                                              windowBits, memLevel, strategy);
             }
             catch (Exception cause)
@@ -95,7 +95,7 @@ namespace Nanook.GrindCore.DeflateZLib
             }
         }
 
-        ~Deflater()
+        ~DeflaterNg()
         {
             Dispose(false);
         }

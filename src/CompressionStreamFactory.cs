@@ -14,6 +14,9 @@ namespace Nanook.GrindCore
         GZip,
         ZLib,
         Deflate,
+        GZipNg,
+        ZLibNg,
+        DeflateNg,
         Brotli
     }
 
@@ -21,9 +24,16 @@ namespace Nanook.GrindCore
     {
         private static readonly Dictionary<CompressionStreamType, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>> streamCreators = new Dictionary<CompressionStreamType, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>>()
         {
+            //{ CompressionStreamType.GZip, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new System.IO.Compression.GZipStream(stream, (System.IO.Compression.CompressionLevel)level, leaveOpen) : new System.IO.Compression.GZipStream(stream, (System.IO.Compression.CompressionMode)mode, leaveOpen) },
+            //{ CompressionStreamType.ZLib, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new System.IO.Compression.ZLibStream(stream, (System.IO.Compression.CompressionLevel)level, leaveOpen) : new System.IO.Compression.ZLibStream(stream, (System.IO.Compression.CompressionMode)mode, leaveOpen) },
+            //{ CompressionStreamType.Deflate, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new System.IO.Compression.DeflateStream(stream, (System.IO.Compression.CompressionLevel)level, leaveOpen) : new System.IO.Compression.DeflateStream(stream, (System.IO.Compression.CompressionMode)mode, leaveOpen) },
+            //{ CompressionStreamType.Brotli, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new System.IO.Compression.BrotliStream(stream, (System.IO.Compression.CompressionLevel)level, leaveOpen) : new System.IO.Compression.BrotliStream(stream, (System.IO.Compression.CompressionMode)mode, leaveOpen) }
             { CompressionStreamType.GZip, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new GZipStream(stream, level, leaveOpen) : new GZipStream(stream, mode, leaveOpen) },
             { CompressionStreamType.ZLib, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new ZLibStream(stream, level, leaveOpen) : new ZLibStream(stream, mode, leaveOpen) },
             { CompressionStreamType.Deflate, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new DeflateStream(stream, level, leaveOpen) : new DeflateStream(stream, mode, leaveOpen) },
+            { CompressionStreamType.GZipNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new GZipNgStream(stream, level, leaveOpen) : new GZipNgStream(stream, mode, leaveOpen) },
+            { CompressionStreamType.ZLibNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new ZLibNgStream(stream, level, leaveOpen) : new ZLibNgStream(stream, mode, leaveOpen) },
+            { CompressionStreamType.DeflateNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new DeflateNgStream(stream, level, leaveOpen) : new DeflateNgStream(stream, mode, leaveOpen) },
             { CompressionStreamType.Brotli, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new BrotliStream(stream, level, leaveOpen) : new BrotliStream(stream, mode, leaveOpen) }
         };
 

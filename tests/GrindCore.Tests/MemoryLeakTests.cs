@@ -82,9 +82,9 @@ namespace GrindCore.Tests
         /// </summary>
         [Theory]
         [InlineData(CompressionStreamType.Brotli, CompressionLevel.Optimal, 0x19b, "e39f3f4d64825537")]
-        [InlineData(CompressionStreamType.Deflate, CompressionLevel.Optimal, 0x3cd, "eefbb1f99743a612")]
-        [InlineData(CompressionStreamType.GZip, CompressionLevel.Optimal, 0x3df, "acf7f3fdc709207f")]
-        [InlineData(CompressionStreamType.ZLib, CompressionLevel.Optimal, 0x3d3, "d94ee8404fc070f8")]
+        [InlineData(CompressionStreamType.Deflate, CompressionLevel.Optimal, 0x2ff, "fd1a57a63d29c607")]
+        [InlineData(CompressionStreamType.GZip, CompressionLevel.Optimal, 0x311, "dd79ecbbf6270f98")]
+        [InlineData(CompressionStreamType.ZLib, CompressionLevel.Optimal, 0x305, "a3c36ab37f8f236d")]
         public void MemLeak_CompressionStream_ByteArray64k(CompressionStreamType type, CompressionLevel level, int compressedSize, string xxh64)
         {
             ulong[] total = new ulong[10];
