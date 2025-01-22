@@ -22,7 +22,6 @@
 
 	<PropertyGroup>
 		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">WIN_X64,TRACE</DefineConstants>
-		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-x86' ">IS32BIT</DefineConstants>
 	</PropertyGroup>
 	
 	<ItemGroup>

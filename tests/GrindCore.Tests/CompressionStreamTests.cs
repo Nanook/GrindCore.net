@@ -507,18 +507,18 @@ namespace GrindCore.Tests
                     string hashInString = inXxhash.Hash!.ToHexString();
                     string hashCompString = compXxhash.Hash!.ToHexString();
                     string hashOutString = outXxhash.Hash!.ToHexString();
-                    Trace.WriteLine($"[InlineData(CompressionStreamType.{type}, CompressionLevel.{level}, 0x{totalCompressedBytes:x}, \"{hashInString}\", \"{hashCompString}\")]");
-                    //Assert.Equal(hashInString, hashOutString); //test IN and decompressed data hashes match
-                    //Assert.Equal(rawXxH64, hashInString); //test raw data hash matches expected
-                    //Assert.Equal(compXxH64, hashCompString); //test compressed data hash matches expected
-                    //Assert.Equal(compressedSize, totalCompressedBytes); //test compressed data size matches expected
+                    //Trace.WriteLine($"[InlineData(CompressionStreamType.{type}, CompressionLevel.{level}, 0x{totalCompressedBytes:x}, \"{hashInString}\", \"{hashCompString}\")]");
+                    Assert.Equal(hashInString, hashOutString); //test IN and decompressed data hashes match
+                    Assert.Equal(rawXxH64, hashInString); //test raw data hash matches expected
+                    Assert.Equal(compXxH64, hashCompString); //test compressed data hash matches expected
+                    Assert.Equal(compressedSize, totalCompressedBytes); //test compressed data size matches expected
 
                 }
             }
 
         }
 
-#if !IS32BIT
+#if WIN_X64
         [Theory]
         [InlineData(CompressionStreamType.Brotli, CompressionLevel.Fastest, 0xaba29, "c668fabe6e6e9235", "b81723649b82a53d")]
         [InlineData(CompressionStreamType.Brotli, CompressionLevel.Optimal, 0x4b9, "c668fabe6e6e9235", "c61dc24b52781f66")]
