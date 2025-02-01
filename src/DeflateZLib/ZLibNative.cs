@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System;
 using static Nanook.GrindCore.Interop.ZLib;
+using System.Reflection.Emit;
 
 namespace Nanook.GrindCore.DeflateZLib
 {
@@ -37,10 +38,13 @@ namespace Nanook.GrindCore.DeflateZLib
 
             private volatile State _initializationState;
 
+            public CompressionVersion Version { get; }
 
-            public ZLibStreamHandle()
+
+            public ZLibStreamHandle(CompressionVersion version)
                 : base(new IntPtr(-1), true)
             {
+                this.Version = version;
                 _initializationState = State.NotInitialized;
                 SetHandle(IntPtr.Zero);
             }
@@ -54,7 +58,6 @@ namespace Nanook.GrindCore.DeflateZLib
             {
                 get { return _initializationState; }
             }
-
 
             protected override bool ReleaseHandle() =>
                 InitializationState switch
@@ -110,7 +113,14 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DN8_ZLib_v1_3_1_DeflateInit2_(stream, level, Interop.ZLib.CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                    ErrorCode errC;
+                    if (this.Version == null || this.Version.Index == 0)
+                        errC = Interop.ZLib.DN9_ZLibNg_v2_2_1_DeflateInit2_(stream, level, Interop.ZLib.CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                    else if (this.Version.Index == 1)
+                        errC = Interop.ZLib.DN8_ZLib_v1_3_1_DeflateInit2_(stream, level, Interop.ZLib.CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                    else
+                        throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
+
                     _initializationState = State.InitializedForDeflate;
 
                     return errC;
@@ -125,7 +135,12 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    return Interop.ZLib.DN8_ZLib_v1_3_1_Deflate(stream, flush);
+                    if (this.Version == null || this.Version.Index == 0)
+                        return Interop.ZLib.DN9_ZLibNg_v2_2_1_Deflate(stream, flush);
+                    else if (this.Version.Index == 1)
+                        return Interop.ZLib.DN8_ZLib_v1_3_1_Deflate(stream, flush);
+                    else
+                        throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
                 }
             }
 
@@ -137,7 +152,13 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DN8_ZLib_v1_3_1_DeflateEnd(stream);
+                    ErrorCode errC;
+                    if (this.Version == null || this.Version.Index == 0)
+                        errC = Interop.ZLib.DN9_ZLibNg_v2_2_1_DeflateEnd(stream);
+                    else if (this.Version.Index == 1)
+                        errC = Interop.ZLib.DN8_ZLib_v1_3_1_DeflateEnd(stream);
+                    else
+                        throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
                     _initializationState = State.Disposed;
 
                     return errC;
@@ -152,7 +173,13 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DN8_ZLib_v1_3_1_InflateInit2_(stream, windowBits);
+                    ErrorCode errC;
+                    if (this.Version == null || this.Version.Index == 0)
+                        errC = Interop.ZLib.DN9_ZLibNg_v2_2_1_InflateInit2_(stream, windowBits);
+                    else if (this.Version.Index == 1)
+                        errC = Interop.ZLib.DN8_ZLib_v1_3_1_InflateInit2_(stream, windowBits);
+                    else
+                        throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
                     _initializationState = State.InitializedForInflate;
 
                     return errC;
@@ -167,7 +194,12 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    return Interop.ZLib.DN8_ZLib_v1_3_1_Inflate(stream, flush);
+                    if (this.Version == null || this.Version.Index == 0)
+                        return Interop.ZLib.DN9_ZLibNg_v2_2_1_Inflate(stream, flush);
+                    else if (this.Version.Index == 1)
+                        return Interop.ZLib.DN8_ZLib_v1_3_1_Inflate(stream, flush);
+                    else
+                        throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
                 }
             }
 
@@ -179,7 +211,13 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
-                    ErrorCode errC = Interop.ZLib.DN8_ZLib_v1_3_1_InflateEnd(stream);
+                    ErrorCode errC;
+                    if (this.Version == null || this.Version.Index == 0)
+                        errC = Interop.ZLib.DN9_ZLibNg_v2_2_1_InflateEnd(stream);
+                    else if (this.Version.Index == 1)
+                        errC = Interop.ZLib.DN8_ZLib_v1_3_1_InflateEnd(stream);
+                    else
+                        throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
                     _initializationState = State.Disposed;
 
                     return errC;
@@ -191,16 +229,16 @@ namespace Nanook.GrindCore.DeflateZLib
         }
 
         public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, Interop.ZLib.CompressionLevel level,
-            int windowBits, int memLevel, CompressionStrategy strategy)
+            int windowBits, int memLevel, CompressionStrategy strategy, CompressionVersion version)
         {
-            zLibStreamHandle = new ZLibStreamHandle();
+            zLibStreamHandle = new ZLibStreamHandle(version);
             return zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
         }
 
 
-        public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
+        public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits, CompressionVersion version)
         {
-            zLibStreamHandle = new ZLibStreamHandle();
+            zLibStreamHandle = new ZLibStreamHandle(version);
             return zLibStreamHandle.InflateInit2_(windowBits);
         }
 

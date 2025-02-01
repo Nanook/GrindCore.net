@@ -15,14 +15,14 @@ namespace Nanook.GrindCore.Brotli
         public const int Quality_Max = 11;
         public const int MaxInputSize = int.MaxValue - 515; // 515 is the max compressed extra bytes
 
-        internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>
-            compressionLevel switch
+        internal static int GetQualityFromCompressionLevel(CompressionType type) =>
+            type switch
             {
-                CompressionLevel.NoCompression => Quality_Min,
-                CompressionLevel.Fastest => 1,
-                CompressionLevel.Optimal => Quality_Default,
-                CompressionLevel.SmallestSize => Quality_Max,
-                _ => throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(compressionLevel))
+                CompressionType.NoCompression => Quality_Min,
+                CompressionType.Fastest => 1,
+                CompressionType.Optimal => Quality_Default,
+                CompressionType.SmallestSize => Quality_Max,
+                _ => (int)type
             };
     }
 }

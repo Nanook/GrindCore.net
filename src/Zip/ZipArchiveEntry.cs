@@ -47,7 +47,7 @@ namespace Nanook.GrindCore.Zip
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
         private byte[] _fileComment;
-        private readonly CompressionLevel? _compressionLevel;
+        private readonly CompressionType? _compressionLevel;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -110,11 +110,11 @@ namespace Nanook.GrindCore.Zip
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
-        internal ZipArchiveEntry(ZipArchive archive, string entryName, CompressionLevel compressionLevel)
+        internal ZipArchiveEntry(ZipArchive archive, string entryName, CompressionType compressionLevel)
             : this(archive, entryName)
         {
             _compressionLevel = compressionLevel;
-            if (_compressionLevel == CompressionLevel.NoCompression)
+            if (_compressionLevel == CompressionType.NoCompression)
             {
                 CompressionMethod = CompressionMethodValues.Stored;
             }
@@ -655,7 +655,7 @@ namespace Nanook.GrindCore.Zip
                 case CompressionMethodValues.Deflate:
                 case CompressionMethodValues.Deflate64:
                 default:
-                    compressorStream = new DeflateStream(backingStream, _compressionLevel ?? CompressionLevel.Optimal, leaveBackingStreamOpen);
+                    compressorStream = new DeflateStream(backingStream, _compressionLevel ?? CompressionType.Optimal, leaveBackingStreamOpen);
                     break;
 
             }
@@ -683,7 +683,7 @@ namespace Nanook.GrindCore.Zip
             switch (CompressionMethod)
             {
                 case CompressionMethodValues.Deflate:
-                    uncompressedStream = new DeflateStream(compressedStreamToRead, CompressionMode.Decompress, _uncompressedSize);
+                    uncompressedStream = new DeflateStream(compressedStreamToRead, _uncompressedSize);
                     break;
                 case CompressionMethodValues.Deflate64:
                     uncompressedStream = new DeflateManagedStream(compressedStreamToRead, CompressionMethodValues.Deflate64, _uncompressedSize);

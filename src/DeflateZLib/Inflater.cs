@@ -30,15 +30,17 @@ namespace Nanook.GrindCore.DeflateZLib
         private MemoryHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
+        private CompressionVersion _version;
 
         private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
 
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
         /// </summary>
-        internal Inflater(int windowBits, long uncompressedSize = -1)
+        internal Inflater(CompressionVersion version, int windowBits, long uncompressedSize = -1)
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
+            _version = version;
             _finished = false;
             _nonEmptyInput = false;
             _isDisposed = false;
@@ -247,7 +249,7 @@ namespace Nanook.GrindCore.DeflateZLib
             ZErrorCode error;
             try
             {
-                error = ZLibNative.CreateZLibStreamForInflate(out _zlibStream, windowBits);
+                error = ZLibNative.CreateZLibStreamForInflate(out _zlibStream, windowBits, _version);
             }
             catch (Exception exception) // could not load the ZLib dll
             {

@@ -25,25 +25,15 @@ namespace Nanook.GrindCore.DeflateZLib
         private int _activeAsyncOperation; // 1 == true, 0 == false
         private bool _wroteBytes;
 
-        internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, Interop.ZLib.Deflate_DefaultWindowBits, uncompressedSize)
+       internal DeflateStream(Stream stream, long uncompressedSize, CompressionVersion? version = null) : this(stream, CompressionType.Decompress, leaveOpen: false, Interop.ZLib.Deflate_DefaultWindowBits, version, uncompressedSize)
         {
         }
 
-        public DeflateStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
+        public DeflateStream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, leaveOpen: false, Interop.ZLib.Deflate_DefaultWindowBits, version)
         {
         }
 
-        public DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen) : this(stream, mode, leaveOpen, Interop.ZLib.Deflate_DefaultWindowBits)
-        {
-        }
-
-        // Implies mode = Compress
-        public DeflateStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
-        {
-        }
-
-        // Implies mode = Compress
-        public DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, compressionLevel, leaveOpen, Interop.ZLib.Deflate_DefaultWindowBits)
+        public DeflateStream(Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null) : this(stream, type, leaveOpen, Interop.ZLib.Deflate_DefaultWindowBits, version)
         {
         }
 
@@ -51,54 +41,38 @@ namespace Nanook.GrindCore.DeflateZLib
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
+        internal DeflateStream(Stream stream, CompressionType type, bool leaveOpen, int windowBits, CompressionVersion? version = null, long uncompressedSize = -1)
         {
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
-            switch (mode)
+            if (version == null)
+                version = CompressionVersion.ZLibNgLatest();
+
+            if (type == CompressionType.Decompress)
             {
-                case CompressionMode.Decompress:
-                    if (!stream.CanRead)
-                        throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
+                if (!stream.CanRead)
+                    throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-                    _inflater = new Inflater(windowBits, uncompressedSize);
-                    _stream = stream;
-                    _mode = CompressionMode.Decompress;
-                    _leaveOpen = leaveOpen;
-                    break;
-
-                case CompressionMode.Compress:
-                    InitializeDeflater(stream, leaveOpen, windowBits, CompressionLevel.Optimal);
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(mode));
+                _inflater = new Inflater(version, windowBits, uncompressedSize);
+                _stream = stream;
+                _mode = CompressionMode.Decompress;
+                _leaveOpen = leaveOpen;
             }
+            else
+                InitializeDeflater(version, stream, leaveOpen, windowBits, type);
         }
-
-        /// <summary>
-        /// Internal constructor to specify the compressionlevel as well as the windowbits
-        /// </summary>
-        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
-        {
-            if (stream is null)
-                throw new ArgumentNullException(nameof(stream));
-
-            InitializeDeflater(stream, leaveOpen, windowBits, compressionLevel);
-        }
-
         /// <summary>
         /// Sets up this DeflateStream to be used for Zlib Deflation/Compression
         /// </summary>
         [MemberNotNull(nameof(_stream))]
-        internal void InitializeDeflater(Stream stream, bool leaveOpen, int windowBits, CompressionLevel compressionLevel)
+        internal void InitializeDeflater(CompressionVersion version, Stream stream, bool leaveOpen, int windowBits, CompressionType compressionLevel)
         {
             Debug.Assert(stream != null);
             if (!stream!.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
-            _deflater = new Deflater(compressionLevel, windowBits);
+            _deflater = new Deflater(version, compressionLevel, windowBits);
 
             _stream = stream;
             _mode = CompressionMode.Compress;

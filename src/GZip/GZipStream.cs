@@ -22,24 +22,13 @@ namespace Nanook.GrindCore.GZip
     {
         private DeflateStream _deflateStream;
 
-        public GZipStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
+        public GZipStream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, leaveOpen: false, version)
         {
         }
 
-        public GZipStream(Stream stream, CompressionMode mode, bool leaveOpen)
+        public GZipStream(Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)
         {
-            _deflateStream = new DeflateStream(stream, mode, leaveOpen, Interop.ZLib.GZip_DefaultWindowBits);
-        }
-
-        // Implies mode = Compress
-        public GZipStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
-        {
-        }
-
-        // Implies mode = Compress
-        public GZipStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
-        {
-            _deflateStream = new DeflateStream(stream, compressionLevel, leaveOpen, Interop.ZLib.GZip_DefaultWindowBits);
+            _deflateStream = new DeflateStream(stream, type, leaveOpen, Interop.ZLib.GZip_DefaultWindowBits, version);
         }
 
         public override bool CanRead => _deflateStream?.CanRead ?? false;

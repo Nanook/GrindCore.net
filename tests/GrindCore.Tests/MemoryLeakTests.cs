@@ -81,11 +81,11 @@ namespace GrindCore.Tests
         /// Loop byte compression to test for memory leaks.
         /// </summary>
         [Theory]
-        [InlineData(CompressionStreamType.Brotli, CompressionLevel.Optimal, 0x19b, "e39f3f4d64825537")]
-        [InlineData(CompressionStreamType.Deflate, CompressionLevel.Optimal, 0x2ff, "fd1a57a63d29c607")]
-        [InlineData(CompressionStreamType.GZip, CompressionLevel.Optimal, 0x311, "dd79ecbbf6270f98")]
-        [InlineData(CompressionStreamType.ZLib, CompressionLevel.Optimal, 0x305, "a3c36ab37f8f236d")]
-        public void MemLeak_CompressionStream_ByteArray64k(CompressionStreamType type, CompressionLevel level, int compressedSize, string xxh64)
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x19b, "e39f3f4d64825537")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x2ff, "fd1a57a63d29c607")]
+        [InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x311, "dd79ecbbf6270f98")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x305, "a3c36ab37f8f236d")]
+        public void MemLeak_CompressionStream_ByteArray64k(CompressionAlgorithm type, CompressionType level, int compressedSize, string xxh64)
         {
             ulong[] total = new ulong[10];
             bool success = false;

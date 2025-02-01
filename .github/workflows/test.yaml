@@ -220,24 +220,25 @@ jobs:
           ./GrindCore.Tests.Runtime
         shell: bash
 
-  test_win_arm64:
-    needs: build_all_platforms
-    runs-on: windows-arm64
-    steps:
-      - name: Download Windows ARM64 build
-        uses: actions/download-artifact@v4
-        with:
-          name: win-arm64-build
-          path: output/win-arm64/
-
-      - name: Build and run tests for Windows ARM64
-        run: |
-          Set-Location -Path output/win-arm64/
-          Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
-          Remove-Item -Path runtimes -Recurse -Force
-          Get-ChildItem
-          .\GrindCore.Tests.Runtime.exe
-        shell: pwsh
+  # !! No arm based docker image to test with
+  # test_win_arm64:
+  #   needs: build_all_platforms
+  #   runs-on: windows-2025
+  #   steps:
+  #     - name: Download Windows ARM64 build
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: win-arm64-build
+  #         path: output/win-arm64/
+  
+  #     - name: Build and run tests for Windows ARM64
+  #       run: |
+  #         Set-Location -Path output/win-arm64/
+  #         Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
+  #         Remove-Item -Path runtimes -Recurse -Force
+  #         Get-ChildItem
+  #         docker run --rm --platform windows/arm64 -v "${PWD}/output/win-arm64:/app" mcr.microsoft.com/dotnet/sdk:9.0 pwsh -c "/app/GrindCore.Tests.Runtime.exe"
+  #       shell: pwsh
 
   test_win_x64:
     needs: build_all_platforms

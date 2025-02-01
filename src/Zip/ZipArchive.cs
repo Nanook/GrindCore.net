@@ -290,7 +290,7 @@ namespace Nanook.GrindCore.Zip
         /// <param name="entryName">A path relative to the root of the archive, indicating the name of the entry to be created.</param>
         /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
         /// <returns>A wrapper for the newly created file entry in the archive.</returns>
-        public ZipArchiveEntry CreateEntry(string entryName, CompressionLevel compressionLevel)
+        public ZipArchiveEntry CreateEntry(string entryName, CompressionType compressionLevel)
         {
             return DoCreateEntry(entryName, compressionLevel);
         }
@@ -395,7 +395,7 @@ namespace Nanook.GrindCore.Zip
             }
         }
 
-        private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
+        private ZipArchiveEntry DoCreateEntry(string entryName, CompressionType? compressionLevel)
         {
             if (string.IsNullOrEmpty(entryName))
                 throw new ArgumentException(nameof(entryName));

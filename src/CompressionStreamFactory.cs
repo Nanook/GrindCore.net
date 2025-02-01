@@ -9,7 +9,7 @@ using System.Reflection.Emit;
 
 namespace Nanook.GrindCore
 {
-    public enum CompressionStreamType
+    public enum CompressionAlgorithm
     {
         GZip,
         ZLib,
@@ -22,68 +22,55 @@ namespace Nanook.GrindCore
 
     public class CompressionStreamFactory
     {
-        private static readonly Dictionary<CompressionStreamType, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>> streamCreators = new Dictionary<CompressionStreamType, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>>()
+        private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionType, bool, CompressionVersion?, Stream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionType, bool, CompressionVersion?, Stream>>()
         {
-            //{ CompressionStreamType.GZip, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new System.IO.Compression.GZipStream(stream, (System.IO.Compression.CompressionLevel)level, leaveOpen) : new System.IO.Compression.GZipStream(stream, (System.IO.Compression.CompressionMode)mode, leaveOpen) },
-            //{ CompressionStreamType.ZLib, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new System.IO.Compression.ZLibStream(stream, (System.IO.Compression.CompressionLevel)level, leaveOpen) : new System.IO.Compression.ZLibStream(stream, (System.IO.Compression.CompressionMode)mode, leaveOpen) },
-            //{ CompressionStreamType.Deflate, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new System.IO.Compression.DeflateStream(stream, (System.IO.Compression.CompressionLevel)level, leaveOpen) : new System.IO.Compression.DeflateStream(stream, (System.IO.Compression.CompressionMode)mode, leaveOpen) },
-            //{ CompressionStreamType.Brotli, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new System.IO.Compression.BrotliStream(stream, (System.IO.Compression.CompressionLevel)level, leaveOpen) : new System.IO.Compression.BrotliStream(stream, (System.IO.Compression.CompressionMode)mode, leaveOpen) }
-            { CompressionStreamType.GZip, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new GZipStream(stream, level, leaveOpen) : new GZipStream(stream, mode, leaveOpen) },
-            { CompressionStreamType.ZLib, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new ZLibStream(stream, level, leaveOpen) : new ZLibStream(stream, mode, leaveOpen) },
-            { CompressionStreamType.Deflate, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new DeflateStream(stream, level, leaveOpen) : new DeflateStream(stream, mode, leaveOpen) },
-            { CompressionStreamType.GZipNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new GZipNgStream(stream, level, leaveOpen) : new GZipNgStream(stream, mode, leaveOpen) },
-            { CompressionStreamType.ZLibNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new ZLibNgStream(stream, level, leaveOpen) : new ZLibNgStream(stream, mode, leaveOpen) },
-            { CompressionStreamType.DeflateNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new DeflateNgStream(stream, level, leaveOpen) : new DeflateNgStream(stream, mode, leaveOpen) },
-            { CompressionStreamType.Brotli, (stream, mode, level, leaveOpen) => mode == CompressionMode.Compress ? new BrotliStream(stream, level, leaveOpen) : new BrotliStream(stream, mode, leaveOpen) }
+            { CompressionAlgorithm.GZip, (stream, type, leaveOpen, version) => new GZipStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibLatest()) },
+            { CompressionAlgorithm.ZLib, (stream, type, leaveOpen, version) => new ZLibStream(stream, type, leaveOpen,version ?? CompressionVersion.ZLibLatest()) },
+            { CompressionAlgorithm.Deflate, (stream, type, leaveOpen, version) => new DeflateStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibLatest()) },
+            { CompressionAlgorithm.GZipNg, (stream, type, leaveOpen, version) => new GZipStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
+            { CompressionAlgorithm.ZLibNg, (stream, type, leaveOpen, version) => new ZLibStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
+            { CompressionAlgorithm.DeflateNg, (stream, type, leaveOpen, version) => new DeflateStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
+            { CompressionAlgorithm.Brotli, (stream, type, leaveOpen, version) => new BrotliStream(stream, type, leaveOpen,version ??  CompressionVersion.BrotliLatest()) }
         };
 
-        public static Stream Create(CompressionStreamType type, Stream stream, CompressionLevel level, bool leaveOpen = false)
+        public static Stream Create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)
         {
-            return create(type, stream, CompressionMode.Compress, level, leaveOpen);
+            return create(algorithm, stream, type, leaveOpen, version);
         }
 
-        public static Stream Create(CompressionStreamType type, Stream stream, CompressionMode mode, bool leaveOpen = false)
+        private static Stream create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)
         {
-            return create(type, stream, mode, CompressionLevel.Optimal, leaveOpen);
+            if (streamCreators.TryGetValue(algorithm, out var creator))
+                return creator(stream, type, leaveOpen, version);
+
+            throw new ArgumentException("Unsupported stream algorithm", nameof(algorithm));
         }
 
-        private static Stream create(CompressionStreamType type, Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen)
-        {
-            if (streamCreators.TryGetValue(type, out var creator))
-                return creator(stream, mode, level, leaveOpen);
-
-            throw new ArgumentException("Unsupported stream type", nameof(type));
-        }
-
-        public static byte[] Compress(CompressionStreamType type, Stream inputStream, CompressionLevel level, bool leaveOpen = false)
+        public static byte[] Compress(CompressionAlgorithm algorithm, Stream inputStream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)
         {
             using (var outputStream = new MemoryStream())
             {
-                using (var compressionStream = Create(type, outputStream, level, leaveOpen))
-                {
+                using (var compressionStream = Create(algorithm, outputStream, type, leaveOpen, version))
                     inputStream.CopyTo(compressionStream);
-                }
                 return outputStream.ToArray();
             }
         }
 
-        public static byte[] Decompress(CompressionStreamType type, Stream inputStream, bool leaveOpen = false)
+        public static byte[] Decompress(CompressionAlgorithm type, Stream inputStream, bool leaveOpen = false, CompressionVersion? version = null)
         {
             using (var outputStream = new MemoryStream())
             {
-                using (var decompressionStream = Create(type, inputStream, CompressionMode.Decompress, leaveOpen))
-                {
+                using (var decompressionStream = Create(type, inputStream, CompressionType.Decompress, leaveOpen, version))
                     decompressionStream.CopyTo(outputStream);
-                }
                 return outputStream.ToArray();
             }
         }
 
-        public static byte[] Compress(CompressionStreamType type, byte[] data, CompressionLevel level, bool leaveOpen = false)
+        public static byte[] Compress(CompressionAlgorithm type, byte[] data, CompressionType level, bool leaveOpen = false, CompressionVersion? version = null)
         {
             using (var outputStream = new MemoryStream())
             {
-                using (var compressionStream = Create(type, outputStream, level, leaveOpen))
+                using (var compressionStream = Create(type, outputStream, level, leaveOpen, version))
                 {
                     compressionStream.Write(data, 0, data.Length);
                 }
@@ -91,12 +78,12 @@ namespace Nanook.GrindCore
             }
         }
 
-        public static byte[] Decompress(CompressionStreamType type, byte[] data, bool leaveOpen = false)
+        public static byte[] Decompress(CompressionAlgorithm type, byte[] data, bool leaveOpen = false, CompressionVersion? version = null)
         {
             using (var outputStream = new MemoryStream())
             {
                 using (var inputStream = new MemoryStream(data))
-                using (var decompressionStream = Create(type, inputStream, CompressionMode.Decompress, leaveOpen))
+                using (var decompressionStream = Create(type, inputStream, CompressionType.Decompress, leaveOpen, version))
                 {
                     decompressionStream.CopyTo(outputStream);
                 }

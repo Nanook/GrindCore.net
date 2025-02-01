@@ -9,15 +9,21 @@ using System;
 
 namespace Nanook.GrindCore.Brotli
 {
-    /// <summary>Provides non-allocating, performant Brotli decompression methods. The methods decompress in a single pass without using a <see cref="System.IO.Compression.BrotliStream" /> instance.</summary>
+    /// <summary>Provides non-allocating, performant Brotli decompression methods. The methods decompress in a single pass without using a <see cref="Nanook.GrindCore.BrotliStream" /> instance.</summary>
     public struct BrotliDecoder : IDisposable
     {
         private SafeBrotliDecoderHandle? _state;
         private bool _disposed;
 
-        internal void InitializeDecoder()
+        internal void InitializeDecoder(CompressionVersion? version = null)
         {
-            _state = Interop.Brotli.BrotliDecoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            if (version == null)
+                version = CompressionVersion.BrotliLatest();
+            if (version.Index == 0)
+                _state = Interop.Brotli.DN8_Brotli_v1_0_9_DecoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            else
+                throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
+            _state.Version = version;
             if (_state.IsInvalid)
                 throw new IOException(SR.BrotliDecoder_Create);
         }
@@ -60,8 +66,14 @@ namespace Nanook.GrindCore.Brotli
 
             bytesConsumed = 0;
             bytesWritten = 0;
-            if (Interop.Brotli.BrotliDecoderIsFinished(_state!) != Interop.BOOL.FALSE)
-                return OperationStatus.Done;
+            if (_state.Version.Index == 0)
+            {
+                if (Interop.Brotli.DN8_Brotli_v1_0_9_DecoderIsFinished(_state!) != Interop.BOOL.FALSE)
+                    return OperationStatus.Done;
+            }
+            else
+                throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
+
             nuint availableOutput = (nuint)destination.Length;
             nuint availableInput = (nuint)source.Length;
             unsafe
@@ -74,11 +86,14 @@ namespace Nanook.GrindCore.Brotli
                     fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                     fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                     {
-                        int brotliResult = Interop.Brotli.BrotliDecoderDecompressStream(_state, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _);
+                        int brotliResult;
+                        if (_state.Version.Index == 0)
+                            brotliResult = Interop.Brotli.DN8_Brotli_v1_0_9_DecoderDecompressStream(_state, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _);
+                        else
+                            throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
+
                         if (brotliResult == 0) // Error
-                        {
                             return OperationStatus.InvalidData;
-                        }
 
                         Debug.Assert(availableInput <= (nuint)source.Length);
                         Debug.Assert(availableOutput <= (nuint)destination.Length);
@@ -112,13 +127,21 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="bytesWritten">The total number of bytes that were written in the <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero or greater than zero but less than the expected total.</remarks>
-        public static unsafe bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        public static unsafe bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, CompressionVersion? version = null)
         {
             fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
             fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
             {
                 nuint availableOutput = (nuint)destination.Length;
-                bool success = Interop.Brotli.BrotliDecoderDecompress((nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
+                bool success;
+
+                if (version == null)
+                    version = CompressionVersion.BrotliLatest();
+
+                if (version.Index == 0)
+                    success = Interop.Brotli.DN8_Brotli_v1_0_9_DecoderDecompress((nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
+                else
+                    throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
 
                 Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
 

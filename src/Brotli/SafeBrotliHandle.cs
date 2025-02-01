@@ -12,11 +12,14 @@ namespace Nanook.GrindCore.Brotli
 
         protected override bool ReleaseHandle()
         {
-            Interop.Brotli.BrotliEncoderDestroyInstance(handle);
+            if (Version.Index == 0)
+                Interop.Brotli.DN8_Brotli_v1_0_9_EncoderDestroyInstance(handle);
             return true;
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
+
+        public CompressionVersion Version { get; set; }
     }
 
     internal sealed class SafeBrotliDecoderHandle : SafeHandle
@@ -25,10 +28,13 @@ namespace Nanook.GrindCore.Brotli
 
         protected override bool ReleaseHandle()
         {
-            Interop.Brotli.BrotliDecoderDestroyInstance(handle);
+            if (Version.Index == 0)
+                Interop.Brotli.DN8_Brotli_v1_0_9_DecoderDestroyInstance(handle);
             return true;
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
+
+        public CompressionVersion Version { get; set; }
     }
 }
