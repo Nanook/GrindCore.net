@@ -9,6 +9,9 @@ using System.Security;
 using System.IO;
 using System;
 
+using ZErrorCode = Nanook.GrindCore.Interop.ZLib.ErrorCode;
+using ZFlushCode = Nanook.GrindCore.Interop.ZLib.FlushCode;
+
 namespace Nanook.GrindCore.DeflateZLib
 {
     /// <summary>
@@ -27,15 +30,17 @@ namespace Nanook.GrindCore.DeflateZLib
         private MemoryHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
+        private CompressionVersion _version;
 
         private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
 
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
         /// </summary>
-        internal Inflater(int windowBits, long uncompressedSize = -1)
+        internal Inflater(CompressionVersion version, int windowBits, long uncompressedSize = -1)
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
+            _version = version;
             _finished = false;
             _nonEmptyInput = false;
             _isDisposed = false;
@@ -124,7 +129,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
         private unsafe void ReadOutput(byte* bufPtr, int length, out int bytesRead)
         {
-            if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
+            if (ReadInflateOutput(bufPtr, length, ZFlushCode.NoFlush, out bytesRead) == ZErrorCode.StreamEnd)
             {
                 if (!NeedsInput() && IsGzipStream() && IsInputBufferHandleAllocated)
                 {
@@ -156,7 +161,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 uint nextAvailIn = _zlibStream.AvailIn;
 
                 // Check the leftover bytes to see if they start with he gzip header ID bytes
-                if (*nextInPointer != ZLibNative.GZip_Header_ID1 || nextAvailIn > 1 && *(nextInPointer + 1) != ZLibNative.GZip_Header_ID2)
+                if (*nextInPointer != Interop.ZLib.GZip_Header_ID1 || nextAvailIn > 1 && *(nextInPointer + 1) != Interop.ZLib.GZip_Header_ID2)
                 {
                     return true;
                 }
@@ -241,10 +246,10 @@ namespace Nanook.GrindCore.DeflateZLib
         [MemberNotNull(nameof(_zlibStream))]
         private void InflateInit(int windowBits)
         {
-            ZLibNative.ErrorCode error;
+            ZErrorCode error;
             try
             {
-                error = ZLibNative.CreateZLibStreamForInflate(out _zlibStream, windowBits);
+                error = ZLibNative.CreateZLibStreamForInflate(out _zlibStream, windowBits, _version);
             }
             catch (Exception exception) // could not load the ZLib dll
             {
@@ -253,16 +258,16 @@ namespace Nanook.GrindCore.DeflateZLib
 
             switch (error)
             {
-                case ZLibNative.ErrorCode.Ok:           // Successful initialization
+                case ZErrorCode.Ok:           // Successful initialization
                     return;
 
-                case ZLibNative.ErrorCode.MemError:     // Not enough memory
+                case ZErrorCode.MemError:     // Not enough memory
                     throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
 
-                case ZLibNative.ErrorCode.VersionError: //zlib library is incompatible with the version assumed
+                case ZErrorCode.VersionError: //zlib library is incompatible with the version assumed
                     throw new ZLibException(SR.ZLibErrorVersionMismatch, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
 
-                case ZLibNative.ErrorCode.StreamError:  // Parameters are invalid
+                case ZErrorCode.StreamError:  // Parameters are invalid
                     throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
 
                 default:
@@ -273,14 +278,14 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Wrapper around the ZLib inflate function, configuring the stream appropriately.
         /// </summary>
-        private unsafe ZLibNative.ErrorCode ReadInflateOutput(byte* bufPtr, int length, ZLibNative.FlushCode flushCode, out int bytesRead)
+        private unsafe ZErrorCode ReadInflateOutput(byte* bufPtr, int length, ZFlushCode flushCode, out int bytesRead)
         {
             lock (SyncLock)
             {
                 _zlibStream.NextOut = (nint)bufPtr;
                 _zlibStream.AvailOut = (uint)length;
 
-                ZLibNative.ErrorCode errC = Inflate(flushCode);
+                ZErrorCode errC = Inflate(flushCode);
                 bytesRead = length - (int)_zlibStream.AvailOut;
 
                 return errC;
@@ -290,9 +295,9 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Wrapper around the ZLib inflate function
         /// </summary>
-        private ZLibNative.ErrorCode Inflate(ZLibNative.FlushCode flushCode)
+        private ZErrorCode Inflate(ZFlushCode flushCode)
         {
-            ZLibNative.ErrorCode errC;
+            ZErrorCode errC;
             try
             {
                 errC = _zlibStream.Inflate(flushCode);
@@ -303,20 +308,20 @@ namespace Nanook.GrindCore.DeflateZLib
             }
             switch (errC)
             {
-                case ZLibNative.ErrorCode.Ok:           // progress has been made inflating
-                case ZLibNative.ErrorCode.StreamEnd:    // The end of the input stream has been reached
+                case ZErrorCode.Ok:           // progress has been made inflating
+                case ZErrorCode.StreamEnd:    // The end of the input stream has been reached
                     return errC;
 
-                case ZLibNative.ErrorCode.BufError:     // No room in the output buffer - inflate() can be called again with more space to continue
+                case ZErrorCode.BufError:     // No room in the output buffer - inflate() can be called again with more space to continue
                     return errC;
 
-                case ZLibNative.ErrorCode.MemError:     // Not enough memory to complete the operation
+                case ZErrorCode.MemError:     // Not enough memory to complete the operation
                     throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "inflate_", (int)errC, _zlibStream.GetErrorMessage());
 
-                case ZLibNative.ErrorCode.DataError:    // The input data was corrupted (input stream not conforming to the zlib format or incorrect check value)
+                case ZErrorCode.DataError:    // The input data was corrupted (input stream not conforming to the zlib format or incorrect check value)
                     throw new InvalidDataException(SR.UnsupportedCompression);
 
-                case ZLibNative.ErrorCode.StreamError:  //the stream structure was inconsistent (for example if next_in or next_out was NULL),
+                case ZErrorCode.StreamError:  //the stream structure was inconsistent (for example if next_in or next_out was NULL),
                     throw new ZLibException(SR.ZLibErrorInconsistentStream, "inflate_", (int)errC, _zlibStream.GetErrorMessage());
 
                 default:
@@ -334,7 +339,7 @@ namespace Nanook.GrindCore.DeflateZLib
             lock (SyncLock)
             {
                 _zlibStream.AvailIn = 0;
-                _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                _zlibStream.NextIn = Interop.ZLib.ZNullPtr;
                 _inputBufferHandle.Dispose();
             }
         }

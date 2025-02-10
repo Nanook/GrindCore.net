@@ -1,6 +1,8 @@
 # GrindCore
 
-Managed C# dotnet wrapper around the Native GrindCore library - [GrindCore GitHub Repository](https://github.com/Nanook/GrindCore)
+A compression and Hashing library built the System.IO.Compression way... A managed dotnet wrapper around a Native library ([GrindCore](https://github.com/Nanook/GrindCore) Native).
+
+Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore) and supports multiple platforms.
 
 Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore)
 
@@ -18,18 +20,22 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 
 ### Compression
 
-- ZLib, Deflate
-- Brotli
-- Zip
+- Streams
+  - ZLib v1.3.1 (DotNet 8.0) [GZip, ZLib, Deflate]
+  - ZLib-NG v2.2.1 (DotNet 9.0) [GZip, ZLib, Deflate]
+  - Brotli v1.1.0 (DotNet 9.0)
+
+- Archives
+  - Zip
 
 ### Hashing
 
 - Blake3, Blake2sp
 - MD5, MD4, MD2
 - SHA1
-- SHA2 (SHA256, SHA384, SHA512)
-- SHA3 (SHA3-224, SHA3-256, SHA3-384, SHA3-512)
-- XXHash (XXH32, XXH64)
+- SHA2 [SHA256, SHA384, SHA512]
+- SHA3 [SHA3-224, SHA3-256, SHA3-384, SHA3-512]
+- XXHash [XXH32, XXH64]
 
 Lots more functionality to be added.
 
@@ -57,18 +63,25 @@ GrindCore integrates robust solutions from several key projects:
 - **[dotnet Runtime GitHub Repository](https://github.com/dotnet/runtime):**
   - Provides a foundation with multiplatform C compilation based on CMake and C, ensuring seamless integration across different platforms.
   - Supplies zlib/deflate and Brotli from the dotnet 8 code, combined with C# wrappers, to offer efficient and reliable compression algorithms.
-- **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):** Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
-- **[SharpCompress GitHub Repository](https://github.com/adamhathcock/sharpcompress):** Expected to provide managed code to process archives and wrap native compression streams, further enhancing the library's capabilities and user experience.
+- **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):**
+  - Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
+- **[SharpCompress GitHub Repository](https://github.com/adamhathcock/sharpcompress):**
+  - Expected to provide managed code to process archives and wrap native compression streams, further enhancing the library's capabilities and user experience.
 
 ## Addressing Current Issues
 
 GrindCore is designed to overcome several known complications in the dotnet ecosystem:
 
-- **Performance:** C# ports generally perform slower than native C, although the JIT offers powerful optimization capabilities.
-- **Up-to-date Implementations:** Leveraging well-maintained projects like dotnet Runtime and 7zip mcmilk ensures that the C algorithms can be updated easily.
-- **Cross-Platform Compatibility:** Through multiplatform C compilation via the dotnet CMake system, GrindCore ensures seamless functionality across different operating systems. The managed layer abstracts this, allowing it to be used as System.IO.Compression would be used.
-- **Consistency:** By preserving exact compression algorithms, the library is ideal for projects requiring checksummed output, ensuring consistent data results and reliability.
-- **Addressing Missing Functionality:** GrindCore aims to expose additional functionalities not available in other libraries, such as `compress2` from zlib/deflate, providing more options and flexibility for developers.
+- **Performance:**
+  - C# ports generally perform slower than native C, although the JIT offers powerful optimization capabilities.
+- **Up-to-date Implementations:**
+  - Leveraging well-maintained projects like dotnet Runtime and 7zip mcmilk ensures that the C algorithms can be updated easily.
+- **Cross-Platform Compatibility:**
+  - Through multiplatform C compilation via the dotnet CMake system, GrindCore ensures seamless functionality across different operating systems. The managed layer abstracts this, allowing it to be used as System.IO.Compression would be used.
+- **Consistency:**
+  - By preserving exact compression algorithms, the library is ideal for projects requiring checksummed output, ensuring consistent data results and reliability.
+- **Addressing Missing Functionality:**
+  - GrindCore aims to expose additional functionalities not available in other libraries, such as `compress2` from zlib/deflate, providing more options and flexibility for developers.
 
 ## Conclusion
 

@@ -3,74 +3,115 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 
+/// <summary>
+/// Provides implementation of the XXHash64 hashing algorithm.
+/// </summary>
 namespace Nanook.GrindCore.XXHash
 {
+    /// <summary>
+    /// Represents the XXHash64 hashing algorithm.
+    /// </summary>
     public unsafe class XXHash64 : HashAlgorithm
     {
         private XXH64_CTX _ctx;
+        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB buffer
 
+        /// <summary>
+        /// Initializes a new instance of the XXHash64 class.
+        /// </summary>
         public XXHash64()
         {
-            HashSizeValue = 64; // XXH64 produces a 64-bit hash
+            // Set the hash size value to 64 bits (8 bytes) for XXH64
+            HashSizeValue = 64;
             Initialize();
         }
 
+        /// <summary>
+        /// Computes the hash value for the specified byte array.
+        /// </summary>
+        /// <param name="data">The input data to compute the hash code for.</param>
+        /// <returns>The computed hash code.</returns>
         public static byte[] Compute(byte[] data) => Compute(data, 0, data.Length);
 
+        /// <summary>
+        /// Computes the hash value for the specified region of the byte array.
+        /// </summary>
+        /// <param name="data">The input data to compute the hash code for.</param>
+        /// <param name="offset">The offset in the byte array to start at.</param>
+        /// <param name="length">The number of bytes to process.</param>
+        /// <returns>The computed hash code.</returns>
         public static byte[] Compute(byte[] data, int offset, int length)
         {
-            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
             XXH64_CTX ctx = new XXH64_CTX();
-
+            // Pin the data array in memory to obtain a pointer
             fixed (byte* dataPtr = data)
             {
                 XXHash.SZ_XXH64_Reset(&ctx);
-                int bytesRead;
-                int remainingSize = length;
-                while (remainingSize > 0)
-                {
-                    bytesRead = Math.Min(remainingSize, bufferSize);
-                    XXHash.SZ_XXH64_Update(&ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
-                    remainingSize -= bytesRead;
-                }
+                // Process the data in 256 MiB chunks
+                processData(dataPtr, offset, length, &ctx);
+                // Compute and return the final hash
                 return XXHash.SZ_XXH64_Digest(&ctx).ToByteArray();
             }
         }
 
-        public static new XXHash64 Create()
+        /// <summary>
+        /// Processes the specified region of the byte array in 256 MiB chunks.
+        /// </summary>
+        private static void processData(byte* dataPtr, int offset, int length, XXH64_CTX* ctx)
         {
-            return new XXHash64();
+            int remainingSize = length;
+            while (remainingSize > 0)
+            {
+                // Determine the size of the current chunk to process
+                int bytesRead = Math.Min(remainingSize, BufferSize);
+                // Update the hash context with the current chunk
+                XXHash.SZ_XXH64_Update(ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
+                // Decrease the remaining size by the number of bytes read
+                remainingSize -= bytesRead;
+            }
         }
 
+        /// <summary>
+        /// Creates a new instance of the XXHash64 class.
+        /// </summary>
+        /// <returns>A new instance of the XXHash64 class.</returns>
+        public static new XXHash64 Create() => new XXHash64();
+
+        /// <summary>
+        /// Initializes the hash algorithm.
+        /// </summary>
         public override void Initialize()
         {
             _ctx = new XXH64_CTX();
+            // Reset the hash context
             fixed (XXH64_CTX* ctxPtr = &_ctx)
                 XXHash.SZ_XXH64_Reset(ctxPtr);
         }
 
+        /// <summary>
+        /// Routes data written to the object into the hash algorithm for computing the hash.
+        /// </summary>
+        /// <param name="data">The input data.</param>
+        /// <param name="offset">The offset in the byte array to start at.</param>
+        /// <param name="size">The number of bytes to process.</param>
         protected override void HashCore(byte[] data, int offset, int size)
         {
-            const int bufferSize = 256 * 1024 * 1024; // 256 MiB buffer
-
-            int bytesRead;
-            int remainingSize = size;
+            // Pin the data array and the hash context in memory to obtain pointers
             fixed (byte* dataPtr = data)
             fixed (XXH64_CTX* ctxPtr = &_ctx)
-            {
-                while (remainingSize > 0)
-                {
-                    bytesRead = Math.Min(remainingSize, bufferSize);
-                    XXHash.SZ_XXH64_Update(ctxPtr, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
-                    remainingSize -= bytesRead;
-                }
-            }
+                processData(dataPtr, offset, size, ctxPtr);
         }
 
+        /// <summary>
+        /// Finalizes the hash computation after the last data is written to the object.
+        /// </summary>
+        /// <returns>The computed hash code.</returns>
         protected override byte[] HashFinal()
         {
+            // Compute and return the final hash
             fixed (XXH64_CTX* ctxPtr = &_ctx)
                 return XXHash.SZ_XXH64_Digest(ctxPtr).ToByteArray();
         }
+
     }
 }

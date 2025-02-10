@@ -38,10 +38,16 @@ namespace Nanook.GrindCore.Brotli
         /// -or-
         /// <paramref name="window" /> is not between the minimum value of 10 and the maximum value of 24.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="System.IO.Compression.BrotliEncoder" /> instance.</exception>
-        public BrotliEncoder(int quality, int window)
+        public BrotliEncoder(int quality, int window, CompressionVersion? version = null)
         {
             _disposed = false;
-            _state = Interop.Brotli.BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            if (version == null)
+                version = CompressionVersion.BrotliLatest();
+            if (version.Index == 0)
+                _state = Interop.Brotli.DN9_BRT_v1_1_0_EncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            else
+                throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
+            _state!.Version = version;
             if (_state.IsInvalid)
                 throw new IOException(SR.BrotliEncoder_Create);
             SetQuality(quality);
@@ -53,10 +59,16 @@ namespace Nanook.GrindCore.Brotli
         /// BROTLI_DEFAULT_WINDOW 22
         /// BROTLI_DEFAULT_QUALITY 11
         /// </summary>
-        internal void InitializeEncoder()
+        internal void InitializeEncoder(CompressionVersion? version = null)
         {
             EnsureNotDisposed();
-            _state = Interop.Brotli.BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            if (version == null)
+                version = CompressionVersion.BrotliLatest();
+            if (version.Index == 0)
+                _state = Interop.Brotli.DN9_BRT_v1_1_0_EncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            else
+                throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
+            _state!.Version = version;
             if (_state.IsInvalid)
                 throw new IOException(SR.BrotliEncoder_Create);
         }
@@ -95,10 +107,13 @@ namespace Nanook.GrindCore.Brotli
             {
                 throw new ArgumentOutOfRangeException(nameof(quality), SR.Format(SR.BrotliEncoder_Quality, quality, 0, BrotliUtils.Quality_Max));
             }
-            if (Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)quality) == Interop.BOOL.FALSE)
+            if (_state.Version.Index == 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
+                if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)quality) == Interop.BOOL.FALSE)
+                    throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
             }
+            else
+                throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
         }
 
         internal void SetWindow(int window)
@@ -113,10 +128,13 @@ namespace Nanook.GrindCore.Brotli
             {
                 throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
             }
-            if (Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
+            if (_state.Version.Index == 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Window"));
+                if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
+                    throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Window"));
             }
+            else
+                throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
         }
 
         /// <summary>Gets the maximum expected compressed length for the provided input size.</summary>
@@ -180,10 +198,13 @@ namespace Nanook.GrindCore.Brotli
                     fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                     fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                     {
-                        if (Interop.Brotli.BrotliEncoderCompressStream(_state!, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _) == Interop.BOOL.FALSE)
+                        if (_state.Version.Index == 0)
                         {
-                            return OperationStatus.InvalidData;
+                            if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderCompressStream(_state!, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _) == Interop.BOOL.FALSE)
+                                return OperationStatus.InvalidData;
                         }
+                        else
+                            throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
 
                         Debug.Assert(availableInput <= (nuint)source.Length);
                         Debug.Assert(availableOutput <= (nuint)destination.Length);
@@ -191,11 +212,14 @@ namespace Nanook.GrindCore.Brotli
                         bytesConsumed += source.Length - (int)availableInput;
                         bytesWritten += destination.Length - (int)availableOutput;
 
-                        // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
-                        if ((int)availableOutput == destination.Length && Interop.Brotli.BrotliEncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
+                        if (_state.Version.Index == 0)
                         {
-                            return OperationStatus.Done;
+                            // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
+                            if ((int)availableOutput == destination.Length && Interop.Brotli.DN9_BRT_v1_1_0_EncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
+                                return OperationStatus.Done;
                         }
+                        else
+                            throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
 
                         source = source.Slice(source.Length - (int)availableInput);
                         destination = destination.Slice(destination.Length - (int)availableOutput);
@@ -220,7 +244,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="quality">A number representing quality of the Brotli compression. 0 is the minimum (no compression), 11 is the maximum.</param>
         /// <param name="window">A number representing the encoder window bits. The minimum value is 10, and the maximum value is 24.</param>
         /// <returns><see langword="true" /> if the compression operation was successful; <see langword="false" /> otherwise.</returns>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window)
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window, CompressionVersion? version = null)
         {
             if (quality < 0 || quality > BrotliUtils.Quality_Max)
             {
@@ -237,7 +261,14 @@ namespace Nanook.GrindCore.Brotli
                 fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                 {
                     nuint availableOutput = (nuint)destination.Length;
-                    bool success = Interop.Brotli.BrotliEncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
+                    if (version == null)
+                        version = CompressionVersion.BrotliLatest();
+
+                    bool success;
+                    if (version.Index == 0)
+                        success = Interop.Brotli.DN9_BRT_v1_1_0_EncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
+                    else
+                        throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
 
                     Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
 

@@ -6,8 +6,8 @@ using System.Diagnostics;
 using System.Security;
 using System;
 
-using ZErrorCode = Nanook.GrindCore.DeflateZLib.ZLibNative.ErrorCode;
-using ZFlushCode = Nanook.GrindCore.DeflateZLib.ZLibNative.FlushCode;
+using ZErrorCode = Nanook.GrindCore.Interop.ZLib.ErrorCode;
+using ZFlushCode = Nanook.GrindCore.Interop.ZLib.FlushCode;
 
 namespace Nanook.GrindCore.DeflateZLib
 {
@@ -21,6 +21,7 @@ namespace Nanook.GrindCore.DeflateZLib
         private bool _isDisposed;
         private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
         private const int maxWindowBits = 31;   // zlib header, or 24..31 for a GZip header
+        private CompressionVersion _version;
 
         // Note, DeflateStream or the deflater do not try to be thread safe.
         // The lock is just used to make writing to unmanaged structures atomic to make sure
@@ -29,47 +30,46 @@ namespace Nanook.GrindCore.DeflateZLib
         // on the stream explicitly.
         private object SyncLock => this;
 
-        internal Deflater(CompressionLevel compressionLevel, int windowBits)
+        internal Deflater(CompressionVersion version, CompressionType compressionLevel, int windowBits)
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
-            ZLibNative.CompressionLevel zlibCompressionLevel;
-            int memLevel;
+            _version = version;
+            Interop.ZLib.CompressionLevel zlibCompressionLevel;
+            int memLevel = Interop.ZLib.Deflate_DefaultMemLevel;
 
             switch (compressionLevel)
             {
                 // See the note in ZLibNative.CompressionLevel for the recommended combinations.
 
-                case CompressionLevel.Optimal:
-                    zlibCompressionLevel = ZLibNative.CompressionLevel.DefaultCompression;
-                    memLevel = ZLibNative.Deflate_DefaultMemLevel;
+                case CompressionType.Optimal:
+                    zlibCompressionLevel = Interop.ZLib.CompressionLevel.DefaultCompression;
                     break;
 
-                case CompressionLevel.Fastest:
-                    zlibCompressionLevel = ZLibNative.CompressionLevel.BestSpeed;
-                    memLevel = ZLibNative.Deflate_DefaultMemLevel;
+                case CompressionType.Fastest:
+                    zlibCompressionLevel = Interop.ZLib.CompressionLevel.BestSpeed;
                     break;
 
-                case CompressionLevel.NoCompression:
-                    zlibCompressionLevel = ZLibNative.CompressionLevel.NoCompression;
-                    memLevel = ZLibNative.Deflate_NoCompressionMemLevel;
+                case CompressionType.NoCompression:
+                    zlibCompressionLevel = Interop.ZLib.CompressionLevel.NoCompression;
+                    memLevel = Interop.ZLib.Deflate_NoCompressionMemLevel;
                     break;
 
-                case CompressionLevel.SmallestSize:
-                    zlibCompressionLevel = ZLibNative.CompressionLevel.BestCompression;
-                    memLevel = ZLibNative.Deflate_DefaultMemLevel;
+                case CompressionType.SmallestSize:
+                    zlibCompressionLevel = Interop.ZLib.CompressionLevel.BestCompression;
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(compressionLevel));
+                    zlibCompressionLevel = (Interop.ZLib.CompressionLevel)compressionLevel; // raw level int
+                    break;
             }
 
-            ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;
+            Interop.ZLib.CompressionStrategy strategy = Interop.ZLib.CompressionStrategy.DefaultStrategy;
 
             ZErrorCode errC;
             try
             {
                 errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, zlibCompressionLevel,
-                                                             windowBits, memLevel, strategy);
+                                                             windowBits, memLevel, strategy, _version);
             }
             catch (Exception cause)
             {
@@ -225,7 +225,7 @@ namespace Nanook.GrindCore.DeflateZLib
             lock (SyncLock)
             {
                 _zlibStream.AvailIn = 0;
-                _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                _zlibStream.NextIn = Interop.ZLib.ZNullPtr;
                 _inputBufferHandle.Dispose();
             }
         }

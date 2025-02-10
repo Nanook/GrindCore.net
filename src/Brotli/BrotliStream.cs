@@ -18,45 +18,41 @@ namespace Nanook.GrindCore.Brotli
         private byte[] _buffer;
         private readonly bool _leaveOpen;
         private readonly CompressionMode _mode;
+        private readonly CompressionVersion _version;
 
-        /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression mode.</summary>
+        /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode.</summary>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="type">CompressionLevel or Decompress, indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
+        public BrotliStream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, leaveOpen: false, version) { }
+
+        /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        public BrotliStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false) { }
-
-        /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
-        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="System.IO.Compression.BrotliStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public BrotliStream(Stream stream, CompressionMode mode, bool leaveOpen)
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="Nanook.GrindCore.BrotliStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        public BrotliStream(Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            switch (mode)
+            _version = version ?? CompressionVersion.BrotliLatest();
+
+            if (type != CompressionType.Decompress)
             {
-                case CompressionMode.Compress:
-                    if (!stream.CanWrite)
-                    {
-                        throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(stream));
-                    }
+                if (!stream.CanWrite)
+                    throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(stream));
 
-                    _encoder.SetQuality(BrotliUtils.Quality_Default);
-                    _encoder.SetWindow(BrotliUtils.WindowBits_Default);
-                    break;
+                _encoder.SetQuality(BrotliUtils.GetQualityFromCompressionLevel(type));
+                _encoder.SetWindow(BrotliUtils.WindowBits_Default);
+                _mode = CompressionMode.Compress;
+            }
+            else
+            {
+                if (!stream.CanRead)
+                    throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
 
-                case CompressionMode.Decompress:
-                    if (!stream.CanRead)
-                    {
-                        throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
-                    }
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(mode));
+                _mode = CompressionMode.Decompress;
             }
 
-            _mode = mode;
             _stream = stream;
             _leaveOpen = leaveOpen;
             _buffer = ArrayPool<byte>.Shared.Rent(DefaultInternalBufferSize);
@@ -68,7 +64,7 @@ namespace Nanook.GrindCore.Brotli
                 throw new ObjectDisposedException(nameof(BrotliStream));
         }
 
-        /// <summary>Releases the unmanaged resources used by the <see cref="System.IO.Compression.BrotliStream" /> and optionally releases the managed resources.</summary>
+        /// <summary>Releases the unmanaged resources used by the <see cref="Nanook.GrindCore.BrotliStream" /> and optionally releases the managed resources.</summary>
         /// <param name="disposing"><see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing)
         {
@@ -95,11 +91,11 @@ namespace Nanook.GrindCore.Brotli
         }
 
 #if NETCOREAPP
-        /// <summary>Asynchronously releases the unmanaged resources used by the <see cref="System.IO.Compression.BrotliStream" />.</summary>
+        /// <summary>Asynchronously releases the unmanaged resources used by the <see cref="Nanook.GrindCore.BrotliStream" />.</summary>
         /// <returns>A task that represents the asynchronous dispose operation.</returns>
         /// <remarks><para>This method lets you perform a resource-intensive dispose operation without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
         /// <para>This method disposes the Brotli stream by writing any changes to the backing store and closing the stream to release resources.</para>
-        /// <para>Calling <see cref="System.IO.Compression.BrotliStream.DisposeAsync" /> allows the resources used by the <see cref="System.IO.Compression.BrotliStream" /> to be reallocated for other purposes. For more information, see [Cleaning Up Unmanaged Resources](/dotnet/standard/garbage-collection/unmanaged).</para></remarks>
+        /// <para>Calling <see cref="Nanook.GrindCore.BrotliStream.DisposeAsync" /> allows the resources used by the <see cref="Nanook.GrindCore.BrotliStream" /> to be reallocated for other purposes. For more information, see [Cleaning Up Unmanaged Resources](/dotnet/standard/garbage-collection/unmanaged).</para></remarks>
         public override async ValueTask DisposeAsync()
         {
             try

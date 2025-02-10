@@ -72,7 +72,7 @@ namespace Nanook.GrindCore.Brotli
         /// <summary>Reads a sequence of bytes from the current Brotli stream to a byte span and advances the position within the Brotli stream by the number of bytes read.</summary>
         /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current source.</param>
         /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes allocated in the buffer if that many bytes are not currently available, or zero (0) if the end of the stream has been reached.</returns>
-        /// <remarks><para>Use the <see cref="System.IO.Compression.BrotliStream.CanRead" /> property to determine whether the current instance supports reading. Use the <see langword="System.IO.Compression.BrotliStream.ReadAsync" /> method to read asynchronously from the current stream.</para>
+        /// <remarks><para>Use the <see cref="Nanook.GrindCore.BrotliStream.CanRead" /> property to determine whether the current instance supports reading. Use the <see langword="Nanook.GrindCore.BrotliStream.ReadAsync" /> method to read asynchronously from the current stream.</para>
         /// <para>This method reads a maximum of <c>buffer.Length</c> bytes from the current stream and stores them in <paramref name="buffer" />. The current position within the Brotli stream is advanced by the number of bytes read; however, if an exception occurs, the current position within the Brotli stream remains unchanged. This method will block until at least one byte of data can be read, in the event that no data is available. <c>Read</c> returns 0 only when there is no more data in the stream and no more is expected (such as a closed socket or end of file). The method is free to return fewer bytes than requested even if the end of the stream has not been reached.</para>
         /// <para>Use <see cref="System.IO.BinaryReader" /> to read primitive data types.</para></remarks>
 #if NETFRAMEWORK
@@ -118,16 +118,16 @@ namespace Nanook.GrindCore.Brotli
         /// <exception cref="System.IO.IOException">The method tried to read asynchronously past the end of the stream, or a disk error occurred.</exception>
         /// <exception cref="System.ArgumentException">One or more of the arguments is invalid.</exception>
         /// <exception cref="System.ObjectDisposedException">Methods were called after the stream was closed.</exception>
-        /// <exception cref="System.NotSupportedException">The current <see cref="System.IO.Compression.BrotliStream" /> implementation does not support the read operation.</exception>
+        /// <exception cref="System.NotSupportedException">The current <see cref="Nanook.GrindCore.BrotliStream" /> implementation does not support the read operation.</exception>
         /// <exception cref="System.InvalidOperationException">This call cannot be completed.</exception>
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback!, asyncState!);
 
         /// <summary>Waits for the pending asynchronous read to complete. (Consider using the <see cref="System.IO.Stream.ReadAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="asyncResult">The reference to the pending asynchronous request to finish.</param>
-        /// <returns>The number of bytes read from the stream, between 0 (zero) and the number of bytes you requested. <see cref="System.IO.Compression.BrotliStream" /> returns 0 only at the end of the stream; otherwise, it blocks until at least one byte is available.</returns>
+        /// <returns>The number of bytes read from the stream, between 0 (zero) and the number of bytes you requested. <see cref="Nanook.GrindCore.BrotliStream" /> returns 0 only at the end of the stream; otherwise, it blocks until at least one byte is available.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="asyncResult" /> is <see langword="null" />.</exception>
-        /// <exception cref="System.ArgumentException"><paramref name="asyncResult" /> did not originate from a <see cref="System.IO.Compression.BrotliStream.BeginRead(byte[],int,int,System.AsyncCallback,object)" /> method on the current stream.</exception>
+        /// <exception cref="System.ArgumentException"><paramref name="asyncResult" /> did not originate from a <see cref="Nanook.GrindCore.BrotliStream.BeginRead(byte[],int,int,System.AsyncCallback,object)" /> method on the current stream.</exception>
         /// <exception cref="System.InvalidOperationException">The end operation cannot be performed because the stream is closed.</exception>
         public override int EndRead(IAsyncResult asyncResult) =>
             TaskToAsyncResult.End<int>(asyncResult);
@@ -139,7 +139,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous read operation, which wraps the total number of bytes read into the <paramref name="buffer" />. The result value can be less than the number of bytes requested if the number of bytes currently available is less than the requested number, or it can be 0 (zero) if the end of the Brotli stream has been reached.</returns>
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
-        /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanRead" /> property to determine whether the current instance supports reading.</para>
+        /// <para>Use the <see cref="Nanook.GrindCore.BrotliStream.CanRead" /> property to determine whether the current instance supports reading.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -152,7 +152,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous read operation, which wraps the total number of bytes read into the buffer. The result value can be less than the number of bytes allocated in the buffer if that many bytes are not currently available, or it can be 0 (zero) if the end of the Brotli stream has been reached.</returns>
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
-        /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanRead" /> property to determine whether the current instance supports reading.</para>
+        /// <para>Use the <see cref="Nanook.GrindCore.BrotliStream.CanRead" /> property to determine whether the current instance supports reading.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
 #if NETFRAMEWORK
         public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
