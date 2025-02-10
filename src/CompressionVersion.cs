@@ -19,8 +19,8 @@ namespace Nanook.GrindCore
     }
     public enum BrotliVersion
     {
-      v1_0_9 = 1,
-      Latest = v1_0_9
+      v1_1_0 = 1,
+      Latest = v1_1_0
     }
 
     public class CompressionVersion
@@ -28,7 +28,7 @@ namespace Nanook.GrindCore
         public static string LATEST = "";
         public static string ZLIB_v1_3_1 = "1.3.1";
         public static string ZLIBNG_v2_2_1 = "2.2.1";
-        public static string BROTLI_v1_0_9 = "1.0.9";
+        public static string BROTLI_v1_1_0 = "1.1.0";
 
         private static string enumStringToVersionString(string enumName) => enumName.Replace("v", "").Replace("_", ".");
 
@@ -58,9 +58,9 @@ namespace Nanook.GrindCore
             switch (algorithm)
             {
                 case CompressionAlgorithm.Brotli:
-                    if (string.IsNullOrEmpty(version) || version == BROTLI_v1_0_9)
+                    if (string.IsNullOrEmpty(version) || version == BROTLI_v1_1_0)
                     {
-                        result.Version = BROTLI_v1_0_9;
+                        result.Version = BROTLI_v1_1_0;
                         result.Index = 0;
                     }
                     break;

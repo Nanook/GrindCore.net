@@ -13,7 +13,7 @@ namespace Nanook.GrindCore.Brotli
         protected override bool ReleaseHandle()
         {
             if (Version.Index == 0)
-                Interop.Brotli.DN8_Brotli_v1_0_9_EncoderDestroyInstance(handle);
+                Interop.Brotli.DN9_BRT_v1_1_0_EncoderDestroyInstance(handle);
             return true;
         }
 
@@ -29,7 +29,7 @@ namespace Nanook.GrindCore.Brotli
         protected override bool ReleaseHandle()
         {
             if (Version.Index == 0)
-                Interop.Brotli.DN8_Brotli_v1_0_9_DecoderDestroyInstance(handle);
+                Interop.Brotli.DN9_BRT_v1_1_0_DecoderDestroyInstance(handle);
             return true;
         }
 
