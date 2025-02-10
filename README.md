@@ -4,6 +4,8 @@ A compression and Hashing library built the System.IO.Compression way... A manag
 
 Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore) and supports multiple platforms.
 
+Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore)
+
 This library is in the early stages of development. There may be many breaking changes over the following months.
 
 ## Overview
