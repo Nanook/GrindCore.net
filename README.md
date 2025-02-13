@@ -1,6 +1,6 @@
 # GrindCore
 
-A compression and Hashing library built the System.IO.Compression way... A managed dotnet wrapper around a Native library ([GrindCore](https://github.com/Nanook/GrindCore) Native).
+A compression and hashing library built the System.IO.Compression way... A managed dotnet wrapper around a Native library ([GrindCore](https://github.com/Nanook/GrindCore) Native).
 
 Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore) and supports multiple platforms.
 
@@ -19,9 +19,9 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 ### Compression
 
 - Streams
-  - ZLib v1.3.1 (DotNet 8.0) [GZip, ZLib, Deflate]
-  - ZLib-NG v2.2.1 (DotNet 9.0) [GZip, ZLib, Deflate]
-  - Brotli v1.1.0 (DotNet 9.0)
+  - ZLib v1.3.1 [GZip, ZLib, Deflate] (From DotNet 8.0)
+  - ZLib-NG v2.2.1 [GZip, ZLib, Deflate] (From DotNet 9.0)
+  - Brotli v1.1.0 (From DotNet 9.0)
 
 - Archives
   - Zip
