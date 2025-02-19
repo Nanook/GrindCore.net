@@ -71,7 +71,7 @@ namespace Nanook.GrindCore.Brotli
 
         internal void WriteCore(ReadOnlySpan<byte> buffer, bool isFinalBlock = false)
         {
-            if (_mode != CompressionMode.Compress)
+            if (!_compress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
             EnsureNotDisposed();
 
@@ -140,7 +140,7 @@ namespace Nanook.GrindCore.Brotli
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
 #endif
         {
-            if (_mode != CompressionMode.Compress)
+            if (!_compress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
             EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
@@ -180,13 +180,13 @@ namespace Nanook.GrindCore.Brotli
             }
         }
 
-        /// <summary>If the stream is not disposed, and the compression mode is set to compress, writes all the remaining encoder's data into this stream.</summary>
+        /// <summary>If the stream is not _disposed, and the compression mode is set to compress, writes all the remaining encoder's data into this stream.</summary>
         /// <exception cref="InvalidDataException">The encoder ran into invalid data.</exception>
-        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is _disposed.</exception>
         public override void Flush()
         {
             EnsureNotDisposed();
-            if (_mode == CompressionMode.Compress)
+            if (_compress)
             {
                 if (_encoder._state == null || _encoder._state.IsClosed)
                     return;
@@ -221,7 +221,7 @@ namespace Nanook.GrindCore.Brotli
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            return _mode != CompressionMode.Compress ? Task.CompletedTask : FlushAsyncCore(cancellationToken);
+            return !_compress ? Task.CompletedTask : FlushAsyncCore(cancellationToken);
         }
 
         private async Task FlushAsyncCore(CancellationToken cancellationToken)

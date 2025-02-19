@@ -19,12 +19,14 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 ### Compression
 
 - Streams
+  - Brotli v1.1.0 (From DotNet 9.0)
+  - Fast-Lzma2 v1.0.1 (From 7Zip-mcmilk)
   - ZLib v1.3.1 [GZip, ZLib, Deflate] (From DotNet 8.0)
   - ZLib-NG v2.2.1 [GZip, ZLib, Deflate] (From DotNet 9.0)
-  - Brotli v1.1.0 (From DotNet 9.0)
 
 - Archives
   - Zip
+  - SharpCompress (Subject to rework and breaking changes)
 
 ### Hashing
 

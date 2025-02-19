@@ -649,7 +649,7 @@ namespace Nanook.GrindCore.Zip
         {
             ThrowIfDisposed();
 
-            // assume writable if not disposed
+            // assume writable if not _disposed
             Debug.Assert(CanWrite);
 
             _baseStream.Flush();

@@ -17,7 +17,7 @@ namespace Nanook.GrindCore.Brotli
         private Stream _stream;
         private byte[] _buffer;
         private readonly bool _leaveOpen;
-        private readonly CompressionMode _mode;
+        private readonly bool _compress;
         private readonly CompressionVersion _version;
 
         /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode.</summary>
@@ -28,7 +28,7 @@ namespace Nanook.GrindCore.Brotli
         /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="Nanook.GrindCore.BrotliStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="Nanook.GrindCore.BrotliStream" /> object is _disposed; otherwise, <see langword="false" />.</param>
         public BrotliStream(Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)
         {
             if (stream == null)
@@ -43,14 +43,14 @@ namespace Nanook.GrindCore.Brotli
 
                 _encoder.SetQuality(BrotliUtils.GetQualityFromCompressionLevel(type));
                 _encoder.SetWindow(BrotliUtils.WindowBits_Default);
-                _mode = CompressionMode.Compress;
+                _compress = true;
             }
             else
             {
                 if (!stream.CanRead)
                     throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
 
-                _mode = CompressionMode.Decompress;
+                _compress = false;
             }
 
             _stream = stream;
@@ -72,7 +72,7 @@ namespace Nanook.GrindCore.Brotli
             {
                 if (disposing && _stream != null)
                 {
-                    if (_mode == CompressionMode.Compress)
+                    if (_compress)
                     {
                         WriteCore(ReadOnlySpan<byte>.Empty, isFinalBlock: true);
                     }
@@ -102,7 +102,7 @@ namespace Nanook.GrindCore.Brotli
             {
                 if (_stream != null)
                 {
-                    if (_mode == CompressionMode.Compress)
+                    if (_compress)
                     {
                         await WriteAsyncMemoryCore(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true).ConfigureAwait(false);
                     }
@@ -143,10 +143,10 @@ namespace Nanook.GrindCore.Brotli
         public Stream BaseStream => _stream;
         /// <summary>Gets a value indicating whether the stream supports reading while decompressing a file.</summary>
         /// <value><see langword="true" /> if the <see cref="System.IO.Compression.CompressionMode" /> value is <see langword="Decompress," /> and the underlying stream supports reading and is not closed; otherwise, <see langword="false" />.</value>
-        public override bool CanRead => _mode == CompressionMode.Decompress && _stream != null && _stream.CanRead;
+        public override bool CanRead => !_compress && _stream != null && _stream.CanRead;
         /// <summary>Gets a value indicating whether the stream supports writing.</summary>
         /// <value><see langword="true" /> if the <see cref="System.IO.Compression.CompressionMode" /> value is <see langword="Compress" />, and the underlying stream supports writing and is not closed; otherwise, <see langword="false" />.</value>
-        public override bool CanWrite => _mode == CompressionMode.Compress && _stream != null && _stream.CanWrite;
+        public override bool CanWrite => _compress && _stream != null && _stream.CanWrite;
         /// <summary>Gets a value indicating whether the stream supports seeking.</summary>
         /// <value><see langword="false" /> in all cases.</value>
         public override bool CanSeek => false;

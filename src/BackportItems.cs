@@ -13,6 +13,8 @@ namespace Nanook.GrindCore
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
     public sealed class MemberNotNullAttribute : Attribute
     {
+        public MemberNotNullAttribute() : this(new string[0]) { }
+
         public MemberNotNullAttribute(params string[] memberNames)
         {
             MemberNames = memberNames;

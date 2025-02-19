@@ -93,7 +93,7 @@ namespace System
         internal static string @FieldTooBigUncompressedSize => GetResourceString("FieldTooBigUncompressedSize", @"Uncompressed Size cannot be held in an Int64.");
         /// <summary>Cannot modify entry in Create mode after entry has been opened for writing.</summary>
         internal static string @FrozenAfterWrite => GetResourceString("FrozenAfterWrite", @"Cannot modify entry in Create mode after entry has been opened for writing.");
-        /// <summary>A stream from ZipArchiveEntry has been disposed.</summary>
+        /// <summary>A stream from ZipArchiveEntry has been _disposed.</summary>
         internal static string @HiddenStreamName => GetResourceString("HiddenStreamName", @"A stream from ZipArchiveEntry has been disposed.");
         /// <summary>Length properties are unavailable once an entry has been opened for writing.</summary>
         internal static string @LengthAfterWrite => GetResourceString("LengthAfterWrite", @"Length properties are unavailable once an entry has been opened for writing.");

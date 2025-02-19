@@ -17,7 +17,7 @@ namespace Nanook.GrindCore.DeflateZLib
         private const int DefaultBufferSize = 8192;
 
         private Stream _stream;
-        private CompressionMode _mode;
+        private bool _compress;
         private bool _leaveOpen;
         private Inflater? _inflater;
         private Deflater? _deflater;
@@ -56,7 +56,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 _inflater = new Inflater(version, windowBits, uncompressedSize);
                 _stream = stream;
-                _mode = CompressionMode.Decompress;
+                _compress = false;
                 _leaveOpen = leaveOpen;
             }
             else
@@ -75,7 +75,7 @@ namespace Nanook.GrindCore.DeflateZLib
             _deflater = new Deflater(version, compressionLevel, windowBits);
 
             _stream = stream;
-            _mode = CompressionMode.Compress;
+            _compress = true;
             _leaveOpen = leaveOpen;
             InitializeBuffer();
         }
@@ -98,31 +98,9 @@ namespace Nanook.GrindCore.DeflateZLib
 
         public Stream BaseStream => _stream;
 
-        public override bool CanRead
-        {
-            get
-            {
-                if (_stream == null)
-                {
-                    return false;
-                }
+        public override bool CanRead => _stream != null && !_compress && _stream.CanRead;
 
-                return _mode == CompressionMode.Decompress && _stream.CanRead;
-            }
-        }
-
-        public override bool CanWrite
-        {
-            get
-            {
-                if (_stream == null)
-                {
-                    return false;
-                }
-
-                return _mode == CompressionMode.Compress && _stream.CanWrite;
-            }
-        }
+        public override bool CanWrite => _stream != null && _compress && _stream.CanWrite;
 
         public override bool CanSeek => false;
 
@@ -140,7 +118,7 @@ namespace Nanook.GrindCore.DeflateZLib
         public override void Flush()
         {
             EnsureNotDisposed();
-            if (_mode == CompressionMode.Compress)
+            if (_compress)
                 FlushBuffers();
         }
 
@@ -152,7 +130,7 @@ namespace Nanook.GrindCore.DeflateZLib
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            return _mode != CompressionMode.Compress ?
+            return !_compress ?
                 Task.CompletedTask :
                 Core(cancellationToken);
 
@@ -314,7 +292,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
         private void EnsureDecompressionMode()
         {
-            if (_mode != CompressionMode.Decompress)
+            if (_compress)
                 ThrowCannotReadFromDeflateStreamException();
 
             static void ThrowCannotReadFromDeflateStreamException() =>
@@ -323,7 +301,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
         private void EnsureCompressionMode()
         {
-            if (_mode != CompressionMode.Compress)
+            if (!_compress)
                 ThrowCannotWriteToDeflateStreamException();
 
             static void ThrowCannotWriteToDeflateStreamException() =>
@@ -571,7 +549,7 @@ namespace Nanook.GrindCore.DeflateZLib
             if (_stream == null)
                 return;
 
-            if (_mode != CompressionMode.Compress)
+            if (!_compress)
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
@@ -599,7 +577,7 @@ namespace Nanook.GrindCore.DeflateZLib
             else
             {
                 // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
+                // the object get _disposed because eventually ZLibNative.ReleaseHandle will get called during
                 // the dispose operation and although it frees the stream but it return error code because the
                 // stream state was still marked as in use. The symptoms of this problem will not be seen except
                 // if running any diagnostic tools which check for disposing safe handle objects
@@ -618,7 +596,7 @@ namespace Nanook.GrindCore.DeflateZLib
             if (_stream == null)
                 return;
 
-            if (_mode != CompressionMode.Compress)
+            if (!_compress)
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
@@ -646,7 +624,7 @@ namespace Nanook.GrindCore.DeflateZLib
             else
             {
                 // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
+                // the object get _disposed because eventually ZLibNative.ReleaseHandle will get called during
                 // the dispose operation and although it frees the stream, it returns an error code because the
                 // stream state was still marked as in use. The symptoms of this problem will not be seen except
                 // if running any diagnostic tools which check for disposing safe handle objects.

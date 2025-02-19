@@ -61,16 +61,9 @@ namespace Nanook.GrindCore
         //Level21 = 21,
         //Level22 = 22,
         MaxZLib = Level9,
+        MaxFastLzma2 = Level10,
         MaxBrotli = Level11,
         //MaxZStd = Level22,
     }
 
-    /// <summary>
-    /// CompressionMode - Internal as CompressionType caters for it publically
-    /// </summary>
-    internal enum CompressionMode
-    {
-        Decompress = 0,
-        Compress = 1
-    }
 }

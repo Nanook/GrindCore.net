@@ -11,7 +11,7 @@ namespace Nanook.GrindCore
         /// ZLib stream descriptor data structure
         /// Do not construct instances of <code>ZStream</code> explicitly.
         /// Always use <code>ZLibNative.DN8_ZLib_v1_3_1_DeflateInit2_</code> or <code>ZLibNative.InflateInit2_</code> instead.
-        /// Those methods will wrap this structure into a <code>SafeHandle</code> and thus make sure that it is always disposed correctly.
+        /// Those methods will wrap this structure into a <code>SafeHandle</code> and thus make sure that it is always _disposed correctly.
         /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         internal struct ZStream
