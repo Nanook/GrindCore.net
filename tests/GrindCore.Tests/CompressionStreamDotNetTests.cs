@@ -18,7 +18,7 @@ namespace GrindCore.Tests
         private static byte[] _data64KiB;
         private static byte[] _text64KiB;
 
-            private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>>()
+        private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>>()
         {
             { CompressionAlgorithm.GZip, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.GZipStream(stream, mode, leaveOpen) : new dn.GZipStream(stream, level, leaveOpen) },
             { CompressionAlgorithm.ZLib, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.ZLibStream(stream, mode, leaveOpen) : new dn.ZLibStream(stream, level, leaveOpen) },
@@ -29,18 +29,18 @@ namespace GrindCore.Tests
             { CompressionAlgorithm.Brotli, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.BrotliStream(stream, mode, leaveOpen) : new dn.BrotliStream(stream, level, leaveOpen) }
         };
 
-            public static Stream Create(CompressionAlgorithm algorithm, Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen = false)
-            {
-                return create(algorithm, stream, mode, level, leaveOpen);
-            }
+        public static Stream Create(CompressionAlgorithm algorithm, Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen = false)
+        {
+            return create(algorithm, stream, mode, level, leaveOpen);
+        }
 
-            private static Stream create(CompressionAlgorithm algorithm, Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen)
-            {
-                if (streamCreators.TryGetValue(algorithm, out var creator))
-                    return creator(stream, mode, level, leaveOpen);
+        private static Stream create(CompressionAlgorithm algorithm, Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen)
+        {
+            if (streamCreators.TryGetValue(algorithm, out var creator))
+                return creator(stream, mode, level, leaveOpen);
 
-                throw new ArgumentException("Unsupported stream algorithm", nameof(algorithm));
-            }
+            throw new ArgumentException("Unsupported stream algorithm", nameof(algorithm));
+        }
         static CompressionStreamDotNetTests()
         {
             _dataEmpty = new byte[0];
@@ -92,7 +92,7 @@ namespace GrindCore.Tests
                     {
                         // Hash raw input data and Compress
                         // using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, type, true))
-                        using (var compressionStream = CompressionStreamDotNetFactory.Create(algorithm, compMemoryStream, CompressionMode.Compress, level, true))
+                        using (var compressionStream = Create(algorithm, compMemoryStream, CompressionMode.Compress, level, true))
                         {
                             using (var cryptoStream = new CryptoStream(compressionStream, inXxhash, CryptoStreamMode.Write, true))
                             {
@@ -114,7 +114,7 @@ namespace GrindCore.Tests
 
                         // Deompress and hash 
                         compMemoryStream.Position = 0; //reset for reading
-                        using (var compressionStream = CompressionStreamDotNetFactory.Create(algorithm, compMemoryStream, CompressionMode.Decompress, level, true))
+                        using (var compressionStream = Create(algorithm, compMemoryStream, CompressionMode.Decompress, level, true))
                         {
                             int bytesRead;
                             while (totalOutProcessedBytes < total && (bytesRead = compressionStream.Read(buffer, 0, Math.Min(blockSize, (int)(total - totalOutProcessedBytes)))) > 0)
@@ -182,7 +182,7 @@ namespace GrindCore.Tests
                     {
                         // Hash raw input data and Compress
                         // using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, type, true))
-                        using (var compressionStream = CompressionStreamDotNetFactory.Create(algorithm, compMemoryStream, CompressionMode.Compress, level, true))
+                        using (var compressionStream = Create(algorithm, compMemoryStream, CompressionMode.Compress, level, true))
                         {
                             using (var cryptoStream = new CryptoStream(compressionStream, inXxhash, CryptoStreamMode.Write, true))
                             {
@@ -204,7 +204,7 @@ namespace GrindCore.Tests
 
                         // Deompress and hash 
                         compMemoryStream.Position = 0; //reset for reading
-                        using (var compressionStream = CompressionStreamDotNetFactory.Create(algorithm, compMemoryStream, CompressionMode.Decompress, level, true))
+                        using (var compressionStream = Create(algorithm, compMemoryStream, CompressionMode.Decompress, level, true))
                         {
                             int bytesRead;
                             while (totalOutProcessedBytes < total && (bytesRead = compressionStream.Read(buffer, 0, Math.Min(blockSize, (int)(total - totalOutProcessedBytes)))) > 0)
