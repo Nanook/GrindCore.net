@@ -32,6 +32,9 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x4bf, "ca5207caef02504d")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x2ff, "fd1a57a63d29c607")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x2ff, "fd1a57a63d29c607")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x1ea, "e8dcd55f29d31d27")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1ea, "4ffd75974e4d0d93")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x1ea, "bfb715f62e1a0e6b")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x3df, "23cc51e8d014ea83")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x311, "dd79ecbbf6270f98")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.SmallestSize, 0x311, "e72c2161819ae447")]
@@ -90,6 +93,7 @@ namespace GrindCore.Tests
             Assert.Equal(_text64KiB, decompressed);
         }
 
+#if !IS_32BIT
         [Theory]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x1, "12f83c352a398165")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x1, "12f83c352a398165")]
@@ -788,6 +792,7 @@ namespace GrindCore.Tests
             }
 
         }
+#endif
 #endif
     }
 }

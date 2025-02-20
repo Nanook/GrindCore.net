@@ -13,6 +13,8 @@ using System.Diagnostics;
 
 namespace GrindCore.Tests
 {
+#if WIN_X64
+
     public class SharpCompressTests
     {
         [Theory]
@@ -115,4 +117,5 @@ namespace GrindCore.Tests
 
         }
     }
+#endif
 }

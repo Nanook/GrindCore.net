@@ -4,7 +4,7 @@ using Nanook.GrindCore.XXHash;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Nanook.GrindCore.ZLib;
-using dn = System.IO.Compression;
+using DN=System.IO.Compression;
 using Xunit;
 using System.Reflection.Emit;
 using System.IO.Compression;
@@ -20,13 +20,13 @@ namespace GrindCore.Tests
 
         private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionMode, CompressionLevel, bool, Stream>>()
         {
-            { CompressionAlgorithm.GZip, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.GZipStream(stream, mode, leaveOpen) : new dn.GZipStream(stream, level, leaveOpen) },
-            { CompressionAlgorithm.ZLib, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.ZLibStream(stream, mode, leaveOpen) : new dn.ZLibStream(stream, level, leaveOpen) },
-            { CompressionAlgorithm.Deflate, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.DeflateStream(stream, mode, leaveOpen) : new dn.DeflateStream(stream, level) },
-            { CompressionAlgorithm.GZipNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.GZipStream(stream, mode, leaveOpen) : new dn.GZipStream(stream, level, leaveOpen) },
-            { CompressionAlgorithm.ZLibNg, (stream, mode, level, leaveOpen) =>mode == CompressionMode.Decompress ? new dn.ZLibStream(stream, mode, leaveOpen) :  new dn.ZLibStream(stream, level, leaveOpen) },
-            { CompressionAlgorithm.DeflateNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.DeflateStream(stream, mode, leaveOpen) : new dn.DeflateStream(stream, level, leaveOpen) },
-            { CompressionAlgorithm.Brotli, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new dn.BrotliStream(stream, mode, leaveOpen) : new dn.BrotliStream(stream, level, leaveOpen) }
+            { CompressionAlgorithm.GZip, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new DN.GZipStream(stream, mode, leaveOpen) : new DN.GZipStream(stream, level, leaveOpen) },
+            { CompressionAlgorithm.ZLib, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new DN.ZLibStream(stream, mode, leaveOpen) : new DN.ZLibStream(stream, level, leaveOpen) },
+            { CompressionAlgorithm.Deflate, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new DN.DeflateStream(stream, mode, leaveOpen) : new DN.DeflateStream(stream, level) },
+            { CompressionAlgorithm.GZipNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new DN.GZipStream(stream, mode, leaveOpen) : new DN.GZipStream(stream, level, leaveOpen) },
+            { CompressionAlgorithm.ZLibNg, (stream, mode, level, leaveOpen) =>mode == CompressionMode.Decompress ? new DN.ZLibStream(stream, mode, leaveOpen) :  new DN.ZLibStream(stream, level, leaveOpen) },
+            { CompressionAlgorithm.DeflateNg, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new DN.DeflateStream(stream, mode, leaveOpen) : new DN.DeflateStream(stream, level, leaveOpen) },
+            { CompressionAlgorithm.Brotli, (stream, mode, level, leaveOpen) => mode == CompressionMode.Decompress ? new DN.BrotliStream(stream, mode, leaveOpen) : new DN.BrotliStream(stream, level, leaveOpen) }
         };
 
         public static Stream Create(CompressionAlgorithm algorithm, Stream stream, CompressionMode mode, CompressionLevel level, bool leaveOpen = false)
