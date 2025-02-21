@@ -1,0 +1,15 @@
+# Use a multi-stage build to ensure all necessary libraries are included
+
+# Stage 1: Build the application
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /app
+COPY . .
+RUN dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o /app/output/linux-arm64 --self-contained false
+
+# Stage 2: Run the application
+FROM mcr.microsoft.com/dotnet/sdk:9.0
+WORKDIR /app
+COPY --from=build /app/output/linux-arm64 .
+COPY src/runtimes/linux-arm64/native/* .
+RUN chmod 755 GrindCore.Tests.Runtime
+ENTRYPOINT ["/app/GrindCore.Tests.Runtime"]

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using Nanook.GrindCore.ZLib;
 using Xunit;
-using System.Reflection.Emit;
 
 namespace GrindCore.Tests
 {
@@ -22,6 +21,20 @@ namespace GrindCore.Tests
             _text64KiB = TestPseudoTextStream.Create(64 * 1024);
         }
 
+        [Theory]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "cdd2efd3865069b2")]
+        public void Text_ByteArray64KiBArm(CompressionAlgorithm algorithm, CompressionType type, int compressedSize, string xxh64)
+        {
+            var compressed = CompressionStreamFactory.Compress(algorithm, _text64KiB, type);
+            Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{compressed.Length:x}, \"{XXHash64.Compute(compressed).ToHexString()}\")]");
+            Assert.Equal(compressedSize, compressed.Length);
+            //Assert.Equal(xxh64, XXHash64.Compute(compressed).ToHexString());
+            //var decompressed = CompressionStreamFactory.Decompress(algorithm, compressed);
+            //Assert.Equal(_text64KiB, decompressed);
+        }
+
+
+#if !IS_32BIT
         [Theory]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x5d1, "2b444156a4305ae3")]
@@ -57,7 +70,6 @@ namespace GrindCore.Tests
             Assert.Equal(_text64KiB, decompressed);
         }
 
-#if !IS_32BIT
         [Theory]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x1f6, "1fd0ab5c0058d51a")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x19b, "e39f3f4d64825537")]

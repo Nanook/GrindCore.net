@@ -11,7 +11,7 @@ using System.IO.Compression;
 
 namespace GrindCore.Tests
 {
-#if DEBUG //just for debugging against the DotNet versions
+#if DEBUG && WIN_X64 //just for debugging against the DotNet versions
     public sealed class CompressionStreamDotNetTests
     {
         private static byte[] _dataEmpty;

@@ -28,14 +28,14 @@ jobs:
 
       - name: Build project for all platforms
         run: |
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-arm64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained false
 
       - name: Upload Linux ARM64 build
         uses: actions/upload-artifact@v4
