@@ -65,10 +65,11 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Sets up this DeflateStream to be used for Zlib Deflation/Compression
         /// </summary>
-        [MemberNotNull(nameof(_stream))]
         internal void InitializeDeflater(CompressionVersion version, Stream stream, bool leaveOpen, int windowBits, CompressionType compressionLevel)
         {
-            Debug.Assert(stream != null);
+            if (stream is null)
+                throw new ArgumentNullException(nameof(stream));
+
             if (!stream!.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
@@ -80,16 +81,17 @@ namespace Nanook.GrindCore.DeflateZLib
             InitializeBuffer();
         }
 
-        [MemberNotNull(nameof(_buffer))]
         private void InitializeBuffer()
         {
-            Debug.Assert(_buffer == null);
+            if (_buffer is null)
+                throw new MethodAccessException($"{nameof(_buffer)} must not be null");
             _buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
         }
 
-        [MemberNotNull(nameof(_buffer))]
         private void EnsureBufferInitialized()
         {
+            if (_buffer is null)
+                throw new MethodAccessException($"{nameof(_buffer)} must not be null");
             if (_buffer == null)
             {
                 InitializeBuffer();

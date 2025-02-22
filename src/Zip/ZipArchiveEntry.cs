@@ -175,7 +175,7 @@ namespace Nanook.GrindCore.Zip
         /// </summary>
         public ZipArchive Archive => _archive;
 
-        //[CLSCompliant(false)]
+        [CLSCompliant(false)]
         public uint Crc32 => _crc32;
 
         /// <summary>
@@ -244,10 +244,12 @@ namespace Nanook.GrindCore.Zip
                 return _storedEntryName;
             }
 
-            [MemberNotNull(nameof(_storedEntryNameBytes))]
-            [MemberNotNull(nameof(_storedEntryName))]
             private set
             {
+                if (_storedEntryNameBytes is null)
+                    throw new MethodAccessException($"{nameof(_storedEntryNameBytes)} must not be null");
+                if (_storedEntryName is null)
+                    throw new MethodAccessException($"{nameof(_storedEntryName)} must not be null");
                 if (value is null)
                     throw new ArgumentNullException(nameof(FullName));
 

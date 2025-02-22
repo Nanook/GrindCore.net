@@ -243,9 +243,10 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Creates the ZStream that will handle inflation.
         /// </summary>
-        [MemberNotNull(nameof(_zlibStream))]
         private void InflateInit(int windowBits)
         {
+            if (_zlibStream is null)
+                throw new MethodAccessException($"{nameof(_zlibStream)} must not be null");
             ZErrorCode error;
             try
             {
