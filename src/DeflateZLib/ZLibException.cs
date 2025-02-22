@@ -6,6 +6,9 @@ using System.Runtime.Serialization;
 using System.IO;
 using System;
 
+using ZErrorCode = Nanook.GrindCore.Interop.ZLib.ErrorCode;
+using ZFlushCode = Nanook.GrindCore.Interop.ZLib.FlushCode;
+
 namespace Nanook.GrindCore.DeflateZLib
 {
     /// <summary>
@@ -17,7 +20,7 @@ namespace Nanook.GrindCore.DeflateZLib
     {
         private readonly string? _zlibErrorContext = string.Empty;
         private readonly string? _zlibErrorMessage = string.Empty;
-        private readonly ZLibNative.ErrorCode _zlibErrorCode = ZLibNative.ErrorCode.Ok;
+        private readonly ZErrorCode _zlibErrorCode = ZErrorCode.Ok;
 
         /// <summary>
         /// This is the preferred constructor to use.
@@ -30,7 +33,7 @@ namespace Nanook.GrindCore.DeflateZLib
         public ZLibException(string? message, string? zlibErrorContext, int zlibErrorCode, string? zlibErrorMessage) : base(message)
         {
             _zlibErrorContext = zlibErrorContext;
-            _zlibErrorCode = (ZLibNative.ErrorCode)zlibErrorCode;
+            _zlibErrorCode = (ZErrorCode)zlibErrorCode;
             _zlibErrorMessage = zlibErrorMessage;
         }
 

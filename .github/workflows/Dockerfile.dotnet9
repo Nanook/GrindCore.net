@@ -1,8 +1,0 @@
-# Use the official .NET 9 SDK ARM64 image as the base image
-FROM mcr.microsoft.com/dotnet/sdk:9.0
-
-# Set the working directory
-WORKDIR /app
-
-# Default command to keep the container alive
-CMD ["sh"]

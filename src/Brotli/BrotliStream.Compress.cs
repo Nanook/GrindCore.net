@@ -29,20 +29,6 @@ namespace Nanook.GrindCore.Brotli
         }
 #endif
 
-        /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression level.</summary>
-        /// <param name="stream">The stream to which compressed data is written.</param>
-        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
-        public BrotliStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false) { }
-
-        /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression level, and optionally leaves the stream open.</summary>
-        /// <param name="stream">The stream to which compressed data is written.</param>
-        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
-        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
-        public BrotliStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen)
-        {
-            _encoder.SetQuality(BrotliUtils.GetQualityFromCompressionLevel(compressionLevel));
-        }
-
         /// <summary>Writes compressed bytes to the underlying stream from the specified byte array.</summary>
         /// <param name="buffer">The buffer containing the data to compress.</param>
         /// <param name="offset">The byte offset in <paramref name="buffer" /> from which the bytes will be read.</param>
@@ -72,7 +58,7 @@ namespace Nanook.GrindCore.Brotli
 
         /// <summary>Writes a sequence of bytes to the current Brotli stream from a read-only byte span and advances the current position within this Brotli stream by the number of bytes written.</summary>
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the current Brotli stream.</param>
-        /// <remarks><para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see langword="System.IO.Compression.BrotliStream.WriteAsync" /> method to write asynchronously to the current stream.</para>
+        /// <remarks><para>Use the <see cref="Nanook.GrindCore.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see langword="Nanook.GrindCore.BrotliStream.WriteAsync" /> method to write asynchronously to the current stream.</para>
         /// <para>If the write operation is successful, the position within the Brotli stream advances by the number of bytes written. If an exception occurs, the position within the Brotli stream remains unchanged.</para></remarks>
 #if NETFRAMEWORK
         public void Write(ReadOnlySpan<byte> buffer)
@@ -115,7 +101,7 @@ namespace Nanook.GrindCore.Brotli
         /// <exception cref="System.IO.IOException">The method tried to write asynchronously past the end of the stream, or a disk error occurred.</exception>
         /// <exception cref="System.ArgumentException">One or more of the arguments is invalid.</exception>
         /// <exception cref="System.ObjectDisposedException">Methods were called after the stream was closed.</exception>
-        /// <exception cref="System.NotSupportedException">The current <see cref="System.IO.Compression.BrotliStream" /> implementation does not support the write operation.</exception>
+        /// <exception cref="System.NotSupportedException">The current <see cref="Nanook.GrindCore.BrotliStream" /> implementation does not support the write operation.</exception>
         /// <exception cref="System.InvalidOperationException">The write operation cannot be performed because the stream is closed.</exception>
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback!, asyncState!);
@@ -133,7 +119,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
-        /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
+        /// <para>Use the <see cref="Nanook.GrindCore.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -146,7 +132,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
-        /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
+        /// <para>Use the <see cref="Nanook.GrindCore.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
 #if NETFRAMEWORK
         public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
