@@ -124,7 +124,8 @@ jobs:
       - name: Install QEMU and binfmt
         run: |
           sudo apt-get update
-          sudo apt-get install qemu qemu-user-static binfmt-support
+          sudo add-apt-repository universe
+          sudo apt-get install qemu-system qemu-user-static binfmt-support
           sudo update-binfmts --enable qemu-arm
 
       - name: Build and run tests for Linux ARM
@@ -135,6 +136,7 @@ jobs:
           chmod 755 GrindCore.Tests.Runtime
           ls -al
           ./GrindCore.Tests.Runtime
+
   
   # test_linux_arm:
   #   needs: build_all_platforms
