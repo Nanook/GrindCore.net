@@ -108,21 +108,6 @@ jobs:
           ./GrindCore.Tests.Runtime
         shell: bash
 
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v2
-
-      # - name: Set up Docker Buildx
-      #   uses: docker/setup-buildx-action@v2
-
-      # - name: Build and run tests for Linux ARM64
-      #   run: |
-      #     cd output/linux-arm64/
-      #     cp runtimes/linux-arm64/native/* .
-      #     rm -rf runtimes
-      #     chmod 755 GrindCore.Tests.Runtime
-      #     ls -al
-      #     docker run --rm --platform linux/arm64 -v "$(pwd):/app" mcr.microsoft.com/dotnet/sdk:9.0 bash -c "/app/GrindCore.Tests.Runtime"
-
   test_linux_arm:
     needs: build_all_platforms
     runs-on: ubuntu-24.04-arm
@@ -136,11 +121,11 @@ jobs:
           name: linux-arm-build
           path: output/linux-arm/
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Install QEMU and binfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install qemu qemu-user-static binfmt-support
+          sudo update-binfmts --enable qemu-arm
 
       - name: Build and run tests for Linux ARM
         run: |
@@ -149,7 +134,35 @@ jobs:
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
           ls -al
-          docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" mcr.microsoft.com/dotnet/sdk:9.0 bash -c "/app/GrindCore.Tests.Runtime"
+          ./GrindCore.Tests.Runtime
+  
+  # test_linux_arm:
+  #   needs: build_all_platforms
+  #   runs-on: ubuntu-24.04-arm
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+
+  #     - name: Download Linux ARM build
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: linux-arm-build
+  #         path: output/linux-arm/
+
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v2
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v2
+
+  #     - name: Build and run tests for Linux ARM
+  #       run: |
+  #         cd output/linux-arm/
+  #         cp runtimes/linux-arm/native/* .
+  #         rm -rf runtimes
+  #         chmod 755 GrindCore.Tests.Runtime
+  #         ls -al
+  #         docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" mcr.microsoft.com/dotnet/sdk:9.0 bash -c "/app/GrindCore.Tests.Runtime"
 
   test_linux_x64:
     needs: build_all_platforms
