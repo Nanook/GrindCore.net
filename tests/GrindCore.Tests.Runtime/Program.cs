@@ -67,6 +67,12 @@ namespace GrindCore.Tests
                                         PrintExceptionDetails(ex);
                                         return result; // prevent hang when trying to resume
                                     }
+                                    GC.Collect();
+                                    GC.WaitForPendingFinalizers();
+                                    GC.Collect();
+                                    GC.WaitForPendingFinalizers();
+                                    GC.Collect();
+
                                 }
                             }
                         }
