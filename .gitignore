@@ -404,3 +404,5 @@ FodyWeavers.xsd
 *.dwarf
 *.a
 *.lib
+
+/output
