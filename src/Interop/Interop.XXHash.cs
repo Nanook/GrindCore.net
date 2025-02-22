@@ -7,7 +7,7 @@ using static Nanook.GrindCore.Interop;
 namespace Nanook.GrindCore.XXHash
 {
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct XXH32_CTX
+    internal unsafe struct XXH32_CTX
     {
         public uint total_len_32; // XXH32_hash_t is assumed to be uint
         public uint large_len;
@@ -18,7 +18,7 @@ namespace Nanook.GrindCore.XXHash
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct XXH64_CTX
+    internal unsafe struct XXH64_CTX
     {
         public ulong total_len; // Assuming similar structure for XXH64 with ulong for total length
         public ulong large_len;

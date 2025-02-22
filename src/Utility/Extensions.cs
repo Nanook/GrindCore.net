@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Nanook.GrindCore
 {
-    public static class Utilities
+    internal static class Utilities
     {
         public static byte[] GetBytes(ulong value)
         {
@@ -43,7 +43,7 @@ namespace Nanook.GrindCore
         }
     }
 
-    public static class ByteArrayExtensions
+    internal static class ByteArrayExtensions
     {
         public static string ToHexString(this byte[] bytes)
         {
@@ -54,7 +54,7 @@ namespace Nanook.GrindCore
         }
     }
 
-    public static class UIntExtensions
+    internal static class UIntExtensions
     {
         public static byte[] ToByteArray(this uint value)
         {
@@ -62,7 +62,7 @@ namespace Nanook.GrindCore
         }
     }
 
-    public static class ULongExtensions
+    internal static class ULongExtensions
     {
         public static byte[] ToByteArray(this ulong value)
         {

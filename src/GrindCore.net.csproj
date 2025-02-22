@@ -85,8 +85,23 @@
 		<PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0" />
 	</ItemGroup>
 
+	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.1'">
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.2" />
+	</ItemGroup>
+
 	<ItemGroup>
-	  <PackageReference Include="System.Private.Uri" Version="4.3.2" />
+		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
+		<PackageReference Include="ZstdSharp.Port" Version="0.6.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<FunctionsPreservedDependencies Include="System.Text.Encoding.CodePages.dll" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>GrindCore.Tests</_Parameter1>
+		</AssemblyAttribute>
 	</ItemGroup>
 
 </Project>

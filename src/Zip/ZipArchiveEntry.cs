@@ -16,7 +16,7 @@ using Nanook.GrindCore.DeflateZLib.DeflateManaged;
 
 namespace Nanook.GrindCore.Zip
 {
-    // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
+    // The disposable fields that this class owns get _disposed when the ZipArchive it belongs to gets _disposed
     public partial class ZipArchiveEntry
     {
         private ZipArchive _archive;
@@ -323,7 +323,7 @@ namespace Nanook.GrindCore.Zip
         /// </summary>
         /// <exception cref="IOException">The entry is already open for reading or writing.</exception>
         /// <exception cref="NotSupportedException">The ZipArchive that this entry belongs to was opened in a mode other than ZipArchiveMode.Update. </exception>
-        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been _disposed.</exception>
         public void Delete()
         {
             if (_archive == null)
@@ -348,7 +348,7 @@ namespace Nanook.GrindCore.Zip
         /// <returns>A Stream that represents the contents of the entry.</returns>
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
-        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been _disposed.</exception>
         public Stream Open()
         {
             ThrowIfInvalidArchive();

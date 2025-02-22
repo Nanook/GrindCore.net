@@ -1,6 +1,7 @@
 using Nanook.GrindCore.Brotli;
 using Nanook.GrindCore.DeflateZLib;
 using Nanook.GrindCore.GZip;
+using Nanook.GrindCore.Lzma;
 using Nanook.GrindCore.ZLib;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,8 @@ namespace Nanook.GrindCore
         GZipNg,
         ZLibNg,
         DeflateNg,
-        Brotli
+        Brotli,
+        FastLzma2
     }
 
     public class CompressionStreamFactory
@@ -30,12 +32,14 @@ namespace Nanook.GrindCore
             { CompressionAlgorithm.GZipNg, (stream, type, leaveOpen, version) => new GZipStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
             { CompressionAlgorithm.ZLibNg, (stream, type, leaveOpen, version) => new ZLibStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
             { CompressionAlgorithm.DeflateNg, (stream, type, leaveOpen, version) => new DeflateStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
-            { CompressionAlgorithm.Brotli, (stream, type, leaveOpen, version) => new BrotliStream(stream, type, leaveOpen,version ??  CompressionVersion.BrotliLatest()) }
+            { CompressionAlgorithm.Brotli, (stream, type, leaveOpen, version) => new BrotliStream(stream, type, leaveOpen, version ??  CompressionVersion.BrotliLatest()) },
+            { CompressionAlgorithm.FastLzma2, (stream, type, leaveOpen, version) => new FastLzma2Stream(stream, type, leaveOpen, new CompressionParameters(4), version) }
         };
 
         public static Stream Create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)
         {
-            return create(algorithm, stream, type, leaveOpen, version);
+            var s = create(algorithm, stream, type, leaveOpen, version);
+            return s;
         }
 
         private static Stream create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)

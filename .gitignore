@@ -405,4 +405,4 @@ FodyWeavers.xsd
 *.a
 *.lib
 
-/output
+output/

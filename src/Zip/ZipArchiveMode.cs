@@ -24,7 +24,7 @@ namespace Nanook.GrindCore.Zip
         /// Reading and writing from entries in the archive is permitted.
         /// Requires that the contents of the entire archive be held in memory.
         /// The underlying file or stream must be readable, writable and seekable.
-        /// No data will be written to the underlying file or stream until the archive is disposed.
+        /// No data will be written to the underlying file or stream until the archive is _disposed.
         /// </summary>
         Update
     }

@@ -81,7 +81,7 @@ namespace Nanook.GrindCore.Brotli
         public override int Read(Span<byte> buffer)
 #endif
         {
-            if (_mode != CompressionMode.Decompress)
+            if (_compress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
             EnsureNotDisposed();
 
@@ -160,7 +160,7 @@ namespace Nanook.GrindCore.Brotli
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
 #endif
         {
-            if (_mode != CompressionMode.Decompress)
+            if (_compress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
             EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();

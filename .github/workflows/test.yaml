@@ -24,18 +24,18 @@ jobs:
 
       - name: Initial Tests
         run: |
-          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
+          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0
 
       - name: Build project for all platforms
         run: |
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-arm64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64 --self-contained false
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r osx-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r osx-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/osx-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-arm64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-arm64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x64 --self-contained false
+          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained false
 
       - name: Upload Linux ARM64 build
         uses: actions/upload-artifact@v4
@@ -87,7 +87,7 @@ jobs:
 
   test_linux_arm64:
     needs: build_all_platforms
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -98,24 +98,24 @@ jobs:
           name: linux-arm64-build
           path: output/linux-arm64/
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build and run tests for Linux ARM64
+      - name: Build and run tests for Linux arm64
         run: |
+          wget https://builds.dotnet.microsoft.com/dotnet/Runtime/9.0.2/dotnet-runtime-9.0.2-linux-arm64.tar.gz
+          sudo mkdir -p /usr/local/share/dotnet-arm64
+          sudo tar -xvf dotnet-runtime-9.0.2-linux-arm64.tar.gz -C /usr/local/share/dotnet-arm64
+          export DOTNET_ROOT=/usr/local/share/dotnet-arm64
+          export PATH=$DOTNET_ROOT:$PATH
           cd output/linux-arm64/
           cp runtimes/linux-arm64/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
           ls -al
-          docker run --rm --platform linux/arm64 -v "$(pwd):/app" mcr.microsoft.com/dotnet/sdk:9.0 bash -c "/app/GrindCore.Tests.Runtime"
+          ./GrindCore.Tests.Runtime
+        shell: bash
 
   test_linux_arm:
     needs: build_all_platforms
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -126,20 +126,28 @@ jobs:
           name: linux-arm-build
           path: output/linux-arm/
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Install QEMU and binfmt
+        run: |
+          sudo apt-get update
+          sudo add-apt-repository universe
+          sudo dpkg --add-architecture armhf
+          sudo apt-get update
+          sudo apt-get install qemu-system qemu-user-static binfmt-support libc6:armhf libstdc++6:armhf libicu-dev:armhf
+          sudo update-binfmts --install qemu-arm /usr/bin/qemu-arm-static --magic '\x7fELF\x02\x01\x01\x61\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00'
 
       - name: Build and run tests for Linux ARM
         run: |
+          wget https://builds.dotnet.microsoft.com/dotnet/Runtime/9.0.2/dotnet-runtime-9.0.2-linux-arm.tar.gz
+          sudo mkdir -p /usr/local/share/dotnet-arm32
+          sudo tar -xvf dotnet-runtime-9.0.2-linux-arm.tar.gz -C /usr/local/share/dotnet-arm32
+          export DOTNET_ROOT=/usr/local/share/dotnet-arm32
+          export PATH=$DOTNET_ROOT:$PATH
           cd output/linux-arm/
           cp runtimes/linux-arm/native/* .
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
           ls -al
-          docker run --rm --platform linux/arm/v7 -v "$(pwd):/app" mcr.microsoft.com/dotnet/sdk:9.0 bash -c "/app/GrindCore.Tests.Runtime"
+          qemu-arm-static ./GrindCore.Tests.Runtime
 
   test_linux_x64:
     needs: build_all_platforms
@@ -219,26 +227,6 @@ jobs:
           ls -al
           ./GrindCore.Tests.Runtime
         shell: bash
-
-  # !! No arm based docker image to test with
-  # test_win_arm64:
-  #   needs: build_all_platforms
-  #   runs-on: windows-2025
-  #   steps:
-  #     - name: Download Windows ARM64 build
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: win-arm64-build
-  #         path: output/win-arm64/
-  
-  #     - name: Build and run tests for Windows ARM64
-  #       run: |
-  #         Set-Location -Path output/win-arm64/
-  #         Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
-  #         Remove-Item -Path runtimes -Recurse -Force
-  #         Get-ChildItem
-  #         docker run --rm --platform windows/arm64 -v "${PWD}/output/win-arm64:/app" mcr.microsoft.com/dotnet/sdk:9.0 pwsh -c "/app/GrindCore.Tests.Runtime.exe"
-  #       shell: pwsh
 
   test_win_x64:
     needs: build_all_platforms
