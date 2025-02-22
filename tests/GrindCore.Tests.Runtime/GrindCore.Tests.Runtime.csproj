@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFrameworks>net9.0;net8.0;net6.0</TargetFrameworks>
+		<TargetFrameworks>net9.0</TargetFrameworks>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -10,7 +10,7 @@
 		<IsPackable>false</IsPackable>
 		<IsTestProject>false</IsTestProject>
 
-		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x64</RuntimeIdentifier>
+		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x86</RuntimeIdentifier>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64' ">x64</PlatformTarget>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'linux-arm64' or  '$(RuntimeIdentifier)' == 'osx-arm64' ">arm64</PlatformTarget>
 		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-x86' ">x86</PlatformTarget>

@@ -22,7 +22,30 @@ namespace GrindCore.Tests
         }
 
         [Theory]
+        //[InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
+        //[InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x5d1, "2b444156a4305ae3")]
+        //[InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x4fa, "bd7a15fc895f1b65")]
+        //[InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x1db4, "2464d64063e022ba")]
+        //[InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0xcc2, "88b181dc28558433")]
+        //[InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0xb9b, "080ef351410b77ac")]
+        //[InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x264c, "728b6f680101e18d")]
+        //[InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0xbe1, "8fbdcf11b9e9fcb4")]
+        //[InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0xb9b, "080ef351410b77ac")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "cdd2efd3865069b2")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x733, "347363ee8e7e7f1d")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x733, "0f256c67b74d6676")]
+        //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x1dc6, "2baeb36442c0367d")]
+        //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0xcd4, "e1f838db8a9218b9")]
+        //[InlineData(CompressionAlgorithm.GZip, CompressionType.SmallestSize, 0xbad, "b2f20d23bf119caa")]
+        //[InlineData(CompressionAlgorithm.GZipNg, CompressionType.Fastest, 0x265e, "acaac697d8fad04f")]
+        //[InlineData(CompressionAlgorithm.GZipNg, CompressionType.Optimal, 0xbf3, "120d4661eec0d065")]
+        //[InlineData(CompressionAlgorithm.GZipNg, CompressionType.SmallestSize, 0xbad, "b2f20d23bf119caa")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x1dba, "bdd8b43a296a44ad")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0xcc8, "aa99d2252c2f6606")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0xba1, "2b9ecf7dce8e81ce")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x2652, "f2324065e2e34d09")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0xbe7, "bd93e4482eb778cb")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0xba1, "2b9ecf7dce8e81ce")]
         public void Text_ByteArray64KiBArm(CompressionAlgorithm algorithm, CompressionType type, int compressedSize, string xxh64)
         {
             var compressed = CompressionStreamFactory.Compress(algorithm, _text64KiB, type);
