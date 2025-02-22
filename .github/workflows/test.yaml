@@ -98,16 +98,13 @@ jobs:
           name: linux-arm64-build
           path: output/linux-arm64/
 
-      - name: Install .NET 9.0 runtime for ARM
+      - name: Build and run tests for Linux arm64
         run: |
           wget https://builds.dotnet.microsoft.com/dotnet/Runtime/9.0.2/dotnet-runtime-9.0.2-linux-arm64.tar.gz
           sudo mkdir -p /usr/local/share/dotnet-arm64
-          sudo tar -xvf dotnet-runtime-9.0.2-linux-arm.tar.gz -C /usr/local/share/dotnet-arm64
+          sudo tar -xvf dotnet-runtime-9.0.2-linux-arm64.tar.gz -C /usr/local/share/dotnet-arm64
           export DOTNET_ROOT=/usr/local/share/dotnet-arm64
           export PATH=$DOTNET_ROOT:$PATH
-
-      - name: Build and run tests for Linux arm64
-        run: |
           cd output/linux-arm64/
           cp runtimes/linux-arm64/native/* .
           rm -rf runtimes
@@ -138,16 +135,13 @@ jobs:
           sudo apt-get install qemu-system qemu-user-static binfmt-support libc6:armhf libstdc++6:armhf libicu-dev:armhf
           sudo update-binfmts --install qemu-arm /usr/bin/qemu-arm-static --magic '\x7fELF\x02\x01\x01\x61\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00'
 
-      - name: Install .NET 9.0 runtime for ARM
+      - name: Build and run tests for Linux ARM
         run: |
           wget https://builds.dotnet.microsoft.com/dotnet/Runtime/9.0.2/dotnet-runtime-9.0.2-linux-arm.tar.gz
           sudo mkdir -p /usr/local/share/dotnet-arm32
           sudo tar -xvf dotnet-runtime-9.0.2-linux-arm.tar.gz -C /usr/local/share/dotnet-arm32
           export DOTNET_ROOT=/usr/local/share/dotnet-arm32
           export PATH=$DOTNET_ROOT:$PATH
-
-      - name: Build and run tests for Linux ARM
-        run: |
           cd output/linux-arm/
           cp runtimes/linux-arm/native/* .
           rm -rf runtimes
