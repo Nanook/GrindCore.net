@@ -127,7 +127,7 @@ jobs:
           sudo add-apt-repository universe
           sudo dpkg --add-architecture armhf
           sudo apt-get update
-          sudo apt-get install qemu-system qemu-user-static binfmt-support libc6:armhf libstdc++6:armhf
+          sudo apt-get install qemu-system qemu-user-static binfmt-support libc6:armhf libstdc++6:armhf libicu-dev
           sudo update-binfmts --install qemu-arm /usr/bin/qemu-arm-static --magic '\x7fELF\x02\x01\x01\x61\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00'
 
       - name: Install .NET 9.0 runtime for ARM32
@@ -149,6 +149,7 @@ jobs:
           export DOTNET_ROOT=/usr/local/share/dotnet-arm32
           export PATH=$DOTNET_ROOT:$PATH
           qemu-arm-static ./GrindCore.Tests.Runtime
+
 
 
   
