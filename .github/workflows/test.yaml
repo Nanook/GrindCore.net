@@ -125,13 +125,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo add-apt-repository universe
-          sudo apt-get install qemu-system qemu-user-static binfmt-support
+          sudo dpkg --add-architecture armhf
+          sudo apt-get update
+          sudo apt-get install qemu-system qemu-user-static binfmt-support libc6:armhf libstdc++6:armhf
           sudo update-binfmts --install qemu-arm /usr/bin/qemu-arm-static --magic '\x7fELF\x02\x01\x01\x61\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00'
-
-      - name: Install ARM32 libraries
-        run: |
-          sudo apt-get install libc6:armhf
-          sudo apt-get install libstdc++6:armhf
 
       - name: Build and run tests for Linux ARM
         run: |
@@ -141,7 +138,6 @@ jobs:
           chmod 755 GrindCore.Tests.Runtime
           ls -al
           qemu-arm-static ./GrindCore.Tests.Runtime
-
   
   # test_linux_arm:
   #   needs: build_all_platforms
