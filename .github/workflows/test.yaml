@@ -108,7 +108,7 @@ jobs:
           ./GrindCore.Tests.Runtime
         shell: bash
 
-  test_linux_arm:
+test_linux_arm:
     needs: build_all_platforms
     runs-on: ubuntu-24.04-arm
     steps:
@@ -137,6 +137,7 @@ jobs:
           sudo tar -xvf dotnet-runtime-8.0.13-linux-arm.tar.gz -C /usr/local/share/dotnet-arm32
           export DOTNET_ROOT=/usr/local/share/dotnet-arm32
           export PATH=$PATH:/usr/local/share/dotnet-arm32
+          dotnet --info
 
       - name: Build and run tests for Linux ARM
         run: |
@@ -145,8 +146,7 @@ jobs:
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
           ls -al
-          qemu-arm-static ./GrindCore.Tests.Runtime
-  
+          qemu-arm-static dotnet ./GrindCore.Tests.Runtime.dll
 
   
   # test_linux_arm:
