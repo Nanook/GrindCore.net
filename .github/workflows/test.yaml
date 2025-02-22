@@ -140,12 +140,13 @@ jobs:
 
       - name: Build and run tests for Linux ARM
         run: |
-          dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Release -r linux-arm -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-arm --self-contained true
           cd output/linux-arm/
+          cp runtimes/linux-arm/native/* .
+          rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
           ls -al
           qemu-arm-static ./GrindCore.Tests.Runtime
-
+  
 
   
   # test_linux_arm:
