@@ -128,6 +128,12 @@ jobs:
           sudo apt-get install qemu-system qemu-user-static binfmt-support
           sudo update-binfmts --install qemu-arm /usr/bin/qemu-arm-static --magic '\x7fELF\x02\x01\x01\x61\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00'
 
+      - name: Ensure .NET 8.0 runtime is in PATH
+        run: |
+          export DOTNET_ROOT=/usr/local/share/dotnet
+          export PATH=$PATH:/usr/local/share/dotnet
+          dotnet --list-runtimes
+
       - name: Build and run tests for Linux ARM
         run: |
           cd output/linux-arm/
@@ -135,7 +141,8 @@ jobs:
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
           ls -al
-          ./GrindCore.Tests.Runtime
+          qemu-arm-static ./GrindCore.Tests.Runtime
+
   
   # test_linux_arm:
   #   needs: build_all_platforms
