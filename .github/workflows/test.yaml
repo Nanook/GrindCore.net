@@ -128,11 +128,10 @@ jobs:
           sudo apt-get install qemu-system qemu-user-static binfmt-support
           sudo update-binfmts --install qemu-arm /usr/bin/qemu-arm-static --magic '\x7fELF\x02\x01\x01\x61\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00'
 
-      - name: Ensure .NET 8.0 runtime is in PATH
+      - name: Install ARM32 libraries
         run: |
-          export DOTNET_ROOT=/usr/local/share/dotnet
-          export PATH=$PATH:/usr/local/share/dotnet
-          dotnet --list-runtimes
+          sudo apt-get install libc6:armhf
+          sudo apt-get install libstdc++6:armhf
 
       - name: Build and run tests for Linux ARM
         run: |
