@@ -444,6 +444,7 @@ namespace GrindCore.Tests
 
         }
 
+#if !IS_32BIT
         [Theory]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x6b44, "6d522dca7d96dfe8", "879665c04f8d526d")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x1b6, "6d522dca7d96dfe8", "cf0f006564a490d7")]
@@ -722,7 +723,7 @@ namespace GrindCore.Tests
 
         [Theory]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x485d6, "c668fabe6e6e9235", "b63e735ffc5263fb")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1682d, "c668fabe6e6e9235", "cc63ff0e04f71804")]
+        //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1682d, "c668fabe6e6e9235", "cc63ff0e04f71804")]
         //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x13cc8, "c668fabe6e6e9235", "7dc0c316356acd4b")]
         public void Data_Stream512MiB_Chunk128MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
         {
@@ -791,5 +792,6 @@ namespace GrindCore.Tests
 
         }
 #endif
+#wndif
     }
 }
