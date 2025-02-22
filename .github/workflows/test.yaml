@@ -108,7 +108,7 @@ jobs:
           ./GrindCore.Tests.Runtime
         shell: bash
 
-test_linux_arm:
+  test_linux_arm:
     needs: build_all_platforms
     runs-on: ubuntu-24.04-arm
     steps:
