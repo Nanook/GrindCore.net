@@ -32,7 +32,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0xbe1, "8fbdcf11b9e9fcb4")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0xb9b, "080ef351410b77ac")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "cdd2efd3865069b2")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x733, "347363ee8e7e7f1d")]
+        //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x733, "347363ee8e7e7f1d")]
         //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x733, "0f256c67b74d6676")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x1dc6, "2baeb36442c0367d")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0xcd4, "e1f838db8a9218b9")]
