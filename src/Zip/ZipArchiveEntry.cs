@@ -246,10 +246,6 @@ namespace Nanook.GrindCore.Zip
 
             private set
             {
-                if (_storedEntryNameBytes is null)
-                    throw new MethodAccessException($"{nameof(_storedEntryNameBytes)} must not be null");
-                if (_storedEntryName is null)
-                    throw new MethodAccessException($"{nameof(_storedEntryName)} must not be null");
                 if (value is null)
                     throw new ArgumentNullException(nameof(FullName));
 
