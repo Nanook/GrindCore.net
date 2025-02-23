@@ -245,8 +245,6 @@ namespace Nanook.GrindCore.DeflateZLib
         /// </summary>
         private void InflateInit(int windowBits)
         {
-            if (_zlibStream is null)
-                throw new MethodAccessException($"{nameof(_zlibStream)} must not be null");
             ZErrorCode error;
             try
             {

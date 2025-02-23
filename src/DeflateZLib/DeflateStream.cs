@@ -83,15 +83,11 @@ namespace Nanook.GrindCore.DeflateZLib
 
         private void InitializeBuffer()
         {
-            if (_buffer is null)
-                throw new MethodAccessException($"{nameof(_buffer)} must not be null");
             _buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
         }
 
         private void EnsureBufferInitialized()
         {
-            if (_buffer is null)
-                throw new MethodAccessException($"{nameof(_buffer)} must not be null");
             if (_buffer == null)
             {
                 InitializeBuffer();
