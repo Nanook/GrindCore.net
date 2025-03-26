@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace GrindCore.Tests
 {
-#if DEBUG && WIN_X64
+//#if DEBUG && WIN_X64
 
     public class SharpCompressTests
     {
@@ -117,5 +117,5 @@ namespace GrindCore.Tests
 
         }
     }
-#endif
+//#endif
 }

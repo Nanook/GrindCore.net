@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using Nanook.GrindCore.ZLib;
 using Xunit;
+using Nanook.GrindCore.Lzma;
+using System;
 
 namespace GrindCore.Tests
 {
@@ -20,6 +22,182 @@ namespace GrindCore.Tests
             _data64KiB = TestDataStream.Create(64 * 1024);
             _text64KiB = TestPseudoTextStream.Create(64 * 1024);
         }
+
+        [Fact]
+        public void LzmaCompressTest()
+        {
+            byte[] outBuff = new byte[512 * 1024 * 1024];
+            byte[] prop;
+            byte[] data = TestDataStream.Create(512 * 1024 * 1024);
+            byte[] decompressed = new byte[data.Length];
+            int size;
+            Stopwatch sw;
+
+            //Trace.WriteLine($"{XXHash64.Compute(data, 0, data.Length).ToHexString()} - Original Data");
+
+            sw = Stopwatch.StartNew();
+            using (Stream ms = new MemoryStream(outBuff))
+            {
+                using (LzmaStream lzma2e = new LzmaStream(ms, CompressionType.Fastest, true, null, 0))
+                {
+                    prop = lzma2e.Properties;
+                    int total = 0;
+                    while (total != data.Length)
+                    {
+                        lzma2e.Write(data, total, 256 * 1024 * 1024);
+                        total += 256 * 1024 * 1024;
+                    }
+                    lzma2e.Flush();
+                }
+                size = (int)ms.Position;
+            }
+            sw.Stop();
+            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 512MiB Block - 1 thread");
+
+            using (MemoryStream ms = new MemoryStream(decompressed))
+            {
+                using (var sclz = new LzmaStream(new MemoryStream(outBuff, 0, size), true, prop, null))
+                {
+                    sclz.CopyTo(ms);
+                }
+            }
+
+            //LzmaDecoder dec = new LzmaDecoder(prop);
+            //int sz = dec.DecodeData(outBuff, 0, 0x10000, decompressed, 0, decompressed.Length, out int status);
+            //sz += dec.DecodeData(outBuff, 0x10000, size - 0x10000, decompressed, sz, decompressed.Length, out status);
+
+            //sw = Stopwatch.StartNew();
+            //using (LzmaEncoder c = new LzmaEncoder(5, 0, 0))
+            //{
+            //    prop = c.Properties;
+            //    //size = (int)c.EncodeTest(data, data.Length, outBuff, outBuff.Length);
+            //    size = (int)c.EncodeData(data, 0, data.Length, outBuff, 0, outBuff.Length, false);
+            //    size += (int)c.EncodeData(data, 0, 0, outBuff, size, outBuff.Length, true);
+            //}
+            //sw.Stop();
+            //Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 512MiB Block - 1 thread");
+
+
+            //using (MemoryStream ms = new MemoryStream())
+            //{
+            //    using (var sclz = new SharpCompress.Compressors.LZMA.LzmaStream(prop, new MemoryStream(outBuff, 0, size), size))
+            //    {
+            //        int dsz = sclz.Read(decompressed, 0, decompressed.Length);
+            //    }
+            //}
+
+            Assert.True(XXHash64.Compute(decompressed).SequenceEqual(XXHash64.Compute(data, 0, decompressed.Length)));
+        }
+
+        //#if DEBUG
+        [Fact]
+        public void Lzma2CompressTest()
+        {
+            byte[] outBuff = new byte[512 * 1024 * 1024];
+            byte prop;
+            byte[] data = TestDataStream.Create(512 * 1024 * 1024);
+            byte[] decompressed = new byte[data.Length];
+            int size;
+            Stopwatch sw;
+
+            Trace.WriteLine($"{XXHash64.Compute(data, 0, data.Length).ToHexString()} - Original Data");
+
+            sw = Stopwatch.StartNew();
+            using (Stream ms = new MemoryStream(outBuff))
+            {
+                using (Lzma2Stream lzma2e = new Lzma2Stream(ms, CompressionType.SmallestSize, true, null, 512 * 1024 * 1024, 0, 1))
+                {
+                    prop = lzma2e.Properties;
+                    lzma2e.Write(data, 0, data.Length);
+                }
+                size = (int)ms.Position;
+            }
+            sw.Stop();
+            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 512MiB Block - 1 thread");
+            Array.Clear(outBuff);
+
+            sw = Stopwatch.StartNew();
+            using (Stream ms = new MemoryStream(outBuff))
+            {
+                using (Lzma2Stream lzma2e = new Lzma2Stream(ms, CompressionType.SmallestSize, true, null, 64 * 1024 * 1024, 0, 1))
+                {
+                    prop = lzma2e.Properties;
+                    lzma2e.Write(data, 0, data.Length);
+                }
+                size = (int)ms.Position;
+            }
+            sw.Stop();
+            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 64MiB blocks - 1 thread");
+            Array.Clear(outBuff);
+
+            sw = Stopwatch.StartNew();
+            using (Stream ms = new MemoryStream(outBuff))
+            {
+                using (Lzma2Stream lzma2e = new Lzma2Stream(ms, CompressionType.SmallestSize, true, null, 64 * 1024 * 1024, 0, 4))
+                {
+                    prop = lzma2e.Properties;
+                    lzma2e.Write(data, 0, data.Length);
+                }
+                size = (int)ms.Position;
+            }
+            sw.Stop();
+            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 64MiB blocks - 4 threads");
+            Array.Clear(outBuff);
+
+            sw = Stopwatch.StartNew();
+            using (Stream ms = new MemoryStream(outBuff))
+            {
+                using (Lzma2Stream lzma2e = new Lzma2Stream(ms, CompressionType.SmallestSize, true, null, 5 * 1024 * 1024, 0, 10))
+                {
+                    prop = lzma2e.Properties;
+                    lzma2e.Write(data, 0, data.Length);
+                }
+                size = (int)ms.Position;
+            }
+            sw.Stop();
+            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 5MiB blocks - 10 threads");
+
+
+            sw = Stopwatch.StartNew();
+            using (var ms = new SharpCompress.Compressors.LZMA.LzmaStream(new byte[] { prop }, new MemoryStream(outBuff, 0, size), size))
+            {
+                using (MemoryStream msO = new MemoryStream(decompressed, 0, decompressed.Length))
+                    ms.Read(decompressed, 0, decompressed.Length);
+            }
+            sw.Stop();
+            Trace.WriteLine($"{XXHash64.Compute(decompressed, 0, decompressed.Length).ToHexString()} - {sw.ElapsedMilliseconds}ms - SharpCompress Decode");
+            Array.Clear(decompressed);
+
+
+            sw = Stopwatch.StartNew();
+            Lzma2Stream lzma2 = new Lzma2Stream(new MemoryStream(outBuff), false, prop, null);
+            int sz = 0;
+            while ((sz += lzma2.Read(decompressed, sz, 10000000)) < decompressed.Length);
+            sw.Stop();
+
+            Trace.WriteLine($"{XXHash64.Compute(decompressed, 0, decompressed.Length).ToHexString()} - {sw.ElapsedMilliseconds}ms - GC Stream Decode");
+
+            //using (Lzma2Decoder d = new Lzma2Decoder(prop))
+            //{
+            //    int pos = 0;
+            //    Lzma2BlockInfo info;
+            //    int outPos = 0;
+            //    int status = 0;
+            //    while (!(info = d.ReadSubBlockInfo(outBuff, (ulong)pos)).IsTerminator)
+            //    {
+            //        if (info.InitProp)
+            //            d.SetProps(d.Properties); // feels like info.Prop should be passed, but it crashes it
+            //        if (info.InitState)
+            //            d.SetState();
+
+            //        outPos += d.DecodeData(outBuff, pos, info.BlockSize, decompressed, outPos, info.UncompressedSize, out status);
+            //        pos += info.BlockSize;
+            //    }
+            //}
+
+
+        }
+        //#endif
 
         [Theory]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
