@@ -23,6 +23,10 @@
 		<RepositoryUrl>https://github.com/Nanook/GrindCore.net</RepositoryUrl>
 	</PropertyGroup>
 
+	<!--<PropertyGroup>
+		<DefineConstants>CLASSIC</DefineConstants>
+	</PropertyGroup>-->
+
 	<PropertyGroup>
 		<TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
 		<GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_Compression</GeneratePlatformNotSupportedAssemblyMessage>

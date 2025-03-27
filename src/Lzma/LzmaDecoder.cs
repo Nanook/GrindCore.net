@@ -19,31 +19,32 @@ namespace Nanook.GrindCore.Lzma
             _decCtx = new CLzmaDec();
             fixed (byte* outPtr = properties)
             {
-                res = S7_Lzma_v24_07_Dec_Allocate(ref _decCtx, outPtr, (uint)properties.Length);
+                res = Interop.Lzma.S7_Lzma_v24_07_Dec_Allocate(ref _decCtx, outPtr, (uint)properties.Length);
                 S7_Lzma_v24_07_Dec_Init(ref _decCtx);
             }
             if (res != 0)
                 throw new Exception($"Allocate Error {res}");
         }
 
-        public int DecodeData(byte[] inData, long inOffset, ref long inSize, byte[] outData, long outOffset, long outSize, out int status)
+        public int DecodeData(byte[] inData, int inOffset, ref int inSize, DataBlock outDataBlock, out int status)
         {
-            ulong outSz = (ulong)outSize;
+            // Get properties from DataBlock
+            ulong outSz = (ulong)outDataBlock.Length;
             ulong inSz = (ulong)inSize;
 
-            fixed (byte* outPtr = &outData[outOffset])
-            fixed (byte* inPtr = &inData[inOffset])
-            fixed (int* statusPtr = &status)
+            fixed (byte* outPtr = &outDataBlock.Data[outDataBlock.Offset]) // Pin memory for the output buffer
+            fixed (byte* inPtr = &inData[inOffset]) // Pin memory for the input buffer
+            fixed (int* statusPtr = &status) // Pin memory for the status
             {
+                // Call the C interop function
                 int res = S7_Lzma_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");
 
-                inSize = (long)inSz;
-                return (int)outSz;
+                inSize = (int)inSz; // Update inSize with the size consumed
+                return (int)outSz; // Return the size of the output
             }
         }
-
 
         public void Dispose()
         {

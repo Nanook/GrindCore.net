@@ -82,47 +82,47 @@ namespace Nanook.GrindCore.Lzma
             return sz;
         }
 
-        public long EncodeData(byte[] inData, long inOffset, long inSize, byte[] outData, long outOffset, long outSize, bool final)
+        public long EncodeData(DataBlock inDataBlock, byte[] outData, int outOffset, int outSize, bool final)
         {
             uint available = 0;
-            long total = 0;
+            int total = 0;
             bool finalfinal = false;
 
             int res = 0;
             ulong outSz = 0;
-            long outTotal = 0;
+            int outTotal = 0;
 
-            while ((total < inSize || (final && inSize == 0) && !finalfinal)) //final && inSize == 0 will set finalfinal=true on one loop
+            while ((total < inDataBlock.Length || (final && inDataBlock.Length == 0) && !finalfinal))
             {
                 if (_inStream.pos == _inStream.size)
                     _inStream.pos = 0; // wrap around
 
-                ulong p = (_inStream.pos + _inStream.remaining) % _inStream.size;
+                int p = (int)((_inStream.pos + _inStream.remaining) % _inStream.size);
 
-                ulong sz = Math.Min((ulong)(inSize - total), Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize));
+                int sz = (int)Math.Min((ulong)(inDataBlock.Length - total), Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize));
 
-                // copy data to end of circular buffer
-                ulong endSz = _inStream.size - p;
-                Array.Copy(inData, inOffset + total, _inBuffer, (long)p, (long)Math.Min(sz, endSz));
+                int endSz = (int)(_inStream.size - (ulong)p);
+                inDataBlock.Copy((int)total, _inBuffer, (int)p, (int)Math.Min(sz, endSz));
 
                 // copy data at start of circular buffer
                 if (sz > endSz)
-                    Array.Copy(inData, inOffset + total + (long)endSz, _inBuffer, 0L, (long)(sz - endSz));
+                    inDataBlock.Copy((int)total + (int)endSz, _inBuffer, 0, (int)(sz - endSz));
 
-                total += (long)sz;
-                _inStream.remaining += sz;
+                total += sz;
+                _inStream.remaining += (ulong)sz;
 
-                finalfinal = final && total == inSize;
+                finalfinal = final && total == inDataBlock.Length;
 
                 if (!finalfinal && _inStream.remaining < (ulong)this.BlockSize)
-                    break; // not enough bytes to fill buffer
+                    break;
 
                 outSz = (ulong)(outSize - outOffset);
+
                 fixed (byte* outPtr = &outData[outOffset])
                 {
-                    res = S7_Lzma_v24_07_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, (int)this.BlockSize, &available, finalfinal ? 1 : 0);
-                    outOffset += (long)outSz;
-                    outTotal += (long)outSz;
+                    res = S7_Lzma_v24_07_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
+                    outOffset += (int)outSz;
+                    outTotal += (int)outSz;
                 }
 
                 if (res != 0)

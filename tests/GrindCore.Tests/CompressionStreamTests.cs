@@ -24,7 +24,7 @@ namespace GrindCore.Tests
         }
 
         [Fact]
-        public void LzmaCompressTest()
+        public async Task LzmaCompressTest()
         {
             byte[] outBuff = new byte[512 * 1024 * 1024];
             byte[] prop;
@@ -44,7 +44,7 @@ namespace GrindCore.Tests
                     int total = 0;
                     while (total != data.Length)
                     {
-                        lzma2e.Write(data, total, 256 * 1024 * 1024);
+                        await lzma2e.WriteAsync(data, total, 256 * 1024 * 1024);
                         total += 256 * 1024 * 1024;
                     }
                     lzma2e.Flush();
@@ -58,7 +58,7 @@ namespace GrindCore.Tests
             {
                 using (var sclz = new LzmaStream(new MemoryStream(outBuff, 0, size), true, prop, null))
                 {
-                    sclz.CopyTo(ms);
+                    await sclz.CopyToAsync(ms);
                 }
             }
 

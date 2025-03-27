@@ -20,7 +20,6 @@ namespace Nanook.GrindCore.Lzma
         private MemoryStream _bufferStream;
 
         private bool _isCompressing;
-        private bool _disposed;
 
         public override bool CanRead => !_isCompressing;
         public override bool CanWrite => _isCompressing;
@@ -83,16 +82,16 @@ namespace Nanook.GrindCore.Lzma
         /// <summary>
         /// Reads data from the stream and decompresses it using LZMA. Position is updated with running total of bytes processed from source stream.
         /// </summary>
-        public override int Read(byte[] buffer, int offset, int count)
+        internal override int OnRead(DataBlock dataBlock)
         {
             if (!this.CanRead)
                 throw new NotSupportedException("Not for Compression mode");
 
             int total = 0;
-            while (count > total)
+            while (dataBlock.Length > total)
             {
-                long remainingBytes = _bufferStream.Length - _bufferStream.Position;
-                if (remainingBytes < 0x200)
+                int remainingBytes = (int)(_bufferStream.Length - _bufferStream.Position);
+                if (remainingBytes < 0x400)
                 {
                     if (remainingBytes > 0)
                         _bufferStream.Read(_buffer, 0, (int)remainingBytes);
@@ -105,7 +104,7 @@ namespace Nanook.GrindCore.Lzma
                 if (remainingBytes == 0)
                     return total;
 
-                int decoded = _decoder.DecodeData(_buffer, (int)_bufferStream.Position, ref remainingBytes, buffer, offset, count, out _);
+                int decoded = _decoder.DecodeData(_buffer, (int)_bufferStream.Position, ref remainingBytes, dataBlock, out _);
                 base.AddPosition(remainingBytes); // returned as amount read
                 total += decoded;
                 _bufferStream.Position += remainingBytes;
@@ -113,21 +112,28 @@ namespace Nanook.GrindCore.Lzma
             return total;
         }
 
+
         /// <summary>
         /// Compresses data using LZMA and writes it to the stream. Position is updated with running total of bytes processed from source stream.
         /// </summary>
-        public override void Write(byte[] buffer, int offset, int count)
+        internal override void OnWrite(DataBlock dataBlock)
         {
             if (!this.CanWrite)
                 throw new NotSupportedException("Not for Decompression mode");
 
-            long size = _encoder.EncodeData(buffer, offset, count, _buffer, 0, _buffer.Length, false);
+            // Use the DataBlock's properties for encoding
+            long size = _encoder.EncodeData(dataBlock, _buffer, 0, _buffer.Length, false);
+
             if (size > 0)
             {
+                // Write the encoded data to the base stream
                 _baseStream.Write(_buffer, 0, (int)size);
+
+                // Update the position
                 base.AddPosition(size);
             }
         }
+
 
         /// <summary>
         /// Flushes any remaining compressed data to the stream.
@@ -136,7 +142,7 @@ namespace Nanook.GrindCore.Lzma
         {
             if (_isCompressing)
             {
-                long size = _encoder.EncodeData(Array.Empty<byte>(), 0, 0, _buffer, 0, _buffer.Length, true);
+                long size = _encoder.EncodeData(new DataBlock(), _buffer, 0, _buffer.Length, true);
                 if (size > 0)
                 {
                     _baseStream.Write(_buffer, 0, (int)size);
@@ -159,8 +165,6 @@ namespace Nanook.GrindCore.Lzma
                 _encoder.Dispose();
             else
                 _decoder.Dispose();
-
-            _disposed = true;
         }
 
     }

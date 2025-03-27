@@ -17,7 +17,6 @@ namespace Nanook.GrindCore.Lzma
 
         public byte Properties { get; }
 
-        private readonly int _bufferSize;
         private readonly bool _leaveStreamOpen;
         private byte[] _buffComp;
         private byte[] _buff;
