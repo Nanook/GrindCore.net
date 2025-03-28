@@ -33,7 +33,7 @@ namespace SharpCompress.Compressors.Lzw
     ///			using (Stream inStream = new LzwInputStream(File.OpenRead(args[0])))
     ///			using (FileStream outStream = File.Create(Path.GetFileNameWithoutExtension(args[0]))) {
     ///				byte[] buffer = new byte[4096];
-    ///				StreamUtils.Copy(inStream, outStream, buffer);
+    ///				StreamUtils.Read(inStream, outStream, buffer);
     ///                         // OR
     ///                         inStream.Read(buffer, 0, buffer.Length);
     ///                         // now do something with the buffer

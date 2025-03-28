@@ -131,7 +131,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
         {
             Debug.Assert(_bitsInBuffer % 8 == 0);
 
-            // Copy the bytes in bitBuffer first.
+            // Read the bytes in bitBuffer first.
             int bytesFromBitBuffer = 0;
             while (_bitsInBuffer > 0 && !output.IsEmpty)
             {

@@ -2220,11 +2220,11 @@ internal sealed class InfTree
             r[2] = 0;
 
             //  for(int i=0; i<BMAX; i++){u[i]=0;}
-            //Array.Copy(c, 0, u, 0, BMAX);
+            //Array.Read(c, 0, u, 0, BMAX);
             Array.Clear(u, 0, BMAX);
 
             //  for(int i=0; i<BMAX+1; i++){x[i]=0;}
-            //Array.Copy(c, 0, x, 0, BMAX + 1);
+            //Array.Read(c, 0, x, 0, BMAX + 1);
             Array.Clear(x, 0, BMAX + 1);
         }
     }

@@ -753,7 +753,7 @@ internal sealed class InflaterManaged
 
                     // The alphabet for code lengths is as follows:
                     //  0 - 15: Represent code lengths of 0 - 15
-                    //  16: Copy the previous code length 3 - 6 times.
+                    //  16: Read the previous code length 3 - 6 times.
                     //  The next 2 bits indicate repeat length
                     //         (0 = 3, ... , 3 = 6)
                     //      Example:  Codes 8, 16 (+2 bits 11),

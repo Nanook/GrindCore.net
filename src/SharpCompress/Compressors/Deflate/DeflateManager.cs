@@ -974,7 +974,7 @@ internal sealed partial class DeflateManager
         bi_valid = 0;
     }
 
-    // Copy a stored block, storing first the length and its
+    // Read a stored block, storing first the length and its
     // one's complement if requested.
     internal void copy_block(int buf, int len, bool header)
     {
@@ -1005,7 +1005,7 @@ internal sealed partial class DeflateManager
         _codec.flush_pending();
     }
 
-    // Copy without compression as much as possible from the input stream, return
+    // Read without compression as much as possible from the input stream, return
     // the current block state.
     // This function does not insert new strings in the dictionary since
     // uncompressible data is probably not useful. This function is used
@@ -1025,7 +1025,7 @@ internal sealed partial class DeflateManager
             max_block_size = pending.Length - 5;
         }
 
-        // Copy as much as possible from input to output:
+        // Read as much as possible from input to output:
         while (true)
         {
             // Fill the window as much as possible:

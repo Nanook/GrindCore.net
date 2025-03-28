@@ -1,5 +1,4 @@
 using System;
-using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +8,7 @@ namespace Nanook.GrindCore.Lzma
     /// <summary>
     /// A stream implementation for LZMA compression and decompression.
     /// Inherits common Stream functionality from the StreamBase class.
+    /// Uses a customised LZMA to allow Stream.Write() pattern for compression.
     /// </summary>
     public class LzmaStream : StreamBase
     {

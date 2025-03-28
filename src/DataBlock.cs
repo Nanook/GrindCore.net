@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 
 namespace Nanook.GrindCore
@@ -13,19 +14,22 @@ namespace Nanook.GrindCore
         public DataBlock(ReadOnlySpan<byte> span, int offset, int length)
         {
             _mutableData = Span<byte>.Empty; // Initialize as empty since ReadOnlySpan is immutable
-            Data = span.Slice(offset, length);
+            Data = span;
             Offset = offset;
             Length = length;
         }
+        public DataBlock(ReadOnlySpan<byte> span) : this(span, 0, span.Length) { }
 
         // Constructor for Span<byte>
         public DataBlock(Span<byte> span, int offset, int length)
         {
             _mutableData = span;
-            Data = span.Slice(offset, length);
+            Data = span;
             Offset = offset;
             Length = length;
         }
+
+        public DataBlock(Span<byte> span) : this(span, 0, span.Length) { }
 
         public int Offset { get; }
         public int Length { get; }
@@ -33,16 +37,34 @@ namespace Nanook.GrindCore
         // Expose the mutable span for writing
         public Span<byte> AsWritableSpan()
         {
-            return _mutableData.Slice(Offset, Length);
+            return _mutableData;
         }
 
-        // Copy method to replicate the logic and copy data to the target byte array
-        public void Copy(int sourceOffset, byte[] target, int targetOffset, int length)
+        // Read method to replicate the logic and copy data to the target byte array
+        public void Read(int sourceOffset, byte[] target, int targetOffset, int length)
         {
             if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
                 throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
 
-            Data.Slice(sourceOffset, length).CopyTo(target.AsSpan(targetOffset, length));
+            Data.Slice(this.Offset + sourceOffset, length).CopyTo(target.AsSpan(targetOffset, length));
+        }
+
+        public void Read(int sourceOffset, Stream stream, int length)
+        {
+            if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
+                throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
+
+            stream.Write(Data.Slice(this.Offset + sourceOffset, length));
+        }
+
+        public void Write(int sourceOffset, Stream stream, int length)
+        {
+            if (_mutableData.IsEmpty)
+                throw new NotSupportedException("ReadOnlySpan is not writable");
+            if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
+                throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
+
+            stream.Read(_mutableData.Slice(this.Offset + sourceOffset, length));
         }
     }
 #else
@@ -59,17 +81,36 @@ namespace Nanook.GrindCore
             Length = length;
         }
 
+        public DataBlock(byte[] data) : this(data, 0, data.Length) { }
+
         public int Offset { get; }
         public int Length { get; }
 
-        // Copy method to replicate the logic and copy data to the target byte array
-        public void Copy(int sourceOffset, byte[] target, int targetOffset, int length)
+        // Read method to replicate the logic and copy data to the target byte array
+        public void Read(int sourceOffset, byte[] target, int targetOffset, int length)
         {
             if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
                 throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
 
             Array.Copy(Data, Offset + sourceOffset, target, targetOffset, length);
         }
+
+        public void Read(int sourceOffset, Stream stream, int length)
+        {
+            if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
+                throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
+
+            stream.Write(Data, Offset + sourceOffset, length);
+        }
+
+        public void Write(int sourceOffset, Stream stream, int length)
+        {
+            if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
+                throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
+
+            stream.Read(Data, Offset + sourceOffset, length);
+        }
+
     }
 #endif
 }

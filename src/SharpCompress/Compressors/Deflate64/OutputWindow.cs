@@ -77,7 +77,7 @@ internal sealed class OutputWindow
     }
 
     /// <summary>
-    /// Copy up to length of bytes from input directly.
+    /// Read up to length of bytes from input directly.
     /// This is used for uncompressed block.
     /// </summary>
     public int CopyFrom(InputBuffer input, int length)
@@ -114,7 +114,7 @@ internal sealed class OutputWindow
     /// <summary>Bytes not consumed in output window.</summary>
     public int AvailableBytes => _bytesUsed;
 
-    /// <summary>Copy the decompressed bytes to output array.</summary>
+    /// <summary>Read the decompressed bytes to output array.</summary>
     public int CopyTo(byte[] output, int offset, int length)
     {
         int copyEnd;

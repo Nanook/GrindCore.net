@@ -378,7 +378,7 @@ bool AddVMCode(uint FirstByte,byte[] Code,int CodeSize)
 {
   VMCodeInp.InitBitInput();
   //x memcpy(VMCodeInp.InBuf,Code,Min(BitInput.MAX_SIZE,CodeSize));
-  Array.Copy(Code, 0, VMCodeInp.InBuf, 0, Math.Min(BitInput.MAX_SIZE,CodeSize));
+  Array.Read(Code, 0, VMCodeInp.InBuf, 0, Math.Min(BitInput.MAX_SIZE,CodeSize));
   VM.Init();
 
   uint FiltPos;
@@ -520,7 +520,7 @@ bool UnpReadBuf30()
     // to make it zero.
     if (DataSize>0)
       //x memmove(Inp.InBuf,Inp.InBuf+Inp.InAddr,DataSize);
-      Array.Copy(Inp.InBuf,Inp.InAddr,Inp.InBuf,0,DataSize);
+      Array.Read(Inp.InBuf,Inp.InAddr,Inp.InBuf,0,DataSize);
     Inp.InAddr=0;
     ReadTop=DataSize;
   }
@@ -749,7 +749,7 @@ bool ReadTables30()
   MakeDecodeTables(Table,(int)(NC30+DC30),BlockTables.LDD,LDC30);
   MakeDecodeTables(Table,(int)(NC30+DC30+LDC30),BlockTables.RD,RC30);
   //x memcpy(UnpOldTable,Table,sizeof(UnpOldTable));
-  Array.Copy(Table,0,UnpOldTable,0,UnpOldTable.Length);
+  Array.Read(Table,0,UnpOldTable,0,UnpOldTable.Length);
   return true;
 }
 

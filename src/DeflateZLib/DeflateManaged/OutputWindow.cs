@@ -81,7 +81,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
         }
 
         /// <summary>
-        /// Copy up to length of bytes from input directly.
+        /// Read up to length of bytes from input directly.
         /// This is used for uncompressed block.
         /// </summary>
         public int CopyFrom(InputBuffer input, int length)
@@ -118,7 +118,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
         /// <summary>Bytes not consumed in output window.</summary>
         public int AvailableBytes => _bytesUsed;
 
-        /// <summary>Copy the decompressed bytes to output buffer.</summary>
+        /// <summary>Read the decompressed bytes to output buffer.</summary>
         public int CopyTo(Span<byte> output)
         {
             int copy_end;

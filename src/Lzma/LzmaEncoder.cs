@@ -82,7 +82,7 @@ namespace Nanook.GrindCore.Lzma
             return sz;
         }
 
-        public long EncodeData(DataBlock inDataBlock, byte[] outData, int outOffset, int outSize, bool final)
+        public long EncodeData(DataBlock inData, byte[] outData, int outOffset, int outSize, bool final)
         {
             uint available = 0;
             int total = 0;
@@ -92,26 +92,26 @@ namespace Nanook.GrindCore.Lzma
             ulong outSz = 0;
             int outTotal = 0;
 
-            while ((total < inDataBlock.Length || (final && inDataBlock.Length == 0) && !finalfinal))
+            while ((total < inData.Length || (final && inData.Length == 0) && !finalfinal))
             {
                 if (_inStream.pos == _inStream.size)
                     _inStream.pos = 0; // wrap around
 
                 int p = (int)((_inStream.pos + _inStream.remaining) % _inStream.size);
 
-                int sz = (int)Math.Min((ulong)(inDataBlock.Length - total), Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize));
+                int sz = (int)Math.Min((ulong)(inData.Length - total), Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize));
 
                 int endSz = (int)(_inStream.size - (ulong)p);
-                inDataBlock.Copy((int)total, _inBuffer, (int)p, (int)Math.Min(sz, endSz));
+                inData.Read((int)total, _inBuffer, (int)p, (int)Math.Min(sz, endSz));
 
                 // copy data at start of circular buffer
                 if (sz > endSz)
-                    inDataBlock.Copy((int)total + (int)endSz, _inBuffer, 0, (int)(sz - endSz));
+                    inData.Read((int)total + (int)endSz, _inBuffer, 0, (int)(sz - endSz));
 
                 total += sz;
                 _inStream.remaining += (ulong)sz;
 
-                finalfinal = final && total == inDataBlock.Length;
+                finalfinal = final && total == inData.Length;
 
                 if (!finalfinal && _inStream.remaining < (ulong)this.BlockSize)
                     break;

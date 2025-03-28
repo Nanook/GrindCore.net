@@ -23,6 +23,7 @@
 		<RepositoryUrl>https://github.com/Nanook/GrindCore.net</RepositoryUrl>
 	</PropertyGroup>
 
+	<!-- CLASSIC will switch to net framework StreamBase and DataBlock for debugging -->
 	<!--<PropertyGroup>
 		<DefineConstants>CLASSIC</DefineConstants>
 	</PropertyGroup>-->

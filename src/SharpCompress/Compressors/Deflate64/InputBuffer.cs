@@ -133,7 +133,7 @@ internal sealed class InputBuffer
         Debug.Assert(offset <= output.Length - length);
         Debug.Assert((_bitsInBuffer % 8) == 0);
 
-        // Copy the bytes in bitBuffer first.
+        // Read the bytes in bitBuffer first.
         var bytesFromBitBuffer = 0;
         while (_bitsInBuffer > 0 && length > 0)
         {

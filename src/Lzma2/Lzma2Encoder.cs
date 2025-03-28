@@ -60,27 +60,23 @@ namespace Nanook.GrindCore.Lzma
 
         }
 
-        public int EncodeData(byte[] inData, int inOffset, int inSize, byte[] outData, int outOffset, int outSize)
+        public int EncodeData(DataBlock dataBlock, int inOffset, int inSize, byte[] outData, int outOffset, int outSize)
         {
-            return (int)EncodeData(inData, (ulong)inOffset, (ulong)inSize, outData, (ulong)outOffset, (ulong)outSize);
-        }
-
-        public ulong EncodeData(byte[] inData, ulong inOffset, ulong inSize, byte[] outData, ulong outOffset, ulong outSize)
-        {
+            ulong outSz = (ulong)outSize;
             fixed (byte* outPtr = &outData[outOffset])
-            fixed (byte* inPtr = &inData[inOffset])
+            fixed (byte* inPtr = &dataBlock.Data[dataBlock.Offset + inOffset])
             {
-                int res = S7_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSize, inPtr, inSize, IntPtr.Zero);
+                int res = S7_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)inSize, IntPtr.Zero);
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
             }
 
             var enc = getState();
 
-            this.BytesIn += inSize;
-            this.BytesOut += outSize;
+            this.BytesIn += (ulong)inSize;
+            this.BytesOut += outSz;
 
-            return outSize;
+            return (int)outSz;
         }
 
 

@@ -74,22 +74,19 @@ namespace Nanook.GrindCore.Lzma
             S7_Lzma2_v24_07_Dec_Init(ref _decCtx);
         }
 
-        public int DecodeData(byte[] inData, int inOffset, int inDataLen, byte[] outData, int outOffset, int outDataLen, out int status)
+        public int DecodeData(byte[] inData, int inOffset, int inSize, DataBlock outData, int outOffset, int outSize, out int status)
         {
-            return (int)DecodeData(inData, (ulong)inOffset, (ulong)inDataLen, outData, (ulong)outOffset, (ulong)outDataLen, out status);
-        }
-
-        public int DecodeData(byte[] inData, ulong inOffset, ulong inSize, byte[] outData, ulong outOffset, ulong outSize, out int status)
-        {
-            fixed (byte* outPtr = &outData[outOffset])
+            ulong inSz = (ulong)inSize;
+            ulong outSz = (ulong)outSize;
+            fixed (byte* outPtr = &outData.Data[outData.Offset + outOffset])
             fixed (byte* inPtr = &inData[inOffset])
             fixed (int* statusPtr = &status)
             {
-                int res = S7_Lzma2_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSize, inPtr, &inSize, 0, statusPtr);
+                int res = S7_Lzma2_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");
 
-                return (int)outSize;
+                return (int)outSz;
             }
         }
 

@@ -26,13 +26,13 @@ namespace Nanook.GrindCore.Lzma
                 throw new Exception($"Allocate Error {res}");
         }
 
-        public int DecodeData(byte[] inData, int inOffset, ref int inSize, DataBlock outDataBlock, out int status)
+        public int DecodeData(byte[] inData, int inOffset, ref int inSize, DataBlock outData, out int status)
         {
             // Get properties from DataBlock
-            ulong outSz = (ulong)outDataBlock.Length;
+            ulong outSz = (ulong)outData.Length;
             ulong inSz = (ulong)inSize;
 
-            fixed (byte* outPtr = &outDataBlock.Data[outDataBlock.Offset]) // Pin memory for the output buffer
+            fixed (byte* outPtr = &outData.Data[outData.Offset]) // Pin memory for the output buffer
             fixed (byte* inPtr = &inData[inOffset]) // Pin memory for the input buffer
             fixed (int* statusPtr = &status) // Pin memory for the status
             {
