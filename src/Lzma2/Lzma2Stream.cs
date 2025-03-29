@@ -23,7 +23,6 @@ namespace Nanook.GrindCore.Lzma
         private byte[] _buff;
         private Stream _buffMs;
 
-        private bool _disposed;
         private readonly Stream _stream;
         private bool _isComp;
         public override bool CanRead => _stream != null && _stream.CanRead;
@@ -216,7 +215,6 @@ namespace Nanook.GrindCore.Lzma
             else
                 _dec.Dispose();
             _buffMs.Dispose();
-            _disposed = true;
         }
 
         ~Lzma2Stream()

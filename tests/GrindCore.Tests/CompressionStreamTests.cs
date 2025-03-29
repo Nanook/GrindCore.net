@@ -962,9 +962,9 @@ namespace GrindCore.Tests
                     string hashOutString = outXxhash.Hash!.ToHexString();
                     Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{totalCompressedBytes:x}, \"{hashInString}\", \"{hashCompString}\")]");
                     Assert.Equal(compressedSize, totalCompressedBytes); //test compressed data size matches expected
-                    Assert.Equal(hashInString, hashOutString); //test IN and decompressed data hashes match
                     Assert.Equal(rawXxH64, hashInString); //test raw data hash matches expected
                     Assert.Equal(compXxH64, hashCompString); //test compressed data hash matches expected
+                    Assert.Equal(hashInString, hashOutString); //test IN and decompressed data hashes match
                 }
             }
 

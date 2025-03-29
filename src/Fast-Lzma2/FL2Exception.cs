@@ -50,7 +50,7 @@ namespace Nanook.GrindCore.Lzma
         }
 
         internal static bool IsError(nuint code) => code > 0 - Enum.GetValues(typeof(FL2ErrorCode)).Cast<uint>().Max();
-        public static bool IsError(int code) => FL2Exception.IsError((int)code);
+        public static bool IsError(int code) => FL2Exception.IsError((nuint)code);
 
         public static string GetErrorString(FL2ErrorCode code) => code switch
         {
