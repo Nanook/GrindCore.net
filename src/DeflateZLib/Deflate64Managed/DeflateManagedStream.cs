@@ -327,7 +327,7 @@ namespace Nanook.GrindCore.DeflateZLib.DeflateManaged
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }
 
-        // This is called by Dispose:
+        // This is called by dispose:
         private void PurgeBuffers(bool disposing)
         {
             if (!disposing)

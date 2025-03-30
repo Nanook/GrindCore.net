@@ -19,11 +19,6 @@ namespace Nanook.GrindCore.Lzma
         public ulong BytesOut { get; private set; }
         public ulong BytesFullSize { get; private set; }
 
-        private CLzma2Enc getState()
-        {
-            return Marshal.PtrToStructure<CLzma2Enc>(_encoder);
-        }
-
         public Lzma2Encoder(int level = 5, int threads = 1, ulong blockSize = 0, uint dictSize = 0, int wordSize = 0)
         {
             _encoder = S7_Lzma2_v24_07_Enc_Create();
@@ -70,8 +65,6 @@ namespace Nanook.GrindCore.Lzma
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
             }
-
-            var enc = getState();
 
             this.BytesIn += (ulong)inSize;
             this.BytesOut += outSz;

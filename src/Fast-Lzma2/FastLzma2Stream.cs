@@ -66,7 +66,7 @@ namespace Nanook.GrindCore.Lzma
         /// Write Checksum in the end. finish compress progress.
         /// </summary>
         /// <exception cref="FL2Exception"></exception>
-        public override void Flush()
+        internal override void OnFlush()
         {
             if (_isCompressing)
                 _enc.Flush(_stream);
@@ -76,7 +76,7 @@ namespace Nanook.GrindCore.Lzma
 
         protected override void OnDispose()
         {
-            Flush();
+            base.Flush();
             if (!_leaveStreamOpen)
                 _stream.Dispose();
             if (_isCompressing)

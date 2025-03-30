@@ -1,7 +1,6 @@
 
 
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Security;
 using System;
@@ -17,7 +16,6 @@ namespace Nanook.GrindCore.DeflateZLib
     internal sealed class Deflater : IDisposable
     {
         private readonly ZLibNative.ZLibStreamHandle _zlibStream;
-        private MemoryHandle _inputBufferHandle;
         private bool _isDisposed;
         private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
         private const int maxWindowBits = 31;   // zlib header, or 24..31 for a GZip header
@@ -113,29 +111,11 @@ namespace Nanook.GrindCore.DeflateZLib
                 if (disposing)
                     _zlibStream.Dispose();
 
-                DeallocateInputBufferHandle();
                 _isDisposed = true;
             }
         }
 
         public bool NeedsInput() => 0 == _zlibStream.AvailIn;
-
-        internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
-        {
-            Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            if (0 == inputBuffer.Length)
-            {
-                return;
-            }
-
-            lock (SyncLock)
-            {
-                _inputBufferHandle = inputBuffer.Pin();
-
-                _zlibStream.NextIn = (nint)_inputBufferHandle.Pointer;
-                _zlibStream.AvailIn = (uint)inputBuffer.Length;
-            }
-        }
 
         internal unsafe void SetInput(byte* inputBufferPtr, int count)
         {
@@ -159,20 +139,10 @@ namespace Nanook.GrindCore.DeflateZLib
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
 
-            try
-            {
-                int bytesRead;
-                ReadDeflateOutput(outputBuffer!, ZFlushCode.NoFlush, out bytesRead);
-                return bytesRead;
-            }
-            finally
-            {
-                // Before returning, make sure to release input buffer if necessary:
-                if (0 == _zlibStream.AvailIn)
-                {
-                    DeallocateInputBufferHandle();
-                }
-            }
+            int bytesRead;
+            ReadDeflateOutput(outputBuffer!, ZFlushCode.NoFlush, out bytesRead);
+            return bytesRead;
+
         }
 
         private unsafe ZErrorCode ReadDeflateOutput(byte[] outputBuffer, ZFlushCode flushCode, out int bytesRead)
@@ -226,7 +196,6 @@ namespace Nanook.GrindCore.DeflateZLib
             {
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = Interop.ZLib.ZNullPtr;
-                _inputBufferHandle.Dispose();
             }
         }
 

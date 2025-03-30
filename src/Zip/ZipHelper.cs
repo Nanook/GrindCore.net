@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.IO;
 using System;
+using System.Linq;
 
 namespace Nanook.GrindCore.Zip
 {
@@ -250,11 +251,11 @@ namespace Nanook.GrindCore.Zip
                 Debug.Assert(totalCodePoints > 0);
                 Debug.Assert(totalCodePoints <= bytes.Length);
 
-                return bytes[0..totalCodePoints];
+                return bytes.Take(totalCodePoints).ToArray();
             }
 
             bytes = encoding.GetBytes(text);
-            return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;
+            return maxBytes < bytes.Length ? bytes.Take(maxBytes).ToArray() : bytes;
         }
     }
 }

@@ -19,6 +19,8 @@ namespace Nanook.GrindCore
         ZLibNg,
         DeflateNg,
         Brotli,
+        Lzma,
+        Lzma2,
         FastLzma2
     }
 
@@ -33,7 +35,9 @@ namespace Nanook.GrindCore
             { CompressionAlgorithm.ZLibNg, (stream, type, leaveOpen, version) => new ZLibStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
             { CompressionAlgorithm.DeflateNg, (stream, type, leaveOpen, version) => new DeflateStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
             { CompressionAlgorithm.Brotli, (stream, type, leaveOpen, version) => new BrotliStream(stream, type, leaveOpen, version ??  CompressionVersion.BrotliLatest()) },
-            { CompressionAlgorithm.FastLzma2, (stream, type, leaveOpen, version) => new FastLzma2Stream(stream, type, leaveOpen, new CompressionParameters(4), version) }
+            { CompressionAlgorithm.Lzma, (stream, type, leaveOpen, version) => new LzmaStream(stream, type, leaveOpen, version ?? CompressionVersion.LzmaLatest()) },
+            { CompressionAlgorithm.Lzma2, (stream, type, leaveOpen, version) => new Lzma2Stream(stream, type, leaveOpen, version ?? CompressionVersion.Lzma2Latest()) },
+            { CompressionAlgorithm.FastLzma2, (stream, type, leaveOpen, version) => new FastLzma2Stream(stream, type, leaveOpen, new CompressionParameters(4), version ?? CompressionVersion.FastLzma2Latest()) }
         };
 
         public static Stream Create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)

@@ -101,7 +101,7 @@ namespace Nanook.GrindCore.Zip
             return _baseStream.Read(buffer, offset, count);
         }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD2_0
         public int Read(Span<byte> buffer)
 #else
         public override int Read(Span<byte> buffer)
@@ -129,7 +129,7 @@ namespace Nanook.GrindCore.Zip
             return _baseStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD2_0
         public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
 #else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -166,7 +166,7 @@ namespace Nanook.GrindCore.Zip
             _baseStream.Write(buffer, offset, count);
         }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD2_0
         public void Write(ReadOnlySpan<byte> source)
 #else
         public override void Write(ReadOnlySpan<byte> source)
@@ -194,7 +194,7 @@ namespace Nanook.GrindCore.Zip
             return _baseStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD2_0
         public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
 #else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -322,7 +322,7 @@ namespace Nanook.GrindCore.Zip
             return ret;
         }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD2_0
         public int Read(Span<byte> destination)
 #else
         public override int Read(Span<byte> destination)
@@ -379,7 +379,7 @@ namespace Nanook.GrindCore.Zip
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD2_0
         public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
 #else
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -580,7 +580,7 @@ namespace Nanook.GrindCore.Zip
             _position += count;
         }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD2_0
         public void Write(ReadOnlySpan<byte> source)
 #else
         public override void Write(ReadOnlySpan<byte> source)
@@ -617,7 +617,7 @@ namespace Nanook.GrindCore.Zip
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD2_0
         public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
 #else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)

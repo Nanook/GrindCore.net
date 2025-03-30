@@ -225,7 +225,13 @@ namespace Nanook.GrindCore.DeflateZLib
             }
 
             // This can work even after XxflateEnd().
-            public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
+            public string GetErrorMessage() => _zStream.msg != ZNullPtr ?
+#if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
+                Marshal.PtrToStringUTF8(_zStream.msg)!
+#else
+                Marshal.PtrToStringBSTR(_zStream.msg)!
+#endif
+                : string.Empty;
         }
 
         public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, Interop.ZLib.CompressionLevel level,

@@ -28,6 +28,7 @@ namespace Nanook.GrindCore
 
         internal abstract int OnRead(DataBlock dataBlock);
         internal abstract void OnWrite(DataBlock dataBlock);
+        internal abstract void OnFlush();
 
         // Abstract method for Seek, since it's required by Stream
         public override long Seek(long offset, SeekOrigin origin)
@@ -56,6 +57,11 @@ namespace Nanook.GrindCore
             OnWrite(new DataBlock(buffer, offset, count));
         }
 
+        public override void Flush()
+        {
+            OnFlush();
+        }
+
 #if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
         /// <summary>
         /// Reads data asynchronously from the stream using a Memory<byte>. Converts to DataBlock internally.
@@ -82,8 +88,8 @@ namespace Nanook.GrindCore
                 OnWrite(dataBlock);
             }, cancellationToken).ConfigureAwait(false);
         }
- #endif
- #if CLASSIC || NET40_OR_GREATER || NETSTANDARD || NETCOREAPP
+#endif
+#if CLASSIC || NET40_OR_GREATER || NETSTANDARD || NETCOREAPP
         /// <summary>
         /// Reads data asynchronously from the stream using byte[]. Converts to DataBlock internally.
         /// </summary>
@@ -109,7 +115,20 @@ namespace Nanook.GrindCore
                 OnWrite(dataBlock);
             }, cancellationToken).ConfigureAwait(false);
         }
+
+        public override async Task FlushAsync(CancellationToken cancellationToken)
+        {
+            await Task.Run(() =>
+            {
+                OnFlush();
+            }, cancellationToken).ConfigureAwait(false);
+        }
 #endif
+
+        /// <summary>
+        /// Close streaming progress
+        /// </summary>
+        public override void Close() => Dispose(true);
 
         protected override void Dispose(bool disposing)
         {

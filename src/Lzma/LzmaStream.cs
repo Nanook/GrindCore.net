@@ -19,10 +19,10 @@ namespace Nanook.GrindCore.Lzma
         private readonly byte[] _buffer;
         private MemoryStream _bufferStream;
 
-        private bool _isCompressing;
+        private bool _compress;
 
-        public override bool CanRead => !_isCompressing;
-        public override bool CanWrite => _isCompressing;
+        public override bool CanRead => _baseStream != null && !_compress && _baseStream.CanRead;
+        public override bool CanWrite => _baseStream != null && _compress && _baseStream.CanWrite;
 
         /// <summary>
         /// Compression properties used for LZMA compression.
@@ -39,7 +39,7 @@ namespace Nanook.GrindCore.Lzma
         /// <param name="dictionarySize">Optional dictionary size for compression.</param>
         public LzmaStream(Stream stream, CompressionType compressionType, bool leaveOpen, CompressionVersion? version = null, int dictionarySize = 0) : base(true)
         {
-            _isCompressing = true;
+            _compress = true;
             _leaveStreamOpen = leaveOpen;
 
             if (compressionType == CompressionType.Optimal)
@@ -69,7 +69,7 @@ namespace Nanook.GrindCore.Lzma
             if (decompressProperties == null)
                 throw new ArgumentNullException(nameof(decompressProperties));
 
-            _isCompressing = false;
+            _compress = false;
             _leaveStreamOpen = leaveOpen;
 
             _decoder = new LzmaDecoder(decompressProperties);
@@ -138,9 +138,9 @@ namespace Nanook.GrindCore.Lzma
         /// <summary>
         /// Flushes any remaining compressed data to the stream.
         /// </summary>
-        public override void Flush()
+        internal override void OnFlush()
         {
-            if (_isCompressing)
+            if (_compress)
             {
                 long size = _encoder.EncodeData(new DataBlock(), _buffer, 0, _buffer.Length, true);
                 if (size > 0)
@@ -156,12 +156,12 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         protected override void OnDispose()
         {
-            Flush();
+            base.Flush();
 
             if (!_leaveStreamOpen)
                 _baseStream.Dispose();
 
-            if (_isCompressing)
+            if (_compress)
                 _encoder.Dispose();
             else
                 _decoder.Dispose();
