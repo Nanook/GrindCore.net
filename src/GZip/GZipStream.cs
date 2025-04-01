@@ -1,10 +1,6 @@
-
-
-
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using System.IO;
 using System;
 using Nanook.GrindCore.DeflateZLib;

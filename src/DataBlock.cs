@@ -6,22 +6,6 @@ using System.Runtime.InteropServices;
 namespace Nanook.GrindCore
 {
 #if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
-    //using System.Buffers;
-    //internal struct DataBlockPinnedHandle
-    //{
-    //    private GCHandle _handle;
-    //    public DataBlockPinnedHandle(DataBlock dataBlock)
-    //    {
-    //        _handle = dataBlock.Data.AsMemory(0, dataBlock.Length).Pin();
-    //    }
-
-    //    public IntPtr Pointer => _handle.AddrOfPinnedObject();
-
-    //    public void Free()
-    //    {
-    //        _handle.Free();
-    //    }
-    //}
 
     internal readonly ref struct DataBlock
     {
@@ -86,21 +70,7 @@ namespace Nanook.GrindCore
         }
     }
 #else
-    //internal struct DataBlockPinnedHandle
-    //{
-    //    private GCHandle _handle;
-    //    public DataBlockPinnedHandle(DataBlock dataBlock)
-    //    {
-    //        _handle = GCHandle.Alloc(dataBlock.Data);
-    //    }
 
-    //    public IntPtr Pointer => _handle.AddrOfPinnedObject();
-
-    //    public void Free()
-    //    {
-    //        _handle.Free();
-    //    }
-    //}
     internal readonly struct DataBlock
     {
         public readonly byte[] Data;

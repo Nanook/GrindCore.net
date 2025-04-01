@@ -83,7 +83,7 @@ namespace Nanook.GrindCore.Lzma
             return code;
         }
 
-        public unsafe int EncodeData(DataBlock buffer, bool appending, Stream output, CancellationToken cancellationToken = default)
+        public unsafe int EncodeData(DataBlock buffer, bool appending, Stream output)
         {
             //ref byte ref_buffer = ref MemoryMarshal.GetReference(buffer.Data);
             //fixed (byte* pBuffer = &ref_buffer)
@@ -109,12 +109,12 @@ namespace Nanook.GrindCore.Lzma
                             throw new FL2Exception(code);
                     }
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
-                } while (!cancellationToken.IsCancellationRequested && (_compOutBuffer.pos != 0));
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Interop.FastLzma2.FL2_cancelCStream(_context);
-                    return 0;
-                }
+                } while (_compOutBuffer.pos != 0);
+                //if (cancellationToken.IsCancellationRequested)
+                //{
+                //    Interop.FastLzma2.FL2_cancelCStream(_context);
+                //    return 0;
+                //}
 
                 // continue receive compressed data
                 do
@@ -128,12 +128,12 @@ namespace Nanook.GrindCore.Lzma
                             throw new FL2Exception(code);
                     }
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
-                } while (!cancellationToken.IsCancellationRequested && _compOutBuffer.pos != 0);
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Interop.FastLzma2.FL2_cancelCStream(_context);
-                    return 0;
-                }
+                } while (_compOutBuffer.pos != 0);
+                //if (cancellationToken.IsCancellationRequested)
+                //{
+                //    Interop.FastLzma2.FL2_cancelCStream(_context);
+                //    return 0;
+                //}
 
                 // receive all remaining compressed data for safety
                 do
@@ -147,12 +147,12 @@ namespace Nanook.GrindCore.Lzma
                             throw new FL2Exception(code);
                     }
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
-                } while (!cancellationToken.IsCancellationRequested && _compOutBuffer.pos != 0);
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Interop.FastLzma2.FL2_cancelCStream(_context);
-                    return 0;
-                }
+                } while (_compOutBuffer.pos != 0);
+                //if (cancellationToken.IsCancellationRequested)
+                //{
+                //    Interop.FastLzma2.FL2_cancelCStream(_context);
+                //    return 0;
+                //}
 
                 //Write compress checksum if not appending mode
                 if (!appending)

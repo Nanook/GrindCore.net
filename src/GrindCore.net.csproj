@@ -2,9 +2,9 @@
 	<PropertyGroup>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Nullable>enable</Nullable>
-		<NoWarn>CS8618,CA2022,CA8618</NoWarn>
+		<NoWarn>CS8618,CS8602,CA2022,CA8618</NoWarn>
 		<!-- <TargetFrameworks>net462;net472;net48;netcoreapp3.1;net5.0;net6.0;net7.0;net8.0;net9.0</TargetFrameworks> -->
-		<TargetFrameworks>net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1</TargetFrameworks>
+		<TargetFrameworks>net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35</TargetFrameworks>
 		<!--<TargetFrameworks>net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net461;net4.5</TargetFrameworks>-->
 		<AssemblyName>Nanook.GrindCore</AssemblyName>
 		<LangVersion>latest</LangVersion>
@@ -24,14 +24,26 @@
 	</PropertyGroup>
 
 	<!-- CLASSIC will switch to net framework StreamBase and DataBlock for debugging -->
-	<PropertyGroup>
+	<!--<PropertyGroup>
 		<DefineConstants>CLASSIC</DefineConstants>
-	</PropertyGroup>
+	</PropertyGroup>-->
 
 	<PropertyGroup>
 		<TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
 		<GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_Compression</GeneratePlatformNotSupportedAssemblyMessage>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="DeflateZLib\Deflate64Managed\**" />
+	  <Compile Remove="SharpCompress\**" />
+	  <Compile Remove="Zip\**" />
+	  <EmbeddedResource Remove="DeflateZLib\Deflate64Managed\**" />
+	  <EmbeddedResource Remove="SharpCompress\**" />
+	  <EmbeddedResource Remove="Zip\**" />
+	  <None Remove="DeflateZLib\Deflate64Managed\**" />
+	  <None Remove="SharpCompress\**" />
+	  <None Remove="Zip\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="../README.md" Pack="true" PackagePath="\" />
@@ -84,20 +96,15 @@
 		</Content>
 	</ItemGroup>
 
-	<ItemGroup Condition="!$(TargetFramework.StartsWith(`net2`)) AND !$(TargetFramework.StartsWith(`net3`)) AND !$(TargetFramework.StartsWith(`net40`)) AND !$(TargetFramework.StartsWith(`net452`))">
-		<PackageReference Include="System.Buffers" Version="4.6.0" />
-		<PackageReference Include="System.IO" Version="4.3.0" />
-		<PackageReference Include="System.Memory" Version="4.6.0" />
-		<PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.0" />
-	</ItemGroup>
+
 
 	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.1'">
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
-		<PackageReference Include="ZstdSharp.Port" Version="0.6.1" />
+		<!--<PackageReference Include="System.Private.Uri" Version="4.3.2" />
+		<PackageReference Include="ZstdSharp.Port" Version="0.6.1" />-->
 	</ItemGroup>
 
 	<ItemGroup>

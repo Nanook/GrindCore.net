@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+#if !CLASSIC && (NET40_OR_GREATER || NETSTANDARD || NETCOREAPP)
 using System.Threading.Tasks;
+#endif
 
 namespace Nanook.GrindCore
 {
@@ -89,7 +91,7 @@ namespace Nanook.GrindCore
             }, cancellationToken).ConfigureAwait(false);
         }
 #endif
-#if CLASSIC || NET40_OR_GREATER || NETSTANDARD || NETCOREAPP
+#if CLASSIC || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP
         /// <summary>
         /// Reads data asynchronously from the stream using byte[]. Converts to DataBlock internally.
         /// </summary>

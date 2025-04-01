@@ -19,12 +19,12 @@ namespace Nanook.GrindCore.ZLib
             }
         }
 
-        public static unsafe uint UpdateCrc32(uint crc32, ReadOnlySpan<byte> buffer)
-        {
-            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
-            {
-                return Interop.ZLib.DN8_ZLib_v1_3_1_crc32(crc32, bufferPtr, buffer.Length);
-            }
-        }
+        //public static unsafe uint UpdateCrc32(uint crc32, ReadOnlySpan<byte> buffer)
+        //{
+        //    fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
+        //    {
+        //        return Interop.ZLib.DN8_ZLib_v1_3_1_crc32(crc32, bufferPtr, buffer.Length);
+        //    }
+        //}
     }
 }

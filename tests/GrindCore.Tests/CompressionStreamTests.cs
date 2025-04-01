@@ -158,15 +158,15 @@ namespace GrindCore.Tests
             Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 5MiB blocks - 10 threads");
 
 
-            sw = Stopwatch.StartNew();
-            using (var ms = new SharpCompress.Compressors.LZMA.LzmaStream(new byte[] { prop }, new MemoryStream(outBuff, 0, size), size))
-            {
-                using (MemoryStream msO = new MemoryStream(decompressed, 0, decompressed.Length))
-                    ms.Read(decompressed, 0, decompressed.Length);
-            }
-            sw.Stop();
-            Trace.WriteLine($"{XXHash64.Compute(decompressed, 0, decompressed.Length).ToHexString()} - {sw.ElapsedMilliseconds}ms - SharpCompress Decode");
-            Array.Clear(decompressed);
+            //sw = Stopwatch.StartNew();
+            //using (var ms = new SharpCompress.Compressors.LZMA.LzmaStream(new byte[] { prop }, new MemoryStream(outBuff, 0, size), size))
+            //{
+            //    using (MemoryStream msO = new MemoryStream(decompressed, 0, decompressed.Length))
+            //        ms.Read(decompressed, 0, decompressed.Length);
+            //}
+            //sw.Stop();
+            //Trace.WriteLine($"{XXHash64.Compute(decompressed, 0, decompressed.Length).ToHexString()} - {sw.ElapsedMilliseconds}ms - SharpCompress Decode");
+            //Array.Clear(decompressed);
 
 
             sw = Stopwatch.StartNew();

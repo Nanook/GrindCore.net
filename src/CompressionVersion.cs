@@ -71,7 +71,7 @@ namespace Nanook.GrindCore
         public static CompressionVersion Lzma2(Lzma2Version version) => create(CompressionAlgorithm.Lzma2, enumStringToVersionString(Enum.GetName(typeof(Lzma2Version), (int)version)!)); //ensure .Latest is converted to .vx_x_x item
 
         public static CompressionVersion FastLzma2Latest() => FastLzma2(FastLzma2Version.Latest);
-        public static CompressionVersion FastLzma2(FastLzma2Version version) => create(CompressionAlgorithm.Lzma2, enumStringToVersionString(Enum.GetName(typeof(FastLzma2Version), (int)version)!)); //ensure .Latest is converted to .vx_x_x item
+        public static CompressionVersion FastLzma2(FastLzma2Version version) => create(CompressionAlgorithm.FastLzma2, enumStringToVersionString(Enum.GetName(typeof(FastLzma2Version), (int)version)!)); //ensure .Latest is converted to .vx_x_x item
 
 
         private CompressionVersion()

@@ -19,11 +19,11 @@ namespace Nanook.GrindCore
 
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_BRT_v1_1_0_BrotliDecoderDecompressStream")]
             internal static extern int DN9_BRT_v1_1_0_DecoderDecompressStream(
-                SafeBrotliDecoderHandle state, ref nuint availableIn, byte** nextIn,
-                ref nuint availableOut, byte** nextOut, out nuint totalOut);
+                SafeBrotliDecoderHandle state, ref UIntPtr availableIn, byte** nextIn,
+                ref UIntPtr availableOut, byte** nextOut, out UIntPtr totalOut);
 
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_BRT_v1_1_0_BrotliDecoderDecompress")]
-            internal static extern BOOL DN9_BRT_v1_1_0_DecoderDecompress(nuint availableInput, byte* inBytes, nuint* availableOutput, byte* outBytes);
+            internal static extern BOOL DN9_BRT_v1_1_0_DecoderDecompress(UIntPtr availableInput, byte* inBytes, UIntPtr* availableOutput, byte* outBytes);
 
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_BRT_v1_1_0_BrotliDecoderDestroyInstance")]
             internal static extern void DN9_BRT_v1_1_0_DecoderDestroyInstance(IntPtr state);
@@ -39,8 +39,8 @@ namespace Nanook.GrindCore
 
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_BRT_v1_1_0_BrotliEncoderCompressStream")]
             internal static extern BOOL DN9_BRT_v1_1_0_EncoderCompressStream(
-                SafeBrotliEncoderHandle state, BrotliEncoderOperation op, ref nuint availableIn,
-                byte** nextIn, ref nuint availableOut, byte** nextOut, out nuint totalOut);
+                SafeBrotliEncoderHandle state, BrotliEncoderOperation op, ref UIntPtr availableIn,
+                byte** nextIn, ref UIntPtr availableOut, byte** nextOut, out UIntPtr totalOut);
 
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_BRT_v1_1_0_BrotliEncoderHasMoreOutput")]
             internal static extern BOOL DN9_BRT_v1_1_0_EncoderHasMoreOutput(SafeBrotliEncoderHandle state);
@@ -49,10 +49,10 @@ namespace Nanook.GrindCore
             internal static extern void DN9_BRT_v1_1_0_EncoderDestroyInstance(IntPtr state);
 
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_BRT_v1_1_0_BrotliEncoderCompress")]
-            internal static extern BOOL DN9_BRT_v1_1_0_EncoderCompress(int quality, int window, int v, nuint availableInput, byte* inBytes, nuint* availableOutput, byte* outBytes);
+            internal static extern BOOL DN9_BRT_v1_1_0_EncoderCompress(int quality, int window, int v, UIntPtr availableInput, byte* inBytes, UIntPtr* availableOutput, byte* outBytes);
 
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_BRT_v1_1_0_BrotliEncoderMaxCompressedSize")]
-            internal static extern nuint DN9_BRT_v1_1_0_EncoderMaxCompressedSize(nuint inputSize);
+            internal static extern UIntPtr DN9_BRT_v1_1_0_EncoderMaxCompressedSize(UIntPtr inputSize);
         }
     }
 }

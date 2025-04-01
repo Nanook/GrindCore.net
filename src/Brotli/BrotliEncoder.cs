@@ -1,32 +1,13 @@
-
-
-
-using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO;
 using System;
 
-/* Unmerged change from project 'GrindCore.net (netstandard2.1)'
-Added:
-using Nanook;
-using Nanook.GrindCore;
-using Nanook.GrindCore.Brotli;
-using Nanook.GrindCore.Brotli.enc;
-using Nanook.GrindCore.Brotli;
-*/
-
-/* Unmerged change from project 'GrindCore.net (netstandard2.1)'
-Added:
-using Nanook;
-using Nanook.GrindCore;
-using Nanook.GrindCore.Brotli.enc;
-*/
 
 namespace Nanook.GrindCore.Brotli
 {
     /// <summary>Provides methods and static methods to encode and decode data in a streamless, non-allocating, and performant manner using the Brotli data format specification.</summary>
-    public partial struct BrotliEncoder : IDisposable
+    internal partial struct BrotliEncoder : IDisposable
     {
         internal SafeBrotliEncoderHandle? _state;
         private bool _disposed;
@@ -41,6 +22,7 @@ namespace Nanook.GrindCore.Brotli
         public BrotliEncoder(int quality, int window, CompressionVersion? version = null)
         {
             _disposed = false;
+
             if (version == null)
                 version = CompressionVersion.BrotliLatest();
             if (version.Index == 0)
@@ -160,15 +142,15 @@ namespace Nanook.GrindCore.Brotli
             return result;
         }
 
-        internal OperationStatus Flush(Memory<byte> destination, out int bytesWritten) => Flush(destination.Span, out bytesWritten);
+        //internal OperationStatus Flush(DataBlock destination, out int bytesWritten) => Flush(destination.Span, out bytesWritten);
 
         /// <summary>Compresses an empty read-only span of bytes into its destination, which ensures that output is produced for all the processed input. An actual flush is performed when the source is depleted and there is enough space in the destination for the remaining data.</summary>
         /// <param name="destination">When this method returns, a span of bytes where the compressed data will be stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
-        public OperationStatus Flush(Span<byte> destination, out int bytesWritten) => Compress(ReadOnlySpan<byte>.Empty, destination, out _, out bytesWritten, BrotliEncoderOperation.Flush);
+        public OperationStatus Flush(DataBlock destination, out int bytesWritten) => Compress(new DataBlock(), destination, out _, out bytesWritten, BrotliEncoderOperation.Flush);
 
-        internal OperationStatus Compress(ReadOnlyMemory<byte> source, Memory<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(source.Span, destination.Span, out bytesConsumed, out bytesWritten, isFinalBlock);
+        //internal OperationStatus Compress(DataBlock source, DataBlock destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
 
         /// <summary>Compresses a read-only byte span into a destination span.</summary>
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
@@ -177,9 +159,9 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
         /// <param name="isFinalBlock"><see langword="true" /> to finalize the internal stream, which prevents adding more input data when this method returns; <see langword="false" /> to allow the encoder to postpone the production of output until it has processed enough input.</param>
         /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
-        public OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock ? BrotliEncoderOperation.Finish : BrotliEncoderOperation.Process);
+        public OperationStatus Compress(DataBlock source, DataBlock destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock ? BrotliEncoderOperation.Finish : BrotliEncoderOperation.Process);
 
-        internal OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
+        internal OperationStatus Compress(DataBlock source, DataBlock destination, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
         {
             EnsureInitialized();
             Debug.Assert(_state != null);
@@ -188,6 +170,7 @@ namespace Nanook.GrindCore.Brotli
             bytesConsumed = 0;
             nuint availableOutput = (nuint)destination.Length;
             nuint availableInput = (nuint)source.Length;
+
             unsafe
             {
                 // We can freely cast between int and nuint (.NET size_t equivalent) for two reasons:
@@ -195,9 +178,12 @@ namespace Nanook.GrindCore.Brotli
                 // 2. Span's have a maximum length of the int boundary.
                 while ((int)availableOutput > 0)
                 {
-                    fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-                    fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
+                    fixed (byte* inBytes = source.Data)
+                    fixed (byte* outBytes = destination.Data)
                     {
+                        *&inBytes += source.Offset;
+                        *&outBytes += destination.Offset;
+
                         if (_state.Version.Index == 0)
                         {
                             if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderCompressStream(_state!, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _) == Interop.BOOL.FALSE)
@@ -221,8 +207,8 @@ namespace Nanook.GrindCore.Brotli
                         else
                             throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
 
-                        source = source.Slice(source.Length - (int)availableInput);
-                        destination = destination.Slice(destination.Length - (int)availableOutput);
+                        source = new DataBlock(source.Data, source.Length - (int)availableInput, (int)availableInput);
+                        destination = new DataBlock(destination.Data, destination.Length - (int)availableOutput, (int)availableOutput);
                     }
                 }
 
@@ -235,7 +221,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> if the compression operation was successful; <see langword="false" /> otherwise.</returns>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) => TryCompress(source, destination, out bytesWritten, BrotliUtils.Quality_Default, BrotliUtils.WindowBits_Default);
+        public static bool TryCompress(DataBlock source, DataBlock destination, out int bytesWritten) => TryCompress(source, destination, out bytesWritten, BrotliUtils.Quality_Default, BrotliUtils.WindowBits_Default);
 
         /// <summary>Tries to compress a source byte span into a destination byte span, using the provided compression quality leven and encoder window bits.</summary>
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
@@ -244,7 +230,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="quality">A number representing quality of the Brotli compression. 0 is the minimum (no compression), 11 is the maximum.</param>
         /// <param name="window">A number representing the encoder window bits. The minimum value is 10, and the maximum value is 24.</param>
         /// <returns><see langword="true" /> if the compression operation was successful; <see langword="false" /> otherwise.</returns>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window, CompressionVersion? version = null)
+        public static bool TryCompress(DataBlock source, DataBlock destination, out int bytesWritten, int quality, int window, CompressionVersion? version = null)
         {
             if (quality < 0 || quality > BrotliUtils.Quality_Max)
             {
@@ -257,8 +243,8 @@ namespace Nanook.GrindCore.Brotli
 
             unsafe
             {
-                fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-                fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
+                fixed (byte* inBytes = &source.Data[source.Offset])
+                fixed (byte* outBytes = &destination.Data[destination.Offset])
                 {
                     nuint availableOutput = (nuint)destination.Length;
                     if (version == null)
