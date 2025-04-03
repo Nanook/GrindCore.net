@@ -82,7 +82,7 @@ namespace Nanook.GrindCore.Lzma
             return sz;
         }
 
-        public long EncodeData(DataBlock inData, byte[] outData, int outOffset, int outSize, bool final)
+        public long EncodeData(DataBlock inData, byte[] outData, int outOffset, int outSize, bool final, CancellableTask cancel)
         {
             uint available = 0;
             int total = 0;
@@ -94,6 +94,8 @@ namespace Nanook.GrindCore.Lzma
 
             while ((total < inData.Length || (final && inData.Length == 0) && !finalfinal))
             {
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                 if (_inStream.pos == _inStream.size)
                     _inStream.pos = 0; // wrap around
 
@@ -118,8 +120,9 @@ namespace Nanook.GrindCore.Lzma
 
                 outSz = (ulong)(outSize - outOffset);
 
-                fixed (byte* outPtr = &outData[outOffset])
+                fixed (byte* outPtr = outData)
                 {
+                    *&outPtr += outOffset;
                     res = S7_Lzma_v24_07_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
                     outOffset += (int)outSz;
                     outTotal += (int)outSz;

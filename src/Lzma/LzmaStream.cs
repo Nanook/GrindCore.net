@@ -28,6 +28,45 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public byte[] Properties { get; }
 
+        private LzmaStream(Stream stream, CompressionType compressionType, bool leaveOpen, CompressionVersion? version = null, int dictionarySize = 0, byte[]? decompressProperties = null) : base(true)
+        {
+            if (compressionType != CompressionType.Decompress)
+            {
+                _compress = true;
+                _leaveStreamOpen = leaveOpen;
+
+                if (compressionType == CompressionType.Optimal)
+                    compressionType = CompressionType.Level5;
+                else if (compressionType == CompressionType.SmallestSize)
+                    compressionType = CompressionType.MaxLzma2;
+                else if (compressionType == CompressionType.Fastest)
+                    compressionType = CompressionType.Level1;
+
+                _encoder = new LzmaEncoder((int)compressionType, (uint)dictionarySize, 0);
+                Properties = _encoder.Properties;
+                _buffer = new byte[_encoder.BlockSize << 1];
+            }
+            else
+            {
+                if (decompressProperties == null)
+                    decompressProperties = new byte[] { 0x5D, 0, 0, 4, 0 }; //default
+
+                if (stream == null)
+                    throw new ArgumentNullException(nameof(stream));
+                //if (decompressProperties == null)
+                //    throw new ArgumentNullException(nameof(decompressProperties));
+
+                _compress = false;
+                _leaveStreamOpen = leaveOpen;
+
+                _decoder = new LzmaDecoder(decompressProperties);
+                _buffer = new byte[2 * 0x400 * 0x400];
+                _bufferStream = new MemoryStream(_buffer);
+                _bufferStream.SetLength(0);
+            }
+            _baseStream = stream;
+        }
+
         /// <summary>
         /// Initializes a new instance of LzmaStream for compression.
         /// </summary>
@@ -36,22 +75,8 @@ namespace Nanook.GrindCore.Lzma
         /// <param name="leaveOpen">Indicates whether to leave the underlying stream open when the stream is disposed.</param>
         /// <param name="version">Optional compression version.</param>
         /// <param name="dictionarySize">Optional dictionary size for compression.</param>
-        public LzmaStream(Stream stream, CompressionType compressionType, bool leaveOpen, CompressionVersion? version = null, int dictionarySize = 0) : base(true)
+        public LzmaStream(Stream stream, CompressionType compressionType, bool leaveOpen, CompressionVersion? version = null) : this(stream, compressionType, leaveOpen, version, 0, null)
         {
-            _compress = true;
-            _leaveStreamOpen = leaveOpen;
-
-            if (compressionType == CompressionType.Optimal)
-                compressionType = CompressionType.Level5;
-            else if (compressionType == CompressionType.SmallestSize)
-                compressionType = CompressionType.MaxLzma2;
-            else if (compressionType == CompressionType.Fastest)
-                compressionType = CompressionType.Level1;
-
-            _encoder = new LzmaEncoder((int)compressionType, (uint)dictionarySize, 0);
-            Properties = _encoder.Properties;
-            _buffer = new byte[_encoder.BlockSize << 1];
-            _baseStream = stream;
         }
 
         /// <summary>
@@ -61,27 +86,14 @@ namespace Nanook.GrindCore.Lzma
         /// <param name="leaveOpen">Indicates whether to leave the underlying stream open when the stream is disposed.</param>
         /// <param name="decompressProperties">The properties required for LZMA decompression.</param>
         /// <param name="version">Optional compression version.</param>
-        public LzmaStream(Stream stream, bool leaveOpen, byte[] decompressProperties, CompressionVersion? version = null) : base(true)
+        public LzmaStream(Stream stream, bool leaveOpen, byte[] decompressProperties, CompressionVersion? version = null) : this(stream, CompressionType.Decompress, leaveOpen, version, 0, decompressProperties)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (decompressProperties == null)
-                throw new ArgumentNullException(nameof(decompressProperties));
-
-            _compress = false;
-            _leaveStreamOpen = leaveOpen;
-
-            _decoder = new LzmaDecoder(decompressProperties);
-            _buffer = new byte[2 * 0x400 * 0x400];
-            _bufferStream = new MemoryStream(_buffer);
-            _bufferStream.SetLength(0);
-            _baseStream = stream;
         }
 
         /// <summary>
         /// Reads data from the stream and decompresses it using LZMA. Position is updated with running total of bytes processed from source stream.
         /// </summary>
-        internal override int OnRead(DataBlock dataBlock)
+        internal override int OnRead(DataBlock dataBlock, CancellableTask cancel)
         {
             if (!this.CanRead)
                 throw new NotSupportedException("Not for Compression mode");
@@ -89,6 +101,8 @@ namespace Nanook.GrindCore.Lzma
             int total = 0;
             while (dataBlock.Length > total)
             {
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                 int remainingBytes = (int)(_bufferStream.Length - _bufferStream.Position);
                 if (remainingBytes < 0x400)
                 {
@@ -115,13 +129,15 @@ namespace Nanook.GrindCore.Lzma
         /// <summary>
         /// Compresses data using LZMA and writes it to the stream. Position is updated with running total of bytes processed from source stream.
         /// </summary>
-        internal override void OnWrite(DataBlock dataBlock)
+        internal override void OnWrite(DataBlock dataBlock, CancellableTask cancel)
         {
             if (!this.CanWrite)
                 throw new NotSupportedException("Not for Decompression mode");
 
+            cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
             // Use the DataBlock's properties for encoding
-            long size = _encoder.EncodeData(dataBlock, _buffer, 0, _buffer.Length, false);
+            long size = _encoder.EncodeData(dataBlock, _buffer, 0, _buffer.Length, false, cancel);
 
             if (size > 0)
             {
@@ -137,11 +153,11 @@ namespace Nanook.GrindCore.Lzma
         /// <summary>
         /// Flushes any remaining compressed data to the stream.
         /// </summary>
-        internal override void OnFlush()
+        internal override void OnFlush(CancellableTask cancel)
         {
             if (_compress)
             {
-                long size = _encoder.EncodeData(new DataBlock(), _buffer, 0, _buffer.Length, true);
+                long size = _encoder.EncodeData(new DataBlock(), _buffer, 0, _buffer.Length, true, cancel);
                 if (size > 0)
                 {
                     _baseStream.Write(_buffer, 0, (int)size);
@@ -155,15 +171,15 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         protected override void OnDispose()
         {
-            base.Flush();
+            try { base.Flush(); } catch { }
 
             if (!_leaveStreamOpen)
-                _baseStream.Dispose();
+                try { _baseStream.Dispose(); } catch { }
 
             if (_compress)
-                _encoder.Dispose();
+                try { _encoder.Dispose(); } catch { }
             else
-                _decoder.Dispose();
+                try { _decoder.Dispose(); } catch { }
         }
 
     }

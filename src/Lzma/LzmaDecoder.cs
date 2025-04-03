@@ -32,10 +32,12 @@ namespace Nanook.GrindCore.Lzma
             ulong outSz = (ulong)outData.Length;
             ulong inSz = (ulong)inSize;
 
-            fixed (byte* outPtr = &outData.Data[outData.Offset]) // Pin memory for the output buffer
-            fixed (byte* inPtr = &inData[inOffset]) // Pin memory for the input buffer
+            fixed (byte* outPtr = outData.Data) // Pin memory for the output buffer
+            fixed (byte* inPtr = inData) // Pin memory for the input buffer
             fixed (int* statusPtr = &status) // Pin memory for the status
             {
+                *&outPtr += outData.Offset;
+                *&inPtr += inOffset;
                 // Call the C interop function
                 int res = S7_Lzma_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
                 if (res != 0)

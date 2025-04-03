@@ -121,9 +121,7 @@ namespace Nanook.GrindCore.DeflateZLib
             {
                 // Before returning, make sure to release input buffer if necessary:
                 if (0 == _zlibStream.AvailIn && IsInputBufferHandleAllocated)
-                {
                     deallocateInputBufferHandle();
-                }
             }
         }
 
@@ -132,13 +130,9 @@ namespace Nanook.GrindCore.DeflateZLib
             if (readInflateOutput(bufPtr, length, ZFlushCode.NoFlush, out bytesRead) == ZErrorCode.StreamEnd)
             {
                 if (!NeedsInput() && IsGzipStream() && IsInputBufferHandleAllocated)
-                {
                     _finished = resetStreamForLeftoverInput();
-                }
                 else
-                {
                     _finished = true;
-                }
             }
         }
 
@@ -162,9 +156,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 // Check the leftover bytes to see if they start with he gzip header ID bytes
                 if (*nextInPointer != Interop.ZLib.GZip_Header_ID1 || nextAvailIn > 1 && *(nextInPointer + 1) != Interop.ZLib.GZip_Header_ID2)
-                {
                     return true;
-                }
 
                 // Trash our existing zstream.
                 _zlibStream.Dispose();

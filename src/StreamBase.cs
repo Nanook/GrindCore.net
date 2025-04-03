@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+
 #if !CLASSIC && (NET40_OR_GREATER || NETSTANDARD || NETCOREAPP)
 using System.Threading.Tasks;
 #endif
@@ -28,9 +29,9 @@ namespace Nanook.GrindCore
             _position = positionSupport ? 0 : -1;
         }
 
-        internal abstract int OnRead(DataBlock dataBlock);
-        internal abstract void OnWrite(DataBlock dataBlock);
-        internal abstract void OnFlush();
+        internal abstract int OnRead(DataBlock dataBlock, CancellableTask cancel);
+        internal abstract void OnWrite(DataBlock dataBlock, CancellableTask cancel);
+        internal abstract void OnFlush(CancellableTask cancel);
 
         // Abstract method for Seek, since it's required by Stream
         public override long Seek(long offset, SeekOrigin origin)
@@ -51,81 +52,18 @@ namespace Nanook.GrindCore
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return OnRead(new DataBlock(buffer, offset, count));
+            return OnRead(new DataBlock(buffer, offset, count), new CancellableTask());
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            OnWrite(new DataBlock(buffer, offset, count));
+            OnWrite(new DataBlock(buffer, offset, count), new CancellableTask());
         }
 
         public override void Flush()
         {
-            OnFlush();
+            OnFlush(new CancellableTask());
         }
-
-#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
-        /// <summary>
-        /// Reads data asynchronously from the stream using a Memory<byte>. Converts to DataBlock internally.
-        /// </summary>
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            int bytesRead = await Task.Run(() =>
-            {
-                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
-                return OnRead(dataBlock);
-            }, cancellationToken).ConfigureAwait(false);
-
-            return bytesRead;
-        }
-
-        /// <summary>
-        /// Writes data asynchronously to the stream using a ReadOnlyMemory<byte>. Converts to DataBlock internally.
-        /// </summary>
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            await Task.Run(() =>
-            {
-                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
-                OnWrite(dataBlock);
-            }, cancellationToken).ConfigureAwait(false);
-        }
-#endif
-#if CLASSIC || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP
-        /// <summary>
-        /// Reads data asynchronously from the stream using byte[]. Converts to DataBlock internally.
-        /// </summary>
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            int bytesRead = await Task.Run(() =>
-            {
-                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
-                return OnRead(dataBlock);
-            }, cancellationToken).ConfigureAwait(false);
-
-            return bytesRead;
-        }
-
-        /// <summary>
-        /// Writes data asynchronously to the stream using byte[]. Converts to DataBlock internally.
-        /// </summary>
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            await Task.Run(() =>
-            {
-                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
-                OnWrite(dataBlock);
-            }, cancellationToken).ConfigureAwait(false);
-        }
-
-        public override async Task FlushAsync(CancellationToken cancellationToken)
-        {
-            await Task.Run(() =>
-            {
-                OnFlush();
-            }, cancellationToken).ConfigureAwait(false);
-        }
-#endif
 
         /// <summary>
         /// Close streaming progress
@@ -143,6 +81,97 @@ namespace Nanook.GrindCore
             }
             base.Dispose(disposing);
         }
+
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+        /// <summary>
+        /// Reads data asynchronously from the stream using a Memory<byte>. Converts to DataBlock internally.
+        /// </summary>
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
+                return OnRead(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+            }
+
+            return await Task.Run(() =>
+            {
+                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
+                return OnRead(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Writes data asynchronously to the stream using a ReadOnlyMemory<byte>. Converts to DataBlock internally.
+        /// </summary>
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
+                OnWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+                return;
+            }
+
+            await Task.Run(() =>
+            {
+                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
+                OnWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+            }, cancellationToken).ConfigureAwait(false);
+        }
+#endif
+#if CLASSIC || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP
+        /// <summary>
+        /// Reads data asynchronously from the stream using byte[]. Converts to DataBlock internally.
+        /// </summary>
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
+                return OnRead(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+            }
+
+            return await Task.Run(() =>
+            {
+                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
+                return OnRead(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Writes data asynchronously to the stream using byte[]. Converts to DataBlock internally.
+        /// </summary>
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
+                OnWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+                return;
+            }
+
+            await Task.Run(() =>
+            {
+                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
+                OnWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        public override async Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                OnFlush(new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+                return;
+            }
+
+            await Task.Run(() =>
+            {
+                OnFlush(new CancellableTask(cancellationToken));
+            }, cancellationToken).ConfigureAwait(false);
+        }
+#endif
 
         protected abstract void OnDispose();
     }

@@ -78,10 +78,12 @@ namespace Nanook.GrindCore.Lzma
         {
             ulong inSz = (ulong)inSize;
             ulong outSz = (ulong)outSize;
-            fixed (byte* outPtr = &outData.Data[outData.Offset + outOffset])
-            fixed (byte* inPtr = &inData[inOffset])
+            fixed (byte* outPtr = outData.Data)
+            fixed (byte* inPtr = inData)
             fixed (int* statusPtr = &status)
             {
+                *&outPtr += outData.Offset + outOffset;
+                *&inPtr += inOffset;
                 int res = S7_Lzma2_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");

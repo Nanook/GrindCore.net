@@ -59,9 +59,7 @@ namespace Nanook.GrindCore.Brotli
         {
             EnsureNotDisposed();
             if (_state == null)
-            {
                 InitializeEncoder();
-            }
         }
 
         /// <summary>Frees and disposes unmanaged resources.</summary>
@@ -85,10 +83,10 @@ namespace Nanook.GrindCore.Brotli
                 InitializeEncoder();
                 Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
+
             if (quality < BrotliUtils.Quality_Min || quality > BrotliUtils.Quality_Max)
-            {
                 throw new ArgumentOutOfRangeException(nameof(quality), SR.Format(SR.BrotliEncoder_Quality, quality, 0, BrotliUtils.Quality_Max));
-            }
+
             if (_state.Version.Index == 0)
             {
                 if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)quality) == Interop.BOOL.FALSE)
@@ -106,10 +104,10 @@ namespace Nanook.GrindCore.Brotli
                 InitializeEncoder();
                 Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
+
             if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
-            {
                 throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
-            }
+
             if (_state.Version.Index == 0)
             {
                 if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
@@ -243,9 +241,12 @@ namespace Nanook.GrindCore.Brotli
 
             unsafe
             {
-                fixed (byte* inBytes = &source.Data[source.Offset])
-                fixed (byte* outBytes = &destination.Data[destination.Offset])
+                fixed (byte* inBytes = source.Data)
+                fixed (byte* outBytes = destination.Data)
                 {
+                    *&inBytes += source.Offset;
+                    *&outBytes += destination.Offset;
+
                     nuint availableOutput = (nuint)destination.Length;
                     if (version == null)
                         version = CompressionVersion.BrotliLatest();

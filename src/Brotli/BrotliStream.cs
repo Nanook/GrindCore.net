@@ -63,7 +63,7 @@ namespace Nanook.GrindCore.Brotli
             _buffer = new byte[DefaultInternalBufferSize];
         }
 
-        internal override int OnRead(DataBlock buffer)
+        internal override int OnRead(DataBlock buffer, CancellableTask cancel)
         {
             if (_compress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
@@ -72,6 +72,8 @@ namespace Nanook.GrindCore.Brotli
             int bytesWritten;
             while (!TryDecompress(buffer, out bytesWritten))
             {
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                 int bytesRead = _baseStream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
                 if (bytesRead <= 0)
                 {
@@ -92,11 +94,11 @@ namespace Nanook.GrindCore.Brotli
             return bytesWritten;
         }
 
-        internal override void OnWrite(DataBlock buffer)
+        internal override void OnWrite(DataBlock buffer, CancellableTask cancel)
         {
-            OnWrite(buffer, false);
+            OnWrite(buffer, cancel, false);
         }
-        internal void OnWrite(DataBlock buffer, bool isFinalBlock)
+        internal void OnWrite(DataBlock buffer, CancellableTask cancel, bool isFinalBlock)
         {
             if (!_compress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
@@ -106,6 +108,8 @@ namespace Nanook.GrindCore.Brotli
             DataBlock output = new DataBlock(_buffer);
             while (lastResult == OperationStatus.DestinationTooSmall)
             {
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                 int bytesConsumed;
                 int bytesWritten;
                 lastResult = _encoder.Compress(buffer, output, out bytesConsumed, out bytesWritten, isFinalBlock);
@@ -121,7 +125,7 @@ namespace Nanook.GrindCore.Brotli
         /// <summary>If the stream is not _disposed, and the compression mode is set to compress, writes all the remaining encoder's data into this stream.</summary>
         /// <exception cref="InvalidDataException">The encoder ran into invalid data.</exception>
         /// <exception cref="ObjectDisposedException">The stream is _disposed.</exception>
-        internal override void OnFlush()
+        internal override void OnFlush(CancellableTask cancel)
         {
             EnsureNotDisposed();
             if (_compress)
@@ -133,6 +137,8 @@ namespace Nanook.GrindCore.Brotli
                 DataBlock output = new DataBlock(_buffer);
                 while (lastResult == OperationStatus.DestinationTooSmall)
                 {
+                    cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                     int bytesWritten;
                     lastResult = _encoder.Flush(output, out bytesWritten);
                     if (lastResult == OperationStatus.InvalidData)
@@ -150,9 +156,7 @@ namespace Nanook.GrindCore.Brotli
             // Decompress any data we may have in our buffer.
             OperationStatus lastResult = _decoder.Decompress(new DataBlock(_buffer, _bufferOffset, _bufferCount), destination, out int bytesConsumed, out bytesWritten);
             if (lastResult == OperationStatus.InvalidData)
-            {
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
-            }
 
             if (bytesConsumed != 0)
             {
@@ -162,9 +166,7 @@ namespace Nanook.GrindCore.Brotli
 
             // If we successfully decompressed any bytes, or if we've reached the end of the decompression, we're done.
             if (bytesWritten != 0 || lastResult == OperationStatus.Done)
-            {
                 return true;
-            }
 
             if (destination.Length == 0)
             {
@@ -211,7 +213,7 @@ namespace Nanook.GrindCore.Brotli
                 if (_baseStream != null)
                 {
                     if (_compress)
-                        OnWrite(new DataBlock(), true);
+                        OnWrite(new DataBlock(), new CancellableTask(), true);
 
                     if (!_leaveOpen)
                         _baseStream.Dispose();

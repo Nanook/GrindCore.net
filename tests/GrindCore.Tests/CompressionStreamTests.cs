@@ -23,182 +23,6 @@ namespace GrindCore.Tests
             _text64KiB = TestPseudoTextStream.Create(64 * 1024);
         }
 
-        [Fact]
-        public async Task LzmaCompressTest()
-        {
-            byte[] outBuff = new byte[512 * 1024 * 1024];
-            byte[] prop;
-            byte[] data = TestDataStream.Create(512 * 1024 * 1024);
-            byte[] decompressed = new byte[data.Length];
-            int size;
-            Stopwatch sw;
-
-            //Trace.WriteLine($"{XXHash64.Compute(data, 0, data.Length).ToHexString()} - Original Data");
-
-            sw = Stopwatch.StartNew();
-            using (Stream ms = new MemoryStream(outBuff))
-            {
-                using (LzmaStream lzma2e = new LzmaStream(ms, CompressionType.Fastest, true, null, 0))
-                {
-                    prop = lzma2e.Properties;
-                    int total = 0;
-                    while (total != data.Length)
-                    {
-                        await lzma2e.WriteAsync(data, total, 256 * 1024 * 1024);
-                        total += 256 * 1024 * 1024;
-                    }
-                    lzma2e.Flush();
-                }
-                size = (int)ms.Position;
-            }
-            sw.Stop();
-            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 512MiB Block - 1 thread");
-
-            using (MemoryStream ms = new MemoryStream(decompressed))
-            {
-                using (var sclz = new LzmaStream(new MemoryStream(outBuff, 0, size), true, prop, null))
-                {
-                    await sclz.CopyToAsync(ms);
-                }
-            }
-
-            //LzmaDecoder dec = new LzmaDecoder(prop);
-            //int sz = dec.DecodeData(outBuff, 0, 0x10000, decompressed, 0, decompressed.Length, out int status);
-            //sz += dec.DecodeData(outBuff, 0x10000, size - 0x10000, decompressed, sz, decompressed.Length, out status);
-
-            //sw = Stopwatch.StartNew();
-            //using (LzmaEncoder c = new LzmaEncoder(5, 0, 0))
-            //{
-            //    prop = c.Properties;
-            //    //size = (int)c.EncodeTest(data, data.Length, outBuff, outBuff.Length);
-            //    size = (int)c.EncodeData(data, 0, data.Length, outBuff, 0, outBuff.Length, false);
-            //    size += (int)c.EncodeData(data, 0, 0, outBuff, size, outBuff.Length, true);
-            //}
-            //sw.Stop();
-            //Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 512MiB Block - 1 thread");
-
-
-            //using (MemoryStream ms = new MemoryStream())
-            //{
-            //    using (var sclz = new SharpCompress.Compressors.LZMA.LzmaStream(prop, new MemoryStream(outBuff, 0, size), size))
-            //    {
-            //        int dsz = sclz.Read(decompressed, 0, decompressed.Length);
-            //    }
-            //}
-
-            Assert.True(XXHash64.Compute(decompressed).SequenceEqual(XXHash64.Compute(data, 0, decompressed.Length)));
-        }
-
-        //#if DEBUG
-        [Fact]
-        public void Lzma2CompressTest()
-        {
-            byte[] outBuff = new byte[512 * 1024 * 1024];
-            byte prop;
-            byte[] data = TestDataStream.Create(512 * 1024 * 1024);
-            byte[] decompressed = new byte[data.Length];
-            int size;
-            Stopwatch sw;
-
-            Trace.WriteLine($"{XXHash64.Compute(data, 0, data.Length).ToHexString()} - Original Data");
-
-            sw = Stopwatch.StartNew();
-            using (Stream ms = new MemoryStream(outBuff))
-            {
-                using (Lzma2Stream lzma2e = new Lzma2Stream(ms, CompressionType.SmallestSize, true, null, 512 * 1024 * 1024, 0, 1))
-                {
-                    prop = lzma2e.Properties;
-                    lzma2e.Write(data, 0, data.Length);
-                }
-                size = (int)ms.Position;
-            }
-            sw.Stop();
-            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 512MiB Block - 1 thread");
-            Array.Clear(outBuff);
-
-            sw = Stopwatch.StartNew();
-            using (Stream ms = new MemoryStream(outBuff))
-            {
-                using (Lzma2Stream lzma2e = new Lzma2Stream(ms, CompressionType.SmallestSize, true, null, 64 * 1024 * 1024, 0, 1))
-                {
-                    prop = lzma2e.Properties;
-                    lzma2e.Write(data, 0, data.Length);
-                }
-                size = (int)ms.Position;
-            }
-            sw.Stop();
-            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 64MiB blocks - 1 thread");
-            Array.Clear(outBuff);
-
-            sw = Stopwatch.StartNew();
-            using (Stream ms = new MemoryStream(outBuff))
-            {
-                using (Lzma2Stream lzma2e = new Lzma2Stream(ms, CompressionType.SmallestSize, true, null, 64 * 1024 * 1024, 0, 4))
-                {
-                    prop = lzma2e.Properties;
-                    lzma2e.Write(data, 0, data.Length);
-                }
-                size = (int)ms.Position;
-            }
-            sw.Stop();
-            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 64MiB blocks - 4 threads");
-            Array.Clear(outBuff);
-
-            sw = Stopwatch.StartNew();
-            using (Stream ms = new MemoryStream(outBuff))
-            {
-                using (Lzma2Stream lzma2e = new Lzma2Stream(ms, CompressionType.SmallestSize, true, null, 5 * 1024 * 1024, 0, 10))
-                {
-                    prop = lzma2e.Properties;
-                    lzma2e.Write(data, 0, data.Length);
-                }
-                size = (int)ms.Position;
-            }
-            sw.Stop();
-            Trace.WriteLine($"{XXHash64.Compute(outBuff, 0, size).ToHexString()} - Size {size} - {sw.ElapsedMilliseconds}ms - 5MiB blocks - 10 threads");
-
-
-            //sw = Stopwatch.StartNew();
-            //using (var ms = new SharpCompress.Compressors.LZMA.LzmaStream(new byte[] { prop }, new MemoryStream(outBuff, 0, size), size))
-            //{
-            //    using (MemoryStream msO = new MemoryStream(decompressed, 0, decompressed.Length))
-            //        ms.Read(decompressed, 0, decompressed.Length);
-            //}
-            //sw.Stop();
-            //Trace.WriteLine($"{XXHash64.Compute(decompressed, 0, decompressed.Length).ToHexString()} - {sw.ElapsedMilliseconds}ms - SharpCompress Decode");
-            //Array.Clear(decompressed);
-
-
-            sw = Stopwatch.StartNew();
-            Lzma2Stream lzma2 = new Lzma2Stream(new MemoryStream(outBuff), false, prop, null);
-            int sz = 0;
-            while ((sz += lzma2.Read(decompressed, sz, 10000000)) < decompressed.Length);
-            sw.Stop();
-
-            Trace.WriteLine($"{XXHash64.Compute(decompressed, 0, decompressed.Length).ToHexString()} - {sw.ElapsedMilliseconds}ms - GC Stream Decode");
-
-            //using (Lzma2Decoder d = new Lzma2Decoder(prop))
-            //{
-            //    int pos = 0;
-            //    Lzma2BlockInfo info;
-            //    int outPos = 0;
-            //    int status = 0;
-            //    while (!(info = d.ReadSubBlockInfo(outBuff, (ulong)pos)).IsTerminator)
-            //    {
-            //        if (info.InitProp)
-            //            d.SetProps(d.Properties); // feels like info.Prop should be passed, but it crashes it
-            //        if (info.InitState)
-            //            d.SetState();
-
-            //        outPos += d.DecodeData(outBuff, pos, info.BlockSize, decompressed, outPos, info.UncompressedSize, out status);
-            //        pos += info.BlockSize;
-            //    }
-            //}
-
-
-        }
-        //#endif
-
         [Theory]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x5d1, "2b444156a4305ae3")]
@@ -209,9 +33,15 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x264c, "728b6f680101e18d")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0xbe1, "8fbdcf11b9e9fcb4")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0xb9b, "080ef351410b77ac")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x632, "1ee9e334582493e9")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0x64e, "e36983b8df1f0fa0")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0x64e, "e36983b8df1f0fa0")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x639, "ca845545cc218e11")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x655, "5da46777dcf486f4")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x655, "5da46777dcf486f4")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "cdd2efd3865069b2")]
-        //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x733, "347363ee8e7e7f1d")]
-        //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x733, "0f256c67b74d6676")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x733, "347363ee8e7e7f1d")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x733, "0f256c67b74d6676")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x1dc6, "2baeb36442c0367d")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0xcd4, "e1f838db8a9218b9")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.SmallestSize, 0xbad, "b2f20d23bf119caa")]
@@ -244,9 +74,15 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x4bf, "ca5207caef02504d")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x2ff, "fd1a57a63d29c607")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x2ff, "fd1a57a63d29c607")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x1de, "6d7905044230ec1f")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0x1de, "069b2a2799eadee8")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0x1de, "069b2a2799eadee8")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x1e5, "b4550df1c1bd0067")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x1e5, "3e6f77f9c11f4e70")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x1e5, "3e6f77f9c11f4e70")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x1ea, "e8dcd55f29d31d27")]
-        //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1ea, "4ffd75974e4d0d93")]
-        //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x1ea, "bfb715f62e1a0e6b")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1ea, "4ffd75974e4d0d93")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x1ea, "bfb715f62e1a0e6b")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x3df, "23cc51e8d014ea83")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x311, "dd79ecbbf6270f98")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.SmallestSize, 0x311, "e72c2161819ae447")]
@@ -280,6 +116,15 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x2, "fae4a10ff02fd326")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x2, "fae4a10ff02fd326")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x2, "fae4a10ff02fd326")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x5, "00f4f72fb7a8c648")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0x5, "00f4f72fb7a8c648")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0x5, "00f4f72fb7a8c648")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x1, "e934a84adb052768")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x1, "e934a84adb052768")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x1, "e934a84adb052768")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x6, "d8018fa1b17508d8")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x6, "d8018fa1b17508d8")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x6, "d8018fa1b17508d8")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x14, "da5b8f3c1492541a")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x14, "ebc2b57c01d2615b")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.SmallestSize, 0x14, "e206a5f5f4865fbb")]
@@ -633,6 +478,15 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x4097b, "6d522dca7d96dfe8", "0e9009f7ff7f372d")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x16758, "6d522dca7d96dfe8", "9567de3b29629820")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x1674f, "6d522dca7d96dfe8", "f2985ec622a43a65")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0xd65, "6d522dca7d96dfe8", "de79b5fd4314f0e5")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0xd66, "6d522dca7d96dfe8", "a975d12987fde7eb")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0xd66, "6d522dca7d96dfe8", "a975d12987fde7eb")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x25d01, "6d522dca7d96dfe8", "20ab721773abbaa5")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x25d01, "6d522dca7d96dfe8", "20ab721773abbaa5")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x25d01, "6d522dca7d96dfe8", "b997603c7eaa0dd9")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x32b8, "6d522dca7d96dfe8", "b75df1a5252ce82f")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x2590, "6d522dca7d96dfe8", "1d1b3f4f5bb27e39")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x2590, "6d522dca7d96dfe8", "3e1926735828783a")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x25594, "6d522dca7d96dfe8", "d7d3020f5e9928ce")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x16761, "6d522dca7d96dfe8", "8c8bbce501b98acb")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.SmallestSize, 0x16761, "6d522dca7d96dfe8", "4aaadffba8313a94")]
@@ -723,6 +577,15 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x4097b, "6d522dca7d96dfe8", "0e9009f7ff7f372d")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x16758, "6d522dca7d96dfe8", "9567de3b29629820")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x1674f, "6d522dca7d96dfe8", "f2985ec622a43a65")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0xd65, "6d522dca7d96dfe8", "de79b5fd4314f0e5")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0xd66, "6d522dca7d96dfe8", "a975d12987fde7eb")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0xd66, "6d522dca7d96dfe8", "a975d12987fde7eb")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x25d01, "6d522dca7d96dfe8", "20ab721773abbaa5")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x25d01, "6d522dca7d96dfe8", "20ab721773abbaa5")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x25d01, "6d522dca7d96dfe8", "b997603c7eaa0dd9")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x32b8, "6d522dca7d96dfe8", "b75df1a5252ce82f")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x2590, "6d522dca7d96dfe8", "1d1b3f4f5bb27e39")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x2590, "6d522dca7d96dfe8", "3e1926735828783a")]
         //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x32b8, "6d522dca7d96dfe8", "b75df1a5252ce82f")]
         //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x2590, "6d522dca7d96dfe8", "1d1b3f4f5bb27e39")]
         //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x2590, "6d522dca7d96dfe8", "3e1926735828783a")]
@@ -818,8 +681,14 @@ namespace GrindCore.Tests
         //[InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x23c252, "c668fabe6e6e9235", "a332285f97856aa5")]
         //[InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x23c125, "c668fabe6e6e9235", "5119ef157d67232a")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x4f158, "c668fabe6e6e9235", "99bc4c760e5330db")]
-        //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x3a936, "c668fabe6e6e9235", "736565400eba0fc9")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x3a936, "c668fabe6e6e9235", "736565400eba0fc9")]
         //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x39cbe, "c668fabe6e6e9235", "bd3edf1368d12af3")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x129aa, "c668fabe6e6e9235", "150b42d11de57fc7")]        
+        //[InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0x129ab, "c668fabe6e6e9235", "b8895eebee4cfdbe")]
+        //[InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0x129ab, "c668fabe6e6e9235", "b8895eebee4cfdbe")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x3c8001, "c668fabe6e6e9235", "38be95553536f6c6")]
+        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x3c8001, "c668fabe6e6e9235", "14f162a28ebcc5b0")]
+        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x3c8001, "c668fabe6e6e9235", "14f162a28ebcc5b0")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x3b91a5, "c668fabe6e6e9235", "71c2677e0d742cee")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x23c137, "c668fabe6e6e9235", "d4055f148c70a44c")]
         //[InlineData(CompressionAlgorithm.GZip, CompressionType.SmallestSize, 0x23c137, "c668fabe6e6e9235", "8139b6563f0a1e18")]
@@ -860,7 +729,7 @@ namespace GrindCore.Tests
                                 {
                                     cryptoStream.Write(buffer, 0, bytesRead);
                                     totalInProcessedBytes += bytesRead;
-                                    Trace.WriteLine($"{totalInProcessedBytes} of {total} ({compMemoryStream.Position})");
+                                    //Trace.WriteLine($"{totalInProcessedBytes} of {total} ({compMemoryStream.Position})");
                                 }
                             }
                             compMemoryStream.Flush();
@@ -900,6 +769,12 @@ namespace GrindCore.Tests
         }
 
         [Theory]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x129aa, "c668fabe6e6e9235", "150b42d11de57fc7")]
+        //[InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0x129ab, "c668fabe6e6e9235", "b8895eebee4cfdbe")]
+        //[InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0x129ab, "c668fabe6e6e9235", "b8895eebee4cfdbe")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x3c8001, "c668fabe6e6e9235", "38be95553536f6c6")]
+        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x3c8001, "c668fabe6e6e9235", "14f162a28ebcc5b0")]
+        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x3c8001, "c668fabe6e6e9235", "14f162a28ebcc5b0")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x485d6, "c668fabe6e6e9235", "b63e735ffc5263fb")]
         //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1682d, "c668fabe6e6e9235", "cc63ff0e04f71804")]
         //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x13cc8, "c668fabe6e6e9235", "7dc0c316356acd4b")]
@@ -931,7 +806,7 @@ namespace GrindCore.Tests
                                 {
                                     cryptoStream.Write(buffer, 0, bytesRead);
                                     totalInProcessedBytes += bytesRead;
-                                    Trace.WriteLine($"{totalInProcessedBytes} of {total} ({compMemoryStream.Position})");
+                                    //Trace.WriteLine($"{totalInProcessedBytes} of {total} ({compMemoryStream.Position})");
                                 }
                             }
                             compMemoryStream.Flush();

@@ -67,9 +67,7 @@ namespace Nanook.GrindCore.Lzma
         {
             var code = Interop.FastLzma2.FL2_CStream_getParameter(_context, param);
             if (FL2Exception.IsError(code))
-            {
                 throw new FL2Exception(code);
-            }
             return code;
         }
 
@@ -77,13 +75,12 @@ namespace Nanook.GrindCore.Lzma
         {
             UIntPtr code = Interop.FastLzma2.FL2_CStream_setParameter(_context, param, value);
             if (FL2Exception.IsError(code))
-            {
                 throw new FL2Exception(code);
-            }
+
             return code;
         }
 
-        public unsafe int EncodeData(DataBlock buffer, bool appending, Stream output)
+        public unsafe int EncodeData(DataBlock buffer, bool appending, Stream output, CancellableTask cancel)
         {
             //ref byte ref_buffer = ref MemoryMarshal.GetReference(buffer.Data);
             //fixed (byte* pBuffer = &ref_buffer)
@@ -100,6 +97,8 @@ namespace Nanook.GrindCore.Lzma
                 //push source data & receive part of compressed data
                 do
                 {
+                    cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                     _compOutBuffer.pos = 0;
                     //code 1 output is full, 0 working
                     code = Interop.FastLzma2.FL2_compressStream(_context, ref _compOutBuffer, ref inBuffer);
@@ -110,15 +109,12 @@ namespace Nanook.GrindCore.Lzma
                     }
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
-                //if (cancellationToken.IsCancellationRequested)
-                //{
-                //    Interop.FastLzma2.FL2_cancelCStream(_context);
-                //    return 0;
-                //}
 
                 // continue receive compressed data
                 do
                 {
+                    cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                     _compOutBuffer.pos = 0;
                     //Returns 1 if input or output still exists in the CStream object, 0 if complete,
                     code = Interop.FastLzma2.FL2_copyCStreamOutput(_context, ref _compOutBuffer);
@@ -129,15 +125,12 @@ namespace Nanook.GrindCore.Lzma
                     }
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
-                //if (cancellationToken.IsCancellationRequested)
-                //{
-                //    Interop.FastLzma2.FL2_cancelCStream(_context);
-                //    return 0;
-                //}
 
                 // receive all remaining compressed data for safety
                 do
                 {
+                    cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                     _compOutBuffer.pos = 0;
                     //Returns 1 if input or output still exists in the CStream object, 0 if complete,
                     code = Interop.FastLzma2.FL2_flushStream(_context, ref _compOutBuffer);
@@ -148,15 +141,12 @@ namespace Nanook.GrindCore.Lzma
                     }
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
-                //if (cancellationToken.IsCancellationRequested)
-                //{
-                //    Interop.FastLzma2.FL2_cancelCStream(_context);
-                //    return 0;
-                //}
 
                 //Write compress checksum if not appending mode
                 if (!appending)
                 {
+                    cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                     code = Interop.FastLzma2.FL2_endStream(_context, ref _compOutBuffer);
                     if (FL2Exception.IsError(code))
                     {
@@ -176,8 +166,10 @@ namespace Nanook.GrindCore.Lzma
             return 0;
         }
 
-        public void Flush(Stream output)
+        public void Flush(Stream output, CancellableTask cancel)
         {
+            cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
             UIntPtr code = Interop.FastLzma2.FL2_endStream(_context, ref _compOutBuffer);
             if (FL2Exception.IsError(code))
             {

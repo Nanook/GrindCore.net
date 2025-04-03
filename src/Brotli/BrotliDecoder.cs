@@ -128,9 +128,11 @@ namespace Nanook.GrindCore.Brotli
         /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero or greater than zero but less than the expected total.</remarks>
         public static unsafe bool TryDecompress(DataBlock source, DataBlock destination, out int bytesWritten, CompressionVersion? version = null)
         {
-            fixed (byte* inBytes = &source.Data[source.Offset])
-            fixed (byte* outBytes = &destination.Data[destination.Offset])
+            fixed (byte* inBytes = source.Data)
+            fixed (byte* outBytes = destination.Data)
             {
+                *&inBytes += source.Offset;
+                *&outBytes += destination.Offset;
                 UIntPtr availableOutput = (UIntPtr)destination.Length;
                 bool success;
 

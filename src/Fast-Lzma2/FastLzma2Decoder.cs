@@ -66,7 +66,7 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public long DecompressProgress => (long)Interop.FastLzma2.FL2_getDStreamProgress(_context);
 
-        public unsafe int DecodeData(DataBlock buffer, Stream input)
+        public unsafe int DecodeData(DataBlock buffer, Stream input, CancellableTask cancel)
         {
             // Set the memory limit for the decompression stream under MT. Otherwise decode will failed if buffer is too small.
             // Guess 64mb buffer is enough for most case.
@@ -84,6 +84,8 @@ namespace Nanook.GrindCore.Lzma
 
                 do
                 {
+                    cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                     FL2ErrorCode code = FL2ErrorCode.NoError;
                     // 0 finish,1 decoding
                     UIntPtr cd = Interop.FastLzma2.FL2_decompressStream(_context, ref outBuffer, ref _decompInBuffer);

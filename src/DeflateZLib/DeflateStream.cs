@@ -82,18 +82,18 @@ namespace Nanook.GrindCore.DeflateZLib
         public Stream BaseStream => _baseStream;
 
 
-        internal override int OnRead(DataBlock dataBlock)
+        internal override int OnRead(DataBlock dataBlock, CancellableTask cancel)
         {
             int bytesRead;
             while (true)
             {
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                 // Try to decompress any data from the inflater into the caller's buffer.
                 // If we're able to decompress any bytes, or if decompression is completed, we're done.
                 bytesRead = _inflater!.Inflate(dataBlock);
                 if (bytesRead != 0 || InflatorIsFinished)
-                {
                     break;
-                }
 
                 // We were unable to decompress any data.  If the inflater needs additional input
                 // data to proceed, read some to populate it.
@@ -108,21 +108,13 @@ namespace Nanook.GrindCore.DeflateZLib
                         // - Provided input wasn't completely empty
                         // In such case, we are dealing with a truncated input stream.
                         if ( /*s_useStrictValidation &&*/ dataBlock.Length != 0 && !_inflater.Finished() && _inflater.NonEmptyInput())
-                        {
                             throw new InvalidDataException(SR.TruncatedData);
-                        }
                         break;
                     }
-                    else if (n > _buffer.Length)
-                    {
-                        // The stream is either malicious or poorly implemented and returned a number of
-                        // bytes < 0 || > than the buffer supplied to it.
+                    else if (n > _buffer.Length) // The stream is either malicious or poorly implemented and returned a number of - bytes < 0 || > than the buffer supplied to it.
                         throw new InvalidDataException(SR.GenericInvalidData);
-                    }
                     else
-                    {
                         _inflater.SetInput(_buffer, 0, n);
-                    }
                 }
 
                 if (dataBlock.Length == 0)
@@ -141,11 +133,11 @@ namespace Nanook.GrindCore.DeflateZLib
             return bytesRead;
         }
 
-        internal override void OnWrite(DataBlock dataBlock)
+        internal override void OnWrite(DataBlock dataBlock, CancellableTask cancel)
         {
             Debug.Assert(_deflater != null);
             // Write compressed the bytes we already passed to the deflater:
-            WriteDeflaterOutput();
+            WriteDeflaterOutput(cancel);
 
             unsafe
             {
@@ -154,20 +146,20 @@ namespace Nanook.GrindCore.DeflateZLib
                 {
                     if (dataBlock.Length != 0)
                         _deflater!.SetInput(bufferPtr, dataBlock.Length);
-                    WriteDeflaterOutput();
+                    WriteDeflaterOutput(cancel);
                     _wroteBytes = true;
                 }
             }
         }
 
-        internal override void OnFlush()
+        internal override void OnFlush(CancellableTask cancel)
         {
             if (_compress)
             {
                 if (_wroteBytes)
                 {
                     // Compress any bytes left:
-                    WriteDeflaterOutput();
+                    WriteDeflaterOutput(cancel);
 
                     Debug.Assert(_deflater != null && _buffer != null);
                     // Pull out any bytes left inside deflater:
@@ -177,9 +169,7 @@ namespace Nanook.GrindCore.DeflateZLib
                         int compressedBytes;
                         flushSuccessful = _deflater!.Flush(_buffer!, out compressedBytes);
                         if (flushSuccessful)
-                        {
                             _baseStream.Write(_buffer, 0, compressedBytes);
-                        }
                         Debug.Assert(flushSuccessful == compressedBytes > 0);
                     } while (flushSuccessful);
                 }
@@ -205,7 +195,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 if (_wroteBytes)
                 {
                     // Compress any bytes left
-                    WriteDeflaterOutput();
+                    WriteDeflaterOutput(new CancellableTask());
 
                     // Pull out any bytes left inside deflater:
                     bool finished;
@@ -269,11 +259,13 @@ namespace Nanook.GrindCore.DeflateZLib
             _inflater!.Finished() &&
             (!_inflater.IsGzipStream() || !_inflater.NeedsInput());
 
-        private void WriteDeflaterOutput()
+        private void WriteDeflaterOutput(CancellableTask cancel)
         {
             Debug.Assert(_deflater != null && _buffer != null);
             while (!_deflater!.NeedsInput())
             {
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
                 int compressedBytes = _deflater!.GetDeflateOutput(_buffer!);
                 if (compressedBytes > 0)
                     _baseStream.Write(_buffer, 0, compressedBytes);

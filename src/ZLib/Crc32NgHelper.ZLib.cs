@@ -13,8 +13,9 @@ namespace Nanook.GrindCore.ZLib
         public static unsafe uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
         {
             Debug.Assert(buffer != null && offset >= 0 && length >= 0 && offset <= buffer.Length - length);
-            fixed (byte* bufferPtr = &buffer[offset])
+            fixed (byte* bufferPtr = buffer)
             {
+                *&bufferPtr += offset;
                 return Interop.ZLib.DN9_ZLibNg_v2_2_1_crc32(crc32, bufferPtr, length);
             }
         }

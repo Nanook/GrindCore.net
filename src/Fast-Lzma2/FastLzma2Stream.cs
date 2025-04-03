@@ -51,24 +51,24 @@ namespace Nanook.GrindCore.Lzma
             }
         }
 
-        internal override void OnWrite(DataBlock dataBlock)
+        internal override void OnWrite(DataBlock dataBlock, CancellableTask cancel)
         {
-            _enc.EncodeData(dataBlock, true, _stream); 
+            _enc.EncodeData(dataBlock, true, _stream, cancel); 
         }
 
-        internal override int OnRead(DataBlock dataBlock)
+        internal override int OnRead(DataBlock dataBlock, CancellableTask cancel)
         {
-            return _dec.DecodeData(dataBlock, _stream);
+            return _dec.DecodeData(dataBlock, _stream, cancel);
         }
 
         /// <summary>
         /// Write Checksum in the end. finish compress progress.
         /// </summary>
         /// <exception cref="FL2Exception"></exception>
-        internal override void OnFlush()
+        internal override void OnFlush(CancellableTask cancel)
         {
             if (_isCompressing)
-                _enc.Flush(_stream);
+                _enc.Flush(_stream, cancel);
             else
                 _stream.Flush();
         }
