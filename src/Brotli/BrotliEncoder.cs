@@ -9,6 +9,11 @@ namespace Nanook.GrindCore.Brotli
     /// <summary>Provides methods and static methods to encode and decode data in a streamless, non-allocating, and performant manner using the Brotli data format specification.</summary>
     internal partial struct BrotliEncoder : IDisposable
     {
+        private const int WindowBits_Min = 10;
+        private const int WindowBits_Default = 22;
+        private const int WindowBits_Max = 24;
+        private const int MaxInputSize = int.MaxValue - 515; // 515 is the max compressed extra bytes
+
         internal SafeBrotliEncoderHandle? _state;
         private bool _disposed;
 
@@ -19,7 +24,7 @@ namespace Nanook.GrindCore.Brotli
         /// -or-
         /// <paramref name="window" /> is not between the minimum value of 10 and the maximum value of 24.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="System.IO.Compression.BrotliEncoder" /> instance.</exception>
-        public BrotliEncoder(int quality, int window, CompressionVersion? version = null)
+        public BrotliEncoder(CompressionType level, int window, CompressionVersion? version = null)
         {
             _disposed = false;
 
@@ -32,7 +37,7 @@ namespace Nanook.GrindCore.Brotli
             _state!.Version = version;
             if (_state.IsInvalid)
                 throw new IOException(SR.BrotliEncoder_Create);
-            SetQuality(quality);
+            SetQuality(level);
             SetWindow(window);
         }
 
@@ -75,7 +80,7 @@ namespace Nanook.GrindCore.Brotli
                 throw new ObjectDisposedException(nameof(BrotliEncoder), SR.BrotliEncoder_Disposed);
         }
 
-        internal void SetQuality(int quality)
+        internal void SetQuality(CompressionType level)
         {
             EnsureNotDisposed();
             if (_state == null || _state.IsInvalid || _state.IsClosed)
@@ -84,16 +89,18 @@ namespace Nanook.GrindCore.Brotli
                 Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
 
-            if (quality < BrotliUtils.Quality_Min || quality > BrotliUtils.Quality_Max)
-                throw new ArgumentOutOfRangeException(nameof(quality), SR.Format(SR.BrotliEncoder_Quality, quality, 0, BrotliUtils.Quality_Max));
-
             if (_state.Version.Index == 0)
             {
-                if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)quality) == Interop.BOOL.FALSE)
+                if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)level) == Interop.BOOL.FALSE)
                     throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
             }
             else
                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
+        }
+
+        internal void SetWindow()
+        {
+            SetWindow(WindowBits_Default);
         }
 
         internal void SetWindow(int window)
@@ -105,8 +112,8 @@ namespace Nanook.GrindCore.Brotli
                 Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
 
-            if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
-                throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
+            if (window < WindowBits_Min || window > WindowBits_Max)
+                throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, WindowBits_Min, WindowBits_Max));
 
             if (_state.Version.Index == 0)
             {
@@ -126,7 +133,7 @@ namespace Nanook.GrindCore.Brotli
         {
             if (inputSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputSize));
-            if (inputSize > BrotliUtils.MaxInputSize)
+            if (inputSize > MaxInputSize)
                 throw new ArgumentOutOfRangeException(nameof(inputSize));
 
             if (inputSize == 0)
@@ -219,7 +226,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> if the compression operation was successful; <see langword="false" /> otherwise.</returns>
-        public static bool TryCompress(DataBlock source, DataBlock destination, out int bytesWritten) => TryCompress(source, destination, out bytesWritten, BrotliUtils.Quality_Default, BrotliUtils.WindowBits_Default);
+        public static bool TryCompress(DataBlock source, DataBlock destination, out int bytesWritten, CompressionType level) => TryCompress(source, destination, out bytesWritten, level, WindowBits_Default);
 
         /// <summary>Tries to compress a source byte span into a destination byte span, using the provided compression quality leven and encoder window bits.</summary>
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
@@ -228,15 +235,15 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="quality">A number representing quality of the Brotli compression. 0 is the minimum (no compression), 11 is the maximum.</param>
         /// <param name="window">A number representing the encoder window bits. The minimum value is 10, and the maximum value is 24.</param>
         /// <returns><see langword="true" /> if the compression operation was successful; <see langword="false" /> otherwise.</returns>
-        public static bool TryCompress(DataBlock source, DataBlock destination, out int bytesWritten, int quality, int window, CompressionVersion? version = null)
+        public static bool TryCompress(DataBlock source, DataBlock destination, out int bytesWritten, CompressionType level, int window, CompressionVersion? version = null)
         {
-            if (quality < 0 || quality > BrotliUtils.Quality_Max)
+            if (level < 0 || level > CompressionType.MaxBrotli)
             {
-                throw new ArgumentOutOfRangeException(nameof(quality), SR.Format(SR.BrotliEncoder_Quality, quality, 0, BrotliUtils.Quality_Max));
+                throw new ArgumentOutOfRangeException(nameof(level), SR.Format(SR.BrotliEncoder_Quality, level, 0, CompressionType.MaxBrotli));
             }
-            if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
+            if (window < WindowBits_Min || window > WindowBits_Max)
             {
-                throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
+                throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, WindowBits_Min, WindowBits_Max));
             }
 
             unsafe
@@ -253,7 +260,7 @@ namespace Nanook.GrindCore.Brotli
 
                     bool success;
                     if (version.Index == 0)
-                        success = Interop.Brotli.DN9_BRT_v1_1_0_EncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
+                        success = Interop.Brotli.DN9_BRT_v1_1_0_EncoderCompress((int)level, window, /*BrotliEncoderMode*/ 0, (nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
                     else
                         throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
 

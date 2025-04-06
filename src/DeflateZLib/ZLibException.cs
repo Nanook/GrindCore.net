@@ -7,7 +7,6 @@ using System.IO;
 using System;
 
 using ZErrorCode = Nanook.GrindCore.Interop.ZLib.ErrorCode;
-using ZFlushCode = Nanook.GrindCore.Interop.ZLib.FlushCode;
 
 namespace Nanook.GrindCore.DeflateZLib
 {

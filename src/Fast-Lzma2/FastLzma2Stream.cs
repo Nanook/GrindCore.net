@@ -9,79 +9,61 @@ namespace Nanook.GrindCore.Lzma
     /// <summary>
     /// Streaming Fast LZMA2 compress
     /// </summary>
-    public class FastLzma2Stream : StreamBase
+    public class FastLzma2Stream : CompressionStream, ICompressionDefaults
     {
         private FastLzma2Encoder _enc;
         private FastLzma2Decoder _dec;
 
-        private readonly bool _leaveStreamOpen;
-        private readonly Stream _stream;
-        private bool _isCompressing;
-
-        public override bool CanRead => !_isCompressing;
-        public override bool CanWrite => _isCompressing;
+        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
+        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level6;
+        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxFastLzma2;
 
         public FastLzma2Stream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, false, null, version)
         {
         }
 
-        public FastLzma2Stream(Stream stream, CompressionType type, bool leaveOpen, CompressionParameters? compressParams = null, CompressionVersion? version = null) : base (true)
+        public FastLzma2Stream(Stream stream, CompressionType type, bool leaveOpen, CompressionParameters? compressParams = null, CompressionVersion? version = null) : base (true, stream, leaveOpen, type, version)
         {
             if (compressParams == null)
                 compressParams = new CompressionParameters(0);
 
-            _isCompressing = type != CompressionType.Decompress;
-            _leaveStreamOpen = leaveOpen;
-            _stream = stream;
-
-            if (_isCompressing)
-            {
-                if (type == CompressionType.Optimal)
-                    type = CompressionType.Level6;
-                else if (type == CompressionType.SmallestSize)
-                    type = CompressionType.MaxFastLzma2;
-                else if (type == CompressionType.Fastest)
-                    type = CompressionType.Level1;
-
-                _enc = new FastLzma2Encoder((int)type, compressParams);
-            }
+            if (_compress)
+                _enc = new FastLzma2Encoder((int)_type, compressParams);
             else
-            {
-                _dec = new FastLzma2Decoder(_stream, _stream.Length, (int)type, compressParams);
-            }
+                _dec = new FastLzma2Decoder(_baseStream, _baseStream.Length, (int)_type, compressParams);
         }
 
-        internal override void OnWrite(DataBlock dataBlock, CancellableTask cancel)
+        internal override void OnWrite(DataBlock dataBlock, CancellableTask cancel, out int bytesWrittenToStream)
         {
-            _enc.EncodeData(dataBlock, true, _stream, cancel); 
+            _enc.EncodeData(dataBlock, true, _baseStream, cancel, out bytesWrittenToStream); 
         }
 
-        internal override int OnRead(DataBlock dataBlock, CancellableTask cancel)
+        internal override int OnRead(DataBlock dataBlock, CancellableTask cancel, int limit, out int bytesReadFromStream)
         {
-            return _dec.DecodeData(dataBlock, _stream, cancel);
+            return _dec.DecodeData(dataBlock, _baseStream, cancel, out bytesReadFromStream);
         }
 
         /// <summary>
         /// Write Checksum in the end. finish compress progress.
         /// </summary>
         /// <exception cref="FL2Exception"></exception>
-        internal override void OnFlush(CancellableTask cancel)
+        internal override void OnFlush(CancellableTask cancel, out int bytesWrittenToStream)
         {
-            if (_isCompressing)
-                _enc.Flush(_stream, cancel);
+            bytesWrittenToStream = 0;
+            if (_compress)
+                _enc.Flush(_baseStream, cancel, out bytesWrittenToStream);
             else
-                _stream.Flush();
+                _baseStream.Flush();
         }
 
-        protected override void OnDispose()
+        protected override void OnDispose(out int bytesWrittenToStream)
         {
-            base.Flush();
-            if (!_leaveStreamOpen)
-                _stream.Dispose();
-            if (_isCompressing)
-                _enc.Dispose();
+            bytesWrittenToStream = 0;
+            try { OnFlush(new CancellableTask(), out bytesWrittenToStream); } catch { }
+            if (_compress)
+                try { _enc.Dispose(); } catch { }
             else
-                _dec.Dispose();
+                try { _dec.Dispose(); } catch { }
         }
     }
 }

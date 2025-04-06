@@ -80,10 +80,13 @@ namespace Nanook.GrindCore.Lzma
             return code;
         }
 
-        public unsafe int EncodeData(DataBlock buffer, bool appending, Stream output, CancellableTask cancel)
+        public unsafe int EncodeData(DataBlock buffer, bool appending, Stream output, CancellableTask cancel, out int bytesWrittenToStream)
         {
             //ref byte ref_buffer = ref MemoryMarshal.GetReference(buffer.Data);
             //fixed (byte* pBuffer = &ref_buffer)
+
+            bytesWrittenToStream = 0;
+
             fixed (byte* pBuffer = buffer.Data)
             {
                 FL2InBuffer inBuffer = new FL2InBuffer()
@@ -107,6 +110,7 @@ namespace Nanook.GrindCore.Lzma
                         if (FL2Exception.GetErrorCode(code) != FL2ErrorCode.Buffer)
                             throw new FL2Exception(code);
                     }
+                    bytesWrittenToStream += (int)_compOutBuffer.pos;
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
 
@@ -123,6 +127,7 @@ namespace Nanook.GrindCore.Lzma
                         if (FL2Exception.GetErrorCode(code) != FL2ErrorCode.Buffer)
                             throw new FL2Exception(code);
                     }
+                    bytesWrittenToStream += (int)_compOutBuffer.pos;
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
 
@@ -139,6 +144,7 @@ namespace Nanook.GrindCore.Lzma
                         if (FL2Exception.GetErrorCode(code) != FL2ErrorCode.Buffer)
                             throw new FL2Exception(code);
                     }
+                    bytesWrittenToStream += (int)_compOutBuffer.pos;
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
 
@@ -156,6 +162,7 @@ namespace Nanook.GrindCore.Lzma
                                 throw new FL2Exception(code);
                         }
                     }
+                    bytesWrittenToStream += (int)_compOutBuffer.pos;
                     output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
                     //reset for next mission
                     code = Interop.FastLzma2.FL2_initCStream(_context, 0);
@@ -166,7 +173,7 @@ namespace Nanook.GrindCore.Lzma
             return 0;
         }
 
-        public void Flush(Stream output, CancellableTask cancel)
+        public void Flush(Stream output, CancellableTask cancel, out int bytesWrittenToStream)
         {
             cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
 
@@ -176,6 +183,7 @@ namespace Nanook.GrindCore.Lzma
                 if (FL2Exception.GetErrorCode(code) != FL2ErrorCode.Buffer)
                     throw new FL2Exception(code);
             }
+            bytesWrittenToStream = (int)_compOutBuffer.pos;
             output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
             //prepare for next mission
             code = Interop.FastLzma2.FL2_initCStream(_context, 0);

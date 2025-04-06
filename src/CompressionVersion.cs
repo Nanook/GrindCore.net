@@ -1,8 +1,3 @@
-
-
-
-
-
 using System;
 
 namespace Nanook.GrindCore
@@ -19,8 +14,8 @@ namespace Nanook.GrindCore
     }
     public enum BrotliVersion
     {
-      v1_1_0 = 1,
-      Latest = v1_1_0
+        v1_1_0 = 1,
+        Latest = v1_1_0
     }
     public enum LzmaVersion
     {
@@ -128,7 +123,7 @@ namespace Nanook.GrindCore
                     if (string.IsNullOrEmpty(version) || version == ZLIB_v1_3_1)
                     {
                         result.Version = ZLIB_v1_3_1;
-                        result.Index = 1;
+                        result.Index = 1; //ZLibNg shares the same code as ZLib and uses a different internal version no
                     }
                     break;
                 default:

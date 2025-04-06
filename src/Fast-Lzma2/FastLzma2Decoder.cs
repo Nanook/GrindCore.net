@@ -66,8 +66,10 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public long DecompressProgress => (long)Interop.FastLzma2.FL2_getDStreamProgress(_context);
 
-        public unsafe int DecodeData(DataBlock buffer, Stream input, CancellableTask cancel)
+        public unsafe int DecodeData(DataBlock buffer, Stream input, CancellableTask cancel, out int bytesReadFromStream)
         {
+            bytesReadFromStream = 0;
+
             // Set the memory limit for the decompression stream under MT. Otherwise decode will failed if buffer is too small.
             // Guess 64mb buffer is enough for most case.
             //Interop.FastLzma2.FL2_setDStreamMemoryLimitMt(_context, (nuint)64 * 1024 * 1024);
@@ -87,6 +89,7 @@ namespace Nanook.GrindCore.Lzma
                     cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
 
                     FL2ErrorCode code = FL2ErrorCode.NoError;
+                    int pos = (int)_decompInBuffer.pos;
                     // 0 finish,1 decoding
                     UIntPtr cd = Interop.FastLzma2.FL2_decompressStream(_context, ref outBuffer, ref _decompInBuffer);
                     if (FL2Exception.IsError(cd))
@@ -95,6 +98,9 @@ namespace Nanook.GrindCore.Lzma
                         if (code != FL2ErrorCode.Buffer)
                             throw new FL2Exception(code);
                     }
+
+                    bytesReadFromStream += (int)_decompInBuffer.pos - pos;
+
                     //output is full
                     if (outBuffer.pos == outBuffer.size)
                         break;
@@ -110,21 +116,6 @@ namespace Nanook.GrindCore.Lzma
                 } while (true);
                 return (int)outBuffer.pos;
             }
-        }
-
-        public void Flush(Stream output)
-        {
-            UIntPtr code = Interop.FastLzma2.FL2_endStream(_context, ref _compOutBuffer);
-            if (FL2Exception.IsError(code))
-            {
-                if (FL2Exception.GetErrorCode(code) != FL2ErrorCode.Buffer)
-                    throw new FL2Exception(code);
-            }
-            output.Write(_bufferArray, 0, (int)_compOutBuffer.pos);
-            //prepare for next mission
-            code = Interop.FastLzma2.FL2_initCStream(_context, 0);
-            if (FL2Exception.IsError(code))
-                throw new FL2Exception(code);
         }
 
         public void Dispose()

@@ -26,7 +26,7 @@ namespace Nanook.GrindCore
 
     public class CompressionStreamFactory
     {
-        private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionType, bool, CompressionVersion?, Stream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionType, bool, CompressionVersion?, Stream>>()
+        private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionType, bool, CompressionVersion?, CompressionStream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionType, bool, CompressionVersion?, CompressionStream>>()
         {
             { CompressionAlgorithm.GZip, (stream, type, leaveOpen, version) => new GZipStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibLatest()) },
             { CompressionAlgorithm.ZLib, (stream, type, leaveOpen, version) => new ZLibStream(stream, type, leaveOpen,version ?? CompressionVersion.ZLibLatest()) },
@@ -40,13 +40,13 @@ namespace Nanook.GrindCore
             { CompressionAlgorithm.FastLzma2, (stream, type, leaveOpen, version) => new FastLzma2Stream(stream, type, leaveOpen, new CompressionParameters(4), version ?? CompressionVersion.FastLzma2Latest()) }
         };
 
-        public static Stream Create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)
+        public static CompressionStream Create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)
         {
             var s = create(algorithm, stream, type, leaveOpen, version);
             return s;
         }
 
-        private static Stream create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)
+        private static CompressionStream create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)
         {
             if (streamCreators.TryGetValue(algorithm, out var creator))
                 return creator(stream, type, leaveOpen, version);
