@@ -152,7 +152,7 @@ namespace System
         internal static string @BrotliDecoder_Create => GetResourceString("BrotliDecoder_Create", @"Failed to create BrotliDecoder instance");
         /// <summary>Can not access a closed Decoder.</summary>
         internal static string @BrotliDecoder_Disposed => GetResourceString("BrotliDecoder_Disposed", @"Can not access a closed Decoder.");
-        /// <summary>Can not perform Read operations on a BrotliStream constructed with CompressionMode.Compress.</summary>
+        /// <summary>Can not perform Read operations on a BrotliStream constructed with CompressionMode.Process.</summary>
         internal static string @BrotliStream_Compress_UnsupportedOperation => GetResourceString("BrotliStream_Compress_UnsupportedOperation", @"Can not perform Read operations on a BrotliStream constructed with CompressionMode.Compress.");
         /// <summary>Encoder ran into invalid data.</summary>
         internal static string @BrotliStream_Compress_InvalidData => GetResourceString("BrotliStream_Compress_InvalidData", @"Encoder ran into invalid data.");

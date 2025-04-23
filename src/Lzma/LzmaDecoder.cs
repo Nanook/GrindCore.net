@@ -26,24 +26,26 @@ namespace Nanook.GrindCore.Lzma
                 throw new Exception($"Allocate Error {res}");
         }
 
-        public int DecodeData(byte[] inData, int inOffset, ref int inSize, DataBlock outData, out int status)
+        public int DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData, out int status)
         {
             // Get properties from DataBlock
-            ulong outSz = (ulong)outData.Length;
-            ulong inSz = (ulong)inSize;
+            ulong outSz = (ulong)outData.AvailableWrite;
+            ulong inSz = (ulong)inData.AvailableRead;
 
-            fixed (byte* outPtr = outData.Data) // Pin memory for the output buffer
-            fixed (byte* inPtr = inData) // Pin memory for the input buffer
+            fixed (byte* outPtr = outData.Data) // Pin memory for the output inData
+            fixed (byte* inPtr = inData.Data) // Pin memory for the input inData
             fixed (int* statusPtr = &status) // Pin memory for the status
             {
-                *&outPtr += outData.Offset;
-                *&inPtr += inOffset;
+                *&outPtr += outData.Size; //writePos is size
+                *&inPtr += inData.Pos;
                 // Call the C interop function
                 int res = S7_Lzma_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");
 
-                inSize = (int)inSz; // Update inSize with the size consumed
+                readSz = (int)inSz; // Update inSize with the size consumed
+                inData.Read(readSz);
+                outData.Write((int)outSz);
                 return (int)outSz; // Return the size of the output
             }
         }

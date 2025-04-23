@@ -16,13 +16,11 @@ namespace Nanook.GrindCore.Lzma
         private readonly IntPtr _context;
         private GCHandle _bufferHandle;
         private readonly int _bufferSize;
-
+        private bool _flushed;
 
         public byte[] Properties { get; }
         public int BlockSize { get; }
         public uint KeepBlockSize { get; }
-        public long BytesIn { get; private set; }
-        public long BytesOut { get; private set; }
         public long BytesFullSize { get; private set; }
 
         public FastLzma2Encoder(int level = 6, CompressionParameters? compressParams = null)
@@ -36,6 +34,7 @@ namespace Nanook.GrindCore.Lzma
                 _context = Interop.FastLzma2.FL2_createCStreamMt((uint)compressParams.Threads, 1);
 
             _bufferSize = compressParams.DictionarySize;
+            _flushed = false;
 
             foreach (var kv in compressParams.Values)
             {
@@ -47,7 +46,7 @@ namespace Nanook.GrindCore.Lzma
             if (FL2Exception.IsError(code))
                 throw new FL2Exception(code);
             // Compressed stream output buffer
-            _bufferArray = new byte[_bufferSize];
+            _bufferArray = BufferPool.Rent(_bufferSize);
             _bufferHandle = GCHandle.Alloc(_bufferArray, GCHandleType.Pinned);
             _compOutBuffer = new FL2OutBuffer()
             {
@@ -80,7 +79,7 @@ namespace Nanook.GrindCore.Lzma
             return code;
         }
 
-        public unsafe int EncodeData(DataBlock buffer, bool appending, Stream output, CancellableTask cancel, out int bytesWrittenToStream)
+        public unsafe int EncodeData(CompressionBuffer buffer, bool appending, Stream output, CancellableTask cancel, out int bytesWrittenToStream)
         {
             //ref byte ref_buffer = ref MemoryMarshal.GetReference(buffer.Data);
             //fixed (byte* pBuffer = &ref_buffer)
@@ -89,10 +88,12 @@ namespace Nanook.GrindCore.Lzma
 
             fixed (byte* pBuffer = buffer.Data)
             {
+                *&pBuffer += buffer.Pos;
+
                 FL2InBuffer inBuffer = new FL2InBuffer()
                 {
                     src = (IntPtr)pBuffer,
-                    size = (UIntPtr)buffer.Length,
+                    size = (UIntPtr)buffer.AvailableRead,
                     pos = 0
                 };
                 UIntPtr code;
@@ -169,6 +170,7 @@ namespace Nanook.GrindCore.Lzma
                     if (FL2Exception.IsError(code))
                         throw new FL2Exception(code);
                 }
+                buffer.Read((int)inBuffer.pos);
             }
             return 0;
         }
@@ -176,6 +178,12 @@ namespace Nanook.GrindCore.Lzma
         public void Flush(Stream output, CancellableTask cancel, out int bytesWrittenToStream)
         {
             cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+            bytesWrittenToStream = 0;
+
+            if (_flushed)
+                return;
+
+            _flushed = true;
 
             UIntPtr code = Interop.FastLzma2.FL2_endStream(_context, ref _compOutBuffer);
             if (FL2Exception.IsError(code))
@@ -196,6 +204,7 @@ namespace Nanook.GrindCore.Lzma
             _bufferHandle.Free();
             Interop.FastLzma2.FL2_freeCStream(_context);
             GC.SuppressFinalize(this);
+            BufferPool.Return(_bufferArray);
         }
 
     }

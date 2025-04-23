@@ -11,7 +11,7 @@ namespace Nanook.GrindCore.Lzma
     internal unsafe class FastLzma2Decoder : IDisposable
     {
 
-        private FL2OutBuffer _compOutBuffer;
+        //private FL2OutBuffer _compOutBuffer;
         private byte[] _bufferArray;
         private readonly IntPtr _context;
         private GCHandle _bufferHandle;
@@ -22,8 +22,6 @@ namespace Nanook.GrindCore.Lzma
         public byte[] Properties { get; }
         public int BlockSize { get; }
         public uint KeepBlockSize { get; }
-        public long BytesIn { get; private set; }
-        public long BytesOut { get; private set; }
         public long BytesFullSize { get; private set; }
 
         public FastLzma2Decoder(Stream input, long size, int level = 6, CompressionParameters? compressParams = null)
@@ -40,7 +38,7 @@ namespace Nanook.GrindCore.Lzma
                 throw new FL2Exception(code);
             // Compressed stream input buffer
             _bufferSize = 64 * 0x400 * 0x400; // compressParams.DictionarySize;
-            _bufferArray = new byte[size < _bufferSize ? size : _bufferSize];
+            _bufferArray = BufferPool.Rent((int)(size < _bufferSize ? size : _bufferSize));
             int bytesRead = input.Read(_bufferArray, 0, _bufferArray.Length);
             _bufferHandle = GCHandle.Alloc(_bufferArray, GCHandleType.Pinned);
             _decompInBuffer = new FL2InBuffer()
@@ -66,7 +64,7 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public long DecompressProgress => (long)Interop.FastLzma2.FL2_getDStreamProgress(_context);
 
-        public unsafe int DecodeData(DataBlock buffer, Stream input, CancellableTask cancel, out int bytesReadFromStream)
+        public unsafe int DecodeData(CompressionBuffer buffer, Stream input, CancellableTask cancel, out int bytesReadFromStream)
         {
             bytesReadFromStream = 0;
 
@@ -77,10 +75,11 @@ namespace Nanook.GrindCore.Lzma
             //fixed (byte* pBuffer = &ref_buffer)
             fixed (byte* pBuffer = buffer.Data)
             {
+                *&pBuffer += buffer.Size; //writePos is Size
                 FL2OutBuffer outBuffer = new FL2OutBuffer()
                 {
                     dst = (nint)pBuffer,
-                    size = (nuint)buffer.Length,
+                    size = (nuint)buffer.AvailableWrite,
                     pos = 0
                 };
 
@@ -114,6 +113,8 @@ namespace Nanook.GrindCore.Lzma
                         _decompInBuffer.pos = 0;
                     }
                 } while (true);
+
+                buffer.Write((int)outBuffer.pos);
                 return (int)outBuffer.pos;
             }
         }
@@ -123,6 +124,7 @@ namespace Nanook.GrindCore.Lzma
             _bufferHandle.Free();
             Interop.FastLzma2.FL2_freeDStream(_context);
             GC.SuppressFinalize(this);
+            BufferPool.Return(_bufferArray);
         }
 
     }

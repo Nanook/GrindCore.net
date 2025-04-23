@@ -11,65 +11,108 @@ namespace Nanook.GrindCore.Brotli
         private const int DefaultInternalBufferSize = (1 << 16) - 16; //65520;
         private BrotliEncoder _encoder;
         private BrotliDecoder _decoder;
-        private int _bufferOffset;
-        private int _bufferCount;
+        private CompressionBuffer _buffer;
         private bool _nonEmptyInput;
-        private byte[] _buffer;
+
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Brotli;
+        internal override int DefaultProcessSizeMin => 0x400 * 0x400;
+        internal override int DefaultProcessSizeMax => 0x400 * 0x400;
 
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level4;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxBrotli;
 
-        /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode.</summary>
-        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
-        /// <param name="type">CompressionLevel or Decompress, indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
-        public BrotliStream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, leaveOpen: false, version) { }
-
         /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="Nanook.GrindCore.BrotliStream" /> object is _disposed; otherwise, <see langword="false" />.</param>
-        public BrotliStream(Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null) : base(true, stream, leaveOpen, type, version)
+        public BrotliStream(Stream stream, CompressionOptions options) : base(true, stream, options)
         {
-            _version = version ?? CompressionVersion.BrotliLatest();
-
-            if (_compress)
+            if (IsCompress)
             {
-                _encoder.SetQuality(_type);
+                _encoder.SetQuality(CompressionType);
                 _encoder.SetWindow();
             }
 
-            _buffer = new byte[DefaultInternalBufferSize];
+            _buffer = new CompressionBuffer(options.InternalBufferSize ?? DefaultInternalBufferSize);
         }
 
-        internal override int OnRead(DataBlock buffer, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        private bool tryDecompress(CompressionBuffer destination, out int allBytesConsumed, out int bytesWritten)
         {
-            if (_compress)
+            allBytesConsumed = 0;
+            // Decompress any data we may have in our buffer.
+            int bytesConsumed;
+            int origAvailableOut = destination.AvailableWrite;
+            int origAvailableIn = _buffer.AvailableRead;
+            OperationStatus lastResult = _decoder.Decompress(_buffer, destination, out bytesConsumed, out bytesWritten);
+            if (lastResult == OperationStatus.InvalidData)
+                throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
+
+            if (bytesConsumed != 0)
+                allBytesConsumed += bytesConsumed;
+
+            // If we successfully decompressed any bytes, or if we've reached the end of the decompression, we're done.
+            if (bytesWritten != 0 || lastResult == OperationStatus.Done)
+                return true;
+
+            if (origAvailableOut == 0)
+            {
+                // The caller provided a zero-byte buffer.  This is typically done in order to avoid allocating/renting
+                // a buffer until data is known to be available.  We don't have perfect knowledge here, as _decoder.Decompress
+                // will return DestinationTooSmall whether or not more data is required.  As such, we assume that if there's
+                // any data in our input buffer, it would have been decompressible into at least one byte of output, and
+                // otherwise we need to do a read on the underlying stream.  This isn't perfect, because having input data
+                // doesn't necessarily mean it'll decompress into at least one byte of output, but it's a reasonable approximation
+                // for the 99% case.  If it's wrong, it just means that a caller using zero-byte reads as a way to delay
+                // getting a buffer to use for a subsequent call may end up getting one earlier than otherwise preferred.
+                Debug.Assert(lastResult == OperationStatus.DestinationTooSmall);
+                if (origAvailableIn != 0)
+                {
+                    Debug.Assert(bytesWritten == 0);
+                    return true;
+                }
+            }
+
+            Debug.Assert(
+                lastResult == OperationStatus.NeedMoreData ||
+                (lastResult == OperationStatus.DestinationTooSmall && origAvailableOut == 0 && origAvailableIn == 0), $"{nameof(lastResult)} == {lastResult}, {nameof(destination.AvailableWrite)} == {origAvailableOut}");
+
+            // Ensure any left over data is at the beginning of the array so we can fill the remainder.
+            _buffer.Tidy(); //move any data back to start
+
+            return false;
+        }
+
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        {
+            if (IsCompress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
             EnsureNotDisposed();
             bytesReadFromStream = 0;
             int bytesWritten;
             int bytesConsumed;
-            while (!tryDecompress(buffer, out bytesConsumed, out bytesWritten))
+            while (!tryDecompress(data, out bytesConsumed, out bytesWritten))
             {
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
                 bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distiction)
 
-                int bytesRead = _baseStream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
+                int bytesRead = BaseStream.Read(_buffer.Data, _buffer.Size, _buffer.AvailableWrite);
                 if (bytesRead <= 0)
                 {
-                    if (/*s_useStrictValidation &&*/ _nonEmptyInput && buffer.Length != 0)
+                    if (/*s_useStrictValidation &&*/ _nonEmptyInput && data.AvailableWrite != 0)
                         throw new InvalidDataException(SR.BrotliStream_Decompress_TruncatedData);
                     break;
                 }
 
                 _nonEmptyInput = true;
-                _bufferCount += bytesRead;
 
                 // The stream is either malicious or poorly implemented and returned a number of
                 // bytes larger than the buffer supplied to it.
-                if (_bufferCount > _buffer.Length)
+                if (bytesRead > _buffer.AvailableWrite)
                     throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
+
+
+                _buffer.Write(bytesRead); //update bytes written to _buffer
             }
 
             bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distiction)
@@ -77,37 +120,36 @@ namespace Nanook.GrindCore.Brotli
             return bytesWritten;
         }
 
-        internal override void OnWrite(DataBlock buffer, CancellableTask cancel, out int bytesWrittenToStream)
+        internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
         {
-            OnWrite(buffer, cancel, out bytesWrittenToStream, false);
+            OnWrite(data, cancel, out bytesWrittenToStream, false);
         }
-        internal void OnWrite(DataBlock buffer, CancellableTask cancel, out int bytesWrittenToStream, bool isFinalBlock)
+        internal void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool isFinalBlock)
         {
-            if (!_compress)
+            if (!IsCompress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
             EnsureNotDisposed();
 
             bytesWrittenToStream = 0;
 
             OperationStatus lastResult = OperationStatus.DestinationTooSmall;
-            DataBlock output = new DataBlock(_buffer);
             while (lastResult == OperationStatus.DestinationTooSmall)
             {
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
 
                 int bytesConsumed;
                 int bytesWritten;
-                lastResult = _encoder.Compress(buffer, output, out bytesConsumed, out bytesWritten, isFinalBlock);
+                lastResult = _encoder.Compress(data, _buffer, out bytesConsumed, out bytesWritten, isFinalBlock);
                 if (lastResult == OperationStatus.InvalidData)
                     throw new InvalidOperationException(SR.BrotliStream_Compress_InvalidData);
 
                 bytesWrittenToStream += bytesWritten;
 
                 if (bytesWritten > 0)
-                    output.Read(0, _baseStream, bytesWritten); //read the output bytes and write to _baseStream
-
-                if (bytesConsumed > 0 && bytesConsumed < output.Length)
-                    buffer = new DataBlock(output.Data, bytesConsumed, output.Length - bytesConsumed);
+                {
+                    BaseStream.Write(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
+                    _buffer.Read(bytesWritten);
+                }
             }
         }
 
@@ -120,85 +162,35 @@ namespace Nanook.GrindCore.Brotli
 
             bytesWrittenToStream = 0;
 
-            if (_compress)
+            if (IsCompress)
             {
                 if (_encoder._state == null || _encoder._state.IsClosed)
                     return;
 
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
-                DataBlock output = new DataBlock(_buffer);
                 while (lastResult == OperationStatus.DestinationTooSmall)
                 {
                     cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
 
                     int bytesWritten;
-                    lastResult = _encoder.Flush(output, out bytesWritten);
+                    lastResult = _encoder.Flush(_buffer, out bytesWritten);
                     if (lastResult == OperationStatus.InvalidData)
                         throw new InvalidDataException(SR.BrotliStream_Compress_InvalidData);
 
                     bytesWrittenToStream += bytesWritten;
 
                     if (bytesWritten > 0)
-                        output.Read(0, _baseStream, bytesWritten); //read the output bytes and write to _baseStream
-                }
-
-                _baseStream.Flush();
-            }
-        }
-
-        private bool tryDecompress(DataBlock destination, out int allBytesConsumed, out int bytesWritten)
-        {
-            allBytesConsumed = 0;
-            // Decompress any data we may have in our buffer.
-            int bytesConsumed;
-            OperationStatus lastResult = _decoder.Decompress(new DataBlock(_buffer, _bufferOffset, _bufferCount), destination, out bytesConsumed, out bytesWritten);
-            if (lastResult == OperationStatus.InvalidData)
-                throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
-
-            if (bytesConsumed != 0)
-            {
-                _bufferOffset += bytesConsumed;
-                allBytesConsumed += bytesConsumed;
-                _bufferCount -= bytesConsumed;
-            }
-
-            // If we successfully decompressed any bytes, or if we've reached the end of the decompression, we're done.
-            if (bytesWritten != 0 || lastResult == OperationStatus.Done)
-                return true;
-
-            if (destination.Length == 0)
-            {
-                // The caller provided a zero-byte buffer.  This is typically done in order to avoid allocating/renting
-                // a buffer until data is known to be available.  We don't have perfect knowledge here, as _decoder.Decompress
-                // will return DestinationTooSmall whether or not more data is required.  As such, we assume that if there's
-                // any data in our input buffer, it would have been decompressible into at least one byte of output, and
-                // otherwise we need to do a read on the underlying stream.  This isn't perfect, because having input data
-                // doesn't necessarily mean it'll decompress into at least one byte of output, but it's a reasonable approximation
-                // for the 99% case.  If it's wrong, it just means that a caller using zero-byte reads as a way to delay
-                // getting a buffer to use for a subsequent call may end up getting one earlier than otherwise preferred.
-                Debug.Assert(lastResult == OperationStatus.DestinationTooSmall);
-                if (_bufferCount != 0)
-                {
-                    Debug.Assert(bytesWritten == 0);
-                    return true;
+                    {
+                        BaseStream.Write(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
+                        _buffer.Read(bytesWritten);
+                    }
                 }
             }
-
-            Debug.Assert(
-                lastResult == OperationStatus.NeedMoreData ||
-                (lastResult == OperationStatus.DestinationTooSmall && destination.Length == 0 && _bufferCount == 0), $"{nameof(lastResult)} == {lastResult}, {nameof(destination.Length)} == {destination.Length}");
-
-            // Ensure any left over data is at the beginning of the array so we can fill the remainder.
-            if (_bufferCount != 0 && _bufferOffset != 0)
-                Array.Copy(_buffer, _bufferOffset, _buffer, 0, _bufferCount);
-            _bufferOffset = 0;
-
-            return false;
         }
 
         private void EnsureNotDisposed()
         {
-            if (_baseStream == null)
+            if (BaseStream == null)
                 throw new ObjectDisposedException(nameof(BrotliStream));
         }
 
@@ -207,10 +199,11 @@ namespace Nanook.GrindCore.Brotli
         protected override void OnDispose(out int bytesWrittenToStream)
         {
             bytesWrittenToStream = 0;
-            if (_baseStream != null && _compress)
-                try { OnWrite(new DataBlock(), new CancellableTask(), out bytesWrittenToStream, true); } catch { }
+            if (BaseStream != null && IsCompress)
+                try { OnWrite(new CompressionBuffer(0), new CancellableTask(), out bytesWrittenToStream, true); } catch { }
             try { _encoder.Dispose(); } catch { }
             try { _decoder.Dispose(); } catch { }
+            try { _buffer.Dispose(); } catch { }
         }
     }
 }

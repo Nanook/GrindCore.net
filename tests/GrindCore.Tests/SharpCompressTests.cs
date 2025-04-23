@@ -67,7 +67,7 @@
 //                            numFastBytes: 273 // Number of fast bytes
 //                        );
 
-//                        // Hash raw input data and Compress
+//                        // Hash raw input data and Process
 //                        // using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, type, true))
 //                        using (var compressionStream = new LzmaStream(new LzmaEncoderProperties(true), false, compMemoryStream))
 //                        {

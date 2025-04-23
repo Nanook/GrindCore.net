@@ -55,7 +55,7 @@ namespace Nanook.GrindCore.Brotli
         /// - <see cref="OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="destination" /> to decompress <paramref name="source" />.
         /// - <see cref="OperationStatus.NeedMoreData" />: The decompression action is partially done at least one more byte is required to complete the decompression task. This method should be called again with more input to decompress.
         /// - <see cref="OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be decompressed.</remarks>
-        public OperationStatus Decompress(DataBlock source, DataBlock destination, out int bytesConsumed, out int bytesWritten)
+        public OperationStatus Decompress(CompressionBuffer source, CompressionBuffer destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureInitialized();
             Debug.Assert(_state != null);
@@ -70,8 +70,8 @@ namespace Nanook.GrindCore.Brotli
             else
                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
 
-            UIntPtr availableOutput = (UIntPtr)destination.Length;
-            UIntPtr availableInput = (UIntPtr)source.Length;
+            UIntPtr availableOutput = (UIntPtr)destination.AvailableWrite;
+            UIntPtr availableInput = (UIntPtr)source.AvailableRead;
             unsafe
             {
                 // We can freely cast between int and nuint (.NET size_t equivalent) for two reasons:
@@ -82,8 +82,8 @@ namespace Nanook.GrindCore.Brotli
                     fixed (byte* inBytes = source.Data)
                     fixed (byte* outBytes = destination.Data)
                     {
-                        *&inBytes += source.Offset;
-                        *&outBytes += destination.Offset;
+                        *&inBytes += source.Pos;
+                        *&outBytes += destination.Size; //writePos is Size
 
                         int brotliResult;
                         if (_state.Version.Index == 0)
@@ -94,11 +94,11 @@ namespace Nanook.GrindCore.Brotli
                         if (brotliResult == 0) // Error
                             return OperationStatus.InvalidData;
 
-                        Debug.Assert(availableInput <= (nuint)source.Length);
-                        Debug.Assert(availableOutput <= (nuint)destination.Length);
+                        bytesConsumed += source.AvailableRead - (int)availableInput;
+                        bytesWritten += destination.AvailableWrite - (int)availableOutput;
 
-                        bytesConsumed += source.Length - (int)availableInput;
-                        bytesWritten += destination.Length - (int)availableOutput;
+                        source.Read(bytesConsumed);
+                        destination.Write(bytesWritten); //update dest
 
                         switch (brotliResult)
                         {
@@ -108,9 +108,8 @@ namespace Nanook.GrindCore.Brotli
                                 return OperationStatus.DestinationTooSmall;
                             case 2: // NeedsMoreInput
                             default:
-                                source = new DataBlock(source.Data, source.Length - (int)availableInput, (int)availableInput);
-                                destination = new DataBlock(destination.Data, destination.Length - (int)availableOutput, (int)availableOutput);
-                                if (brotliResult == 2 && source.Length == 0)
+                                //source = new DataBlock(source.Data, source.AvailableRead, (int)availableInput);
+                                if (brotliResult == 2 && source.AvailableRead == 0)
                                     return OperationStatus.NeedMoreData;
                                 break;
                         }
@@ -143,8 +142,6 @@ namespace Nanook.GrindCore.Brotli
                     success = Interop.Brotli.DN9_BRT_v1_1_0_DecoderDecompress((UIntPtr)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
                 else
                     throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
-
-                //Debug.Assert(success ? availableOutput <= (UIntPtr)destination.Length : availableOutput == UIntPtr.Zero);
 
                 bytesWritten = (int)availableOutput;
                 return success;

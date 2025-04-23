@@ -16,9 +16,6 @@ namespace Nanook.GrindCore.Lzma
         public byte[] Properties { get; }
         public int BlockSize { get; }
         public uint KeepBlockSize { get; }
-        public long BytesIn { get; private set; }
-        public long BytesOut { get; private set; }
-        public long BytesFullSize { get; private set; }
 
         public LzmaEncoder(int level = 5, uint dictSize = 0, int wordSize = 0)
         {
@@ -61,7 +58,7 @@ namespace Nanook.GrindCore.Lzma
             this.BlockSize = (int)bufferSize;
             bufferSize += 0x8; // only needs 1 extra byte to ensure the end is not reached. Just allign to 8
 
-            _inBuffer = new byte[bufferSize];
+            _inBuffer = BufferPool.Rent((int)bufferSize);
             _inBufferPinned = GCHandle.Alloc(_inBuffer, GCHandleType.Pinned);
             _inStream = new CBufferInStream() { buffer = _inBufferPinned.AddrOfPinnedObject(), size = bufferSize };
 
@@ -82,7 +79,7 @@ namespace Nanook.GrindCore.Lzma
             return sz;
         }
 
-        public long EncodeData(DataBlock inData, byte[] outData, int outOffset, int outSize, bool final, CancellableTask cancel)
+        public long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             uint available = 0;
             int total = 0;
@@ -92,7 +89,7 @@ namespace Nanook.GrindCore.Lzma
             ulong outSz = 0;
             int outTotal = 0;
 
-            while ((total < inData.Length || (final && inData.Length == 0) && !finalfinal))
+            while (inData.AvailableRead != 0 || (final && !finalfinal))
             {
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
 
@@ -101,39 +98,36 @@ namespace Nanook.GrindCore.Lzma
 
                 int p = (int)((_inStream.pos + _inStream.remaining) % _inStream.size);
 
-                int sz = (int)Math.Min((ulong)(inData.Length - total), Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize));
+                int sz = (int)Math.Min((ulong)inData.AvailableRead, Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize));
 
                 int endSz = (int)(_inStream.size - (ulong)p);
-                inData.Read((int)total, _inBuffer, (int)p, (int)Math.Min(sz, endSz));
+                inData.Read(_inBuffer, (int)p, (int)Math.Min(sz, endSz));
 
                 // copy data at start of circular buffer
                 if (sz > endSz)
-                    inData.Read((int)total + (int)endSz, _inBuffer, 0, (int)(sz - endSz));
+                    inData.Read(_inBuffer, 0, (int)(sz - endSz));
 
                 total += sz;
                 _inStream.remaining += (ulong)sz;
 
-                finalfinal = final && total == inData.Length;
+                finalfinal = final && inData.AvailableRead == 0;
 
                 if (!finalfinal && _inStream.remaining < (ulong)this.BlockSize)
                     break;
 
-                outSz = (ulong)(outSize - outOffset);
+                outSz = (ulong)(outData.AvailableWrite);
 
-                fixed (byte* outPtr = outData)
+                fixed (byte* outPtr = outData.Data)
                 {
-                    *&outPtr += outOffset;
+                    *&outPtr += outData.Size; //writePos is Size
                     res = S7_Lzma_v24_07_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
-                    outOffset += (int)outSz;
                     outTotal += (int)outSz;
                 }
+                outData.Write((int)outSz);
 
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
             }
-
-            this.BytesIn = (long)_inStream.processed;
-            this.BytesOut += (long)outTotal;
 
             return outTotal;
         }
@@ -147,6 +141,7 @@ namespace Nanook.GrindCore.Lzma
             }
             if (_inBufferPinned.IsAllocated)
                 _inBufferPinned.Free();
+            BufferPool.Return(_inBuffer);
         }
 
     }

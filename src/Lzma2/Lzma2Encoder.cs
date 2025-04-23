@@ -15,14 +15,10 @@ namespace Nanook.GrindCore.Lzma
         private IntPtr _encoder;
 
         public byte Properties { get; }
-        public ulong BytesIn { get; private set; }
-        public ulong BytesOut { get; private set; }
-        public ulong BytesFullSize { get; private set; }
 
         public Lzma2Encoder(int level = 5, int threads = 1, ulong blockSize = 0, uint dictSize = 0, int wordSize = 0)
         {
             _encoder = S7_Lzma2_v24_07_Enc_Create();
-            BytesFullSize = blockSize;
             if (_encoder == IntPtr.Zero)
                 throw new Exception("Failed to create LZMA2 encoder.");
 
@@ -55,21 +51,20 @@ namespace Nanook.GrindCore.Lzma
 
         }
 
-        public int EncodeData(DataBlock dataBlock, int inOffset, int inSize, byte[] outData, int outOffset, int outSize)
+        public int EncodeData(CompressionBuffer data, byte[] outData, int outOffset, int outSize)
         {
             ulong outSz = (ulong)outSize;
             fixed (byte* outPtr = outData)
-            fixed (byte* inPtr = dataBlock.Data)
+            fixed (byte* inPtr = data.Data)
             {
                 *&outPtr += outOffset;
-                *&inPtr += dataBlock.Offset + inOffset;
-                int res = S7_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)inSize, IntPtr.Zero);
+                *&inPtr += data.Pos;
+                int res = S7_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)data.AvailableRead, IntPtr.Zero);
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
             }
 
-            this.BytesIn += (ulong)inSize;
-            this.BytesOut += outSz;
+            data.Read(data.AvailableRead);
 
             return (int)outSz;
         }

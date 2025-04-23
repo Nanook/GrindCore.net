@@ -78,17 +78,21 @@ namespace Nanook.GrindCore.DeflateZLib
         //    }
         //}
 
-        public unsafe int Inflate(DataBlock destination)
+        public unsafe int Inflate(CompressionBuffer destination)
         {
             // If inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
-            if (destination.Length == 0)
+            if (destination.AvailableWrite == 0)
                 return 0;
 
+            int read;
             //fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
             fixed (byte* bufPtr = destination.Data)
             {
-                return inflateVerified(bufPtr, destination.Length);
+                *&bufPtr += destination.Size; //Size is writePos
+                read = inflateVerified(bufPtr, destination.AvailableWrite);
             }
+            destination.Write(read); //update
+            return read;
         }
 
         private unsafe int inflateVerified(byte* bufPtr, int length)
@@ -189,22 +193,23 @@ namespace Nanook.GrindCore.DeflateZLib
         //    SetInput(inputBuffer.AsMemory(startIndex, count));
         //}
 
-        public unsafe void SetInput(byte[] inputBuffer, int startIndex, int count)
+        public unsafe void SetInput(CompressionBuffer inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(!IsInputBufferHandleAllocated);
 
-            if (inputBuffer.Length == 0)
+            if (inputBuffer.AvailableRead == 0)
                 return;
 
             lock (SyncLock)
             {
-                _inputBufferHandle = GCHandle.Alloc(inputBuffer, GCHandleType.Pinned);
+                _inputBufferHandle = GCHandle.Alloc(inputBuffer.Data, GCHandleType.Pinned);
                 _zlibStream.NextIn = _inputBufferHandle.AddrOfPinnedObject();
-                _zlibStream.AvailIn = (uint)inputBuffer.Length;
+                _zlibStream.AvailIn = (uint)inputBuffer.AvailableRead;
                 _finished = false;
                 _nonEmptyInput = true;
             }
+            inputBuffer.Read(inputBuffer.AvailableRead);
         }
 
         private void dispose(bool disposing)

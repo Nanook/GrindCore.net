@@ -26,76 +26,68 @@ namespace Nanook.GrindCore
 
     public class CompressionStreamFactory
     {
-        private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionType, bool, CompressionVersion?, CompressionStream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionType, bool, CompressionVersion?, CompressionStream>>()
+        private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionOptions, CompressionStream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionOptions, CompressionStream>>()
         {
-            { CompressionAlgorithm.GZip, (stream, type, leaveOpen, version) => new GZipStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibLatest()) },
-            { CompressionAlgorithm.ZLib, (stream, type, leaveOpen, version) => new ZLibStream(stream, type, leaveOpen,version ?? CompressionVersion.ZLibLatest()) },
-            { CompressionAlgorithm.Deflate, (stream, type, leaveOpen, version) => new DeflateStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibLatest()) },
-            { CompressionAlgorithm.GZipNg, (stream, type, leaveOpen, version) => new GZipStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
-            { CompressionAlgorithm.ZLibNg, (stream, type, leaveOpen, version) => new ZLibStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
-            { CompressionAlgorithm.DeflateNg, (stream, type, leaveOpen, version) => new DeflateStream(stream, type, leaveOpen, version ?? CompressionVersion.ZLibNgLatest()) },
-            { CompressionAlgorithm.Brotli, (stream, type, leaveOpen, version) => new BrotliStream(stream, type, leaveOpen, version ??  CompressionVersion.BrotliLatest()) },
-            { CompressionAlgorithm.Lzma, (stream, type, leaveOpen, version) => new LzmaStream(stream, type, leaveOpen, version ?? CompressionVersion.LzmaLatest()) },
-            { CompressionAlgorithm.Lzma2, (stream, type, leaveOpen, version) => new Lzma2Stream(stream, type, leaveOpen, version ?? CompressionVersion.Lzma2Latest()) },
-            { CompressionAlgorithm.FastLzma2, (stream, type, leaveOpen, version) => new FastLzma2Stream(stream, type, leaveOpen, new CompressionParameters(4), version ?? CompressionVersion.FastLzma2Latest()) }
+            { CompressionAlgorithm.GZip, (stream, options) => new GZipStream(stream, options) },
+            { CompressionAlgorithm.ZLib, (stream, options) => new ZLibStream(stream, options) },
+            { CompressionAlgorithm.Deflate, (stream, options) => new DeflateStream(stream, options) },
+            { CompressionAlgorithm.GZipNg, (stream, options) => new GZipStream(stream, options) },
+            { CompressionAlgorithm.ZLibNg, (stream, options) => new ZLibStream(stream, options) },
+            { CompressionAlgorithm.DeflateNg, (stream, options) => new DeflateStream(stream, options) },
+            { CompressionAlgorithm.Brotli, (stream, options) => new BrotliStream(stream, options) },
+            { CompressionAlgorithm.Lzma, (stream, options) => new LzmaStream(stream, options) },
+            { CompressionAlgorithm.Lzma2, (stream, options) => new Lzma2Stream(stream, options) },
+            { CompressionAlgorithm.FastLzma2, (stream, options) => new FastLzma2Stream(stream, options) }
         };
 
-        public static CompressionStream Create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)
+        public static CompressionStream Create(CompressionAlgorithm algorithm, Stream stream, CompressionOptions options)
         {
-            var s = create(algorithm, stream, type, leaveOpen, version);
+            var s = create(algorithm, stream, options);
             return s;
         }
 
-        private static CompressionStream create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)
+        public static CompressionStream Create(CompressionAlgorithm algorithm, Stream stream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)
+        {
+            var s = create(algorithm, stream, new CompressionOptions() { Type = type, LeaveOpen = leaveOpen, Version = version });
+            return s;
+        }
+
+        private static CompressionStream create(CompressionAlgorithm algorithm, Stream stream, CompressionOptions options)
         {
             if (streamCreators.TryGetValue(algorithm, out var creator))
-                return creator(stream, type, leaveOpen, version);
+                return creator(stream, options);
 
             throw new ArgumentException("Unsupported stream algorithm", nameof(algorithm));
         }
 
-        public static byte[] Compress(CompressionAlgorithm algorithm, Stream inputStream, CompressionType type, bool leaveOpen = false, CompressionVersion? version = null)
+        public static byte[] Process(CompressionAlgorithm algorithm, byte[] data, CompressionOptions options)
         {
-            using (var outputStream = new MemoryStream())
-            {
-                using (var compressionStream = Create(algorithm, outputStream, type, leaveOpen, version))
-                    inputStream.CopyTo(compressionStream);
-                return outputStream.ToArray();
-            }
+            return Process(algorithm, data, options, out _);
         }
-
-        public static byte[] Decompress(CompressionAlgorithm type, Stream inputStream, bool leaveOpen = false, CompressionVersion? version = null)
+        public static byte[] Process(CompressionAlgorithm algorithm, byte[] data, CompressionOptions options, out byte[]? properties)
         {
-            using (var outputStream = new MemoryStream())
+            if (options.Type != CompressionType.Decompress)
             {
-                using (var decompressionStream = Create(type, inputStream, CompressionType.Decompress, leaveOpen, version))
-                    decompressionStream.CopyTo(outputStream);
-                return outputStream.ToArray();
-            }
-        }
-
-        public static byte[] Compress(CompressionAlgorithm type, byte[] data, CompressionType level, bool leaveOpen = false, CompressionVersion? version = null)
-        {
-            using (var outputStream = new MemoryStream())
-            {
-                using (var compressionStream = Create(type, outputStream, level, leaveOpen, version))
+                using (var outputStream = new MemoryStream())
                 {
-                    compressionStream.Write(data, 0, data.Length);
+                    using (var compressionStream = Create(algorithm, outputStream, options))
+                    {
+                        compressionStream.Write(data, 0, data.Length);
+                        properties = compressionStream.Properties;
+                    }
+                    return outputStream.ToArray();
                 }
-                return outputStream.ToArray();
             }
-        }
-
-        public static byte[] Decompress(CompressionAlgorithm type, byte[] data, bool leaveOpen = false, CompressionVersion? version = null)
-        {
-            using (var outputStream = new MemoryStream())
+            else
             {
-                using (var inputStream = new MemoryStream(data))
-                using (var decompressionStream = Create(type, inputStream, CompressionType.Decompress, leaveOpen, version))
+                using (var outputStream = new MemoryStream())
                 {
-                    decompressionStream.CopyTo(outputStream);
+                    properties = null;
+                    using (var inputStream = new MemoryStream(data))
+                    using (var decompressionStream = Create(algorithm, inputStream, options))
+                        decompressionStream.CopyTo(outputStream);
+                    return outputStream.ToArray();
                 }
-                return outputStream.ToArray();
             }
         }
     }

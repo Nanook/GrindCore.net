@@ -51,22 +51,22 @@ namespace Nanook.GrindCore
             Data.Slice(this.Offset + sourceOffset, length).CopyTo(target.AsSpan(targetOffset, length));
         }
 
-        public void Read(int sourceOffset, Stream stream, int length)
+        public void Read(int sourceOffset, CompressionBuffer buffer, int length)
         {
             if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
                 throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
 
-            stream.Write(Data.Slice(this.Offset + sourceOffset, length));
+            buffer.Write(Data.Slice(this.Offset + sourceOffset, length));
         }
 
-        public void Write(int sourceOffset, Stream stream, int length)
+        public void Write(int sourceOffset, CompressionBuffer buffer, int length)
         {
             if (_mutableData.IsEmpty)
                 throw new NotSupportedException("ReadOnlySpan is not writable");
             if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
                 throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
 
-            stream.Read(_mutableData.Slice(this.Offset + sourceOffset, length));
+            buffer.Read(_mutableData.Slice(this.Offset + sourceOffset, length));
         }
     }
 #else
@@ -98,20 +98,20 @@ namespace Nanook.GrindCore
             Array.Copy(Data, Offset + sourceOffset, target, targetOffset, length);
         }
 
-        public void Read(int sourceOffset, Stream stream, int length)
+        public void Read(int sourceOffset, CompressionBuffer buffer, int length)
         {
             if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
                 throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
 
-            stream.Write(Data, Offset + sourceOffset, length);
+            buffer.Write(Data, Offset + sourceOffset, length);
         }
 
-        public void Write(int sourceOffset, Stream stream, int length)
+        public void Write(int sourceOffset, CompressionBuffer buffer, int length)
         {
             if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
                 throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
 
-            stream.Read(Data, Offset + sourceOffset, length);
+            buffer.Read(Data, Offset + sourceOffset, length);
         }
 
     }

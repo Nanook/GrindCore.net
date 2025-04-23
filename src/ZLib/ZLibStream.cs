@@ -11,11 +11,7 @@ namespace Nanook.GrindCore.ZLib
 {
     public class ZLibStream : DeflateStream
     {
-        public ZLibStream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, leaveOpen: false, version)
-        {
-        }
-
-        public ZLibStream(Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null) : base(stream, type, leaveOpen, Interop.ZLib.ZLib_DefaultWindowBits, version)
+        public ZLibStream(Stream stream, CompressionOptions options) : base(stream, options, Interop.ZLib.ZLib_DefaultWindowBits)
         {
         }
 

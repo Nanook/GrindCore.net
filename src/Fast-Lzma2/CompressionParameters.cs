@@ -33,7 +33,7 @@ namespace Nanook.GrindCore.Lzma
 
         /// <summary>
         /// Update all compression parameters according to pre-defined cLevel table
-        /// Compress Level [1..10], Default level is FL2_CLEVEL_DEFAULT==6.
+        /// Process Level [1..10], Default level is FL2_CLEVEL_DEFAULT==6.
         /// Setting FL2_p_highCompression to 1 switches to an alternate cLevel table.
         /// </summary>
         public int? CompressionLevel

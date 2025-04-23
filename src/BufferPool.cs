@@ -31,7 +31,7 @@ namespace Nanook.GrindCore
 
                 foreach (var entry in _pool.Keys)
                 {
-                    if (entry.Length >= size && (closestBuffer == null || entry.Length < closestBuffer.Length))
+                    if (entry.Length == size) //entry.Length >= size && (closestBuffer == null || entry.Length < closestBuffer.Length))
                         closestBuffer = entry;
                 }
 
@@ -47,6 +47,8 @@ namespace Nanook.GrindCore
 
         public static void Return(byte[] buffer)
         {
+            if (buffer == null)
+                return;
             lock (_lock)
             {
                 _pool[buffer] = DateTime.UtcNow;

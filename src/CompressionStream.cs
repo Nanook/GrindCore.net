@@ -8,38 +8,43 @@ using System.Threading.Tasks;
 using static Nanook.GrindCore.Interop;
 #endif
 
-// Add Generic Options class (cater for lzma properties)
-// Add generic buffer pool for buffers
 // Add Read Write buffers to support ReadByte, WriteByte
+// Add a min buffer threshold. - use onRead and onWrite to use CompressionBuffer to manage minimum size buffers (support readbyte, writebyte etc)
 
 namespace Nanook.GrindCore
 {
     public abstract class CompressionStream : Stream
     {
         private bool _disposed;
-        protected readonly Stream _baseStream;
-        protected readonly bool _leaveOpen;
-        protected readonly bool _compress;
-        protected readonly CompressionType _type;
-        protected CompressionVersion? _version;
+        protected readonly bool LeaveOpen;
+        protected readonly bool IsCompress;
+        protected readonly CompressionType CompressionType;
 
-        public Stream BaseStream => _baseStream;
+        public Stream BaseStream { get; }
+
+        protected readonly int _cacheThreshold;
+        private CompressionBuffer _cache;
 
         public override bool CanSeek => false;
-        public override bool CanRead => _baseStream != null && !_compress && _baseStream.CanRead;
-        public override bool CanWrite => _baseStream != null && _compress && _baseStream.CanWrite;
+        public override bool CanRead => BaseStream != null && !IsCompress && BaseStream.CanRead;
+        public override bool CanWrite => BaseStream != null && IsCompress && BaseStream.CanWrite;
 
         public override long Length => throw new NotSupportedException("Seeking is not supported.");
 
-        private int _limit;
         private long _position;
         private long _positionFullSize; //count of bytes read/written to decompressed byte arrays
 
         public long PositionFullSize => _positionFullSize;
 
-        public void SetNextReadLimit(int length)
+        public byte[] Properties { get; protected set; }
+
+        public void ResetForBlockRead(int blockLength)
         {
-            _limit = length;
+            if (!this.CanRead)
+                throw new InvalidOperationException("Stream must be in read mode");
+
+            //TODO: Reset the decoder
+            //_blockSize = blockLength;
         }
 
         public override long Position
@@ -48,65 +53,108 @@ namespace Nanook.GrindCore
             set => throw new NotSupportedException("Position is readonly. Seeking is not supported.");
         }
 
-        protected CompressionStream(bool positionSupport, Stream stream, bool leaveOpen, CompressionType type, CompressionVersion? version = null)
+        protected CompressionStream(bool positionSupport, Stream stream, CompressionOptions options)
         {
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
             _position = positionSupport ? 0 : -1;
-            _compress = type != CompressionType.Decompress;
+            CompressionType = options.Type;
 
-            _leaveOpen = leaveOpen;
-            _baseStream = stream;
-            _version = version;
+            IsCompress = CompressionType != CompressionType.Decompress;
 
-            if (!_compress) //Decompress
+            LeaveOpen = options.LeaveOpen;
+            BaseStream = stream;
+            Version = options.Version ?? CompressionVersion.Create(this.Algorithm, ""); // latest
+
+            _cacheThreshold = options.ProcessSizeMin ?? 0x1000;
+            _cache = new CompressionBuffer(options.ProcessSizeMax ?? 0x200000);
+
+            if (!IsCompress) //Decompress
             {
                 if (!stream.CanRead)
-                    throw new ArgumentException(SR.Stream_FalseCanRead, nameof(_baseStream));
+                    throw new ArgumentException(SR.Stream_FalseCanRead, nameof(BaseStream));
             }
-            else //Compress
+            else //Process
             {
-                if (type == CompressionType.Optimal)
-                    _type = ((ICompressionDefaults)this).LevelOptimal;
-                else if (type == CompressionType.SmallestSize)
-                    _type = ((ICompressionDefaults)this).LevelSmallestSize;
-                else if (type == CompressionType.Fastest)
-                    _type = ((ICompressionDefaults)this).LevelFastest;
-                else
-                    _type = type;
+                if (CompressionType == CompressionType.Optimal)
+                    CompressionType = ((ICompressionDefaults)this).LevelOptimal;
+                else if (CompressionType == CompressionType.SmallestSize)
+                    CompressionType = ((ICompressionDefaults)this).LevelSmallestSize;
+                else if (CompressionType == CompressionType.Fastest)
+                    CompressionType = ((ICompressionDefaults)this).LevelFastest;
 
-                if (_type < 0 || _type > ((ICompressionDefaults)this).LevelSmallestSize)
-                    throw new ArgumentException("Invalid Compression Type / Level", nameof(type));
+                if (CompressionType < 0 || CompressionType > ((ICompressionDefaults)this).LevelSmallestSize)
+                    throw new ArgumentException("Invalid Option, CompressionType / Level");
 
                 if (!stream.CanWrite)
-                    throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(_baseStream));
+                    throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(BaseStream));
             }
         }
 
-        internal abstract int OnRead(DataBlock dataBlock, CancellableTask cancel, int limit, out int bytesReadFromStream);
-        internal abstract void OnWrite(DataBlock dataBlock, CancellableTask cancel, out int bytesWrittenToStream);
+        internal abstract CompressionAlgorithm Algorithm { get; }
+        internal CompressionVersion Version { get; }
+        internal abstract int DefaultProcessSizeMin { get; }
+        internal abstract int DefaultProcessSizeMax { get; }
+        internal abstract int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream);
+        internal abstract void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream);
         internal abstract void OnFlush(CancellableTask cancel, out int bytesWrittenToStream);
         protected abstract void OnDispose(out int bytesWrittenToStream);
 
         private int onRead(DataBlock dataBlock, CancellableTask cancel)
         {
-            int res = OnRead(dataBlock, cancel, _limit, out int bytesReadFromStream);
-            _limit = 0;
-            _positionFullSize += res;
-            _position += bytesReadFromStream;
-            return res;
+            int total = 0;
+            int read = -1;
+
+            while (read != 0 && total != dataBlock.Length)
+            {
+                read = Math.Min(_cache.AvailableRead, dataBlock.Length - total);
+                if (read != 0)
+                {
+                    dataBlock.Write(total, _cache, read);
+                    total += read;
+                }
+
+                if (total < dataBlock.Length)
+                {
+                    read = OnRead(_cache, cancel, 0, out int bytesReadFromStream);
+                    //read = OnRead(new DataBlock(_cache.Data, _cache.Size, _cache.AvailableWrite), cancel, 0, out int bytesReadFromStream);
+                    //_cache.Write(read);
+                    _positionFullSize += read;
+                    _position += bytesReadFromStream;
+                }
+            }
+            return total;
         }
         private void onWrite(DataBlock dataBlock, CancellableTask cancel)
         {
-            OnWrite(dataBlock, cancel, out int bytesWrittenToStream);
-            _positionFullSize += dataBlock.Length;
-            _position += bytesWrittenToStream;
+            int total = 0;
+            int size = 0;
+            while (total != dataBlock.Length)
+            {
+                size = Math.Min(dataBlock.Length - total, _cache.AvailableWrite);
+                if (size != 0)
+                {
+                    dataBlock.Read(total, _cache, size); //read from datablock / write to _cache
+                    total += size;
+                }
+
+                if (_cache.AvailableRead >= _cacheThreshold || _cache.AvailableWrite == 0) // safeguarded, should never be if (false || true)
+                {
+                    size = _cache.AvailableRead;
+                    OnWrite(_cache, cancel, out int bytesWrittenToStream);
+                    //OnWrite(new DataBlock(_cache.Data, _cache.Pos, _cache.AvailableRead), cancel, out int bytesWrittenToStream);
+                    //_cache.Read(size);
+                    _positionFullSize += size;
+                    _position += bytesWrittenToStream;
+                }
+            }
         }
         private void onFlush(CancellableTask cancel)
         {
             OnFlush(cancel, out int bytesWrittenToStream);
             _position += bytesWrittenToStream;
+            BaseStream.Flush();
         }
         private void onDispose()
         {
@@ -152,8 +200,8 @@ namespace Nanook.GrindCore
                 if (disposing)
                     onDispose(); // Custom cleanup for managed resources
 
-                if (!_leaveOpen)
-                    try { _baseStream.Dispose(); } catch { }
+                if (!LeaveOpen)
+                    try { BaseStream.Dispose(); } catch { }
 
                 _disposed = true;
             }

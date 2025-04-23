@@ -16,13 +16,8 @@ namespace Nanook.GrindCore.GZip
 {
     public class GZipStream : DeflateStream
     {
-        public GZipStream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, leaveOpen: false, version)
+        public GZipStream(Stream stream, CompressionOptions options) : base(stream, options, Interop.ZLib.GZip_DefaultWindowBits)
         {
         }
-
-        public GZipStream(Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null) : base(stream, type, leaveOpen, Interop.ZLib.GZip_DefaultWindowBits, version)
-        {
-        }
-
     }
 }

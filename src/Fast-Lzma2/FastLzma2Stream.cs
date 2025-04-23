@@ -13,34 +13,43 @@ namespace Nanook.GrindCore.Lzma
     {
         private FastLzma2Encoder _enc;
         private FastLzma2Decoder _dec;
+        private bool _flushed;
 
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.FastLzma2;
+        internal override int DefaultProcessSizeMin => 0x400 * 0x400;
+        internal override int DefaultProcessSizeMax => 0x400 * 0x400;
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level6;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxFastLzma2;
 
-        public FastLzma2Stream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, false, null, version)
+        public FastLzma2Stream(Stream stream, CompressionOptions options) : this(stream, options, null)
         {
         }
 
-        public FastLzma2Stream(Stream stream, CompressionType type, bool leaveOpen, CompressionParameters? compressParams = null, CompressionVersion? version = null) : base (true, stream, leaveOpen, type, version)
+        public FastLzma2Stream(Stream stream, CompressionOptions options, CompressionParameters? compressParams = null) : base (true, stream, options)
         {
+            _flushed = false;
+
             if (compressParams == null)
-                compressParams = new CompressionParameters(0);
+                compressParams = new CompressionParameters(options.ThreadCount ?? 0);
 
-            if (_compress)
-                _enc = new FastLzma2Encoder((int)_type, compressParams);
+            if (IsCompress)
+                _enc = new FastLzma2Encoder((int)CompressionType, compressParams);
             else
-                _dec = new FastLzma2Decoder(_baseStream, _baseStream.Length, (int)_type, compressParams);
+                _dec = new FastLzma2Decoder(BaseStream, BaseStream.Length, (int)CompressionType, compressParams);
         }
 
-        internal override void OnWrite(DataBlock dataBlock, CancellableTask cancel, out int bytesWrittenToStream)
+        internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
         {
-            _enc.EncodeData(dataBlock, true, _baseStream, cancel, out bytesWrittenToStream); 
+            int avRead = data.AvailableRead;
+            _enc.EncodeData(data, true, BaseStream, cancel, out bytesWrittenToStream);
+            if (avRead != data.AvailableRead)
+                _flushed = false;
         }
 
-        internal override int OnRead(DataBlock dataBlock, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
         {
-            return _dec.DecodeData(dataBlock, _baseStream, cancel, out bytesReadFromStream);
+            return _dec.DecodeData(data, BaseStream, cancel, out bytesReadFromStream);
         }
 
         /// <summary>
@@ -50,17 +59,15 @@ namespace Nanook.GrindCore.Lzma
         internal override void OnFlush(CancellableTask cancel, out int bytesWrittenToStream)
         {
             bytesWrittenToStream = 0;
-            if (_compress)
-                _enc.Flush(_baseStream, cancel, out bytesWrittenToStream);
-            else
-                _baseStream.Flush();
+            if (IsCompress && !_flushed)
+                _enc.Flush(BaseStream, cancel, out bytesWrittenToStream);
         }
 
         protected override void OnDispose(out int bytesWrittenToStream)
         {
             bytesWrittenToStream = 0;
-            try { OnFlush(new CancellableTask(), out bytesWrittenToStream); } catch { }
-            if (_compress)
+            OnFlush(new CancellableTask(), out bytesWrittenToStream);
+            if (IsCompress)
                 try { _enc.Dispose(); } catch { }
             else
                 try { _dec.Dispose(); } catch { }
