@@ -15,7 +15,7 @@ namespace Nanook.GrindCore.Brotli
         private bool _nonEmptyInput;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Brotli;
-        internal override int DefaultProcessSizeMin => 0x400 * 0x400;
+        internal override int DefaultProcessSizeMin => DefaultInternalBufferSize;
         internal override int DefaultProcessSizeMax => 0x400 * 0x400;
 
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;

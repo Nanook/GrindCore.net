@@ -16,8 +16,8 @@ namespace Nanook.GrindCore.Lzma
         private bool _flushed;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.FastLzma2;
-        internal override int DefaultProcessSizeMin => 0x400 * 0x400;
-        internal override int DefaultProcessSizeMax => 0x400 * 0x400;
+        internal override int DefaultProcessSizeMin => 2 * 0x400 * 0x400;
+        internal override int DefaultProcessSizeMax => 2 * 0x400 * 0x400;
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level6;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxFastLzma2;

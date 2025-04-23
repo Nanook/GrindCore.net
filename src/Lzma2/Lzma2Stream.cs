@@ -27,7 +27,6 @@ namespace Nanook.GrindCore.Lzma
         private CompressionBuffer _cbuff;
         private CompressionBuffer _buff;
 
-
         public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0) : base(true, stream, options)
         {
             _flushed = false;

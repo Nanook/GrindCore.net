@@ -30,9 +30,6 @@ namespace Nanook.GrindCore.DeflateZLib
         {
         }
 
-        //private static readonly bool s_useStrictValidation =
-        //    AppContext.TryGetSwitch("Nanook.GrindCore.UseStrictValidation", out bool strictValidation) ? strictValidation : false;
-
         /// <summary>
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
@@ -59,7 +56,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 // Try to decompress any data from the inflater into the caller's buffer.
                 // If we're able to decompress any bytes, or if decompression is completed, we're done.
                 bytesRead = _inflater!.Inflate(data);
-                if (bytesRead != 0 || InflatorIsFinished)
+                if (bytesRead != 0 || inflatorIsFinished)
                     break;
 
                 // We were unable to decompress any data.  If the inflater needs additional input
@@ -111,7 +108,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
             // Write compressed the bytes we already passed to the deflater:
             int compressedBytes;
-            WriteDeflaterOutput(cancel, out compressedBytes);
+            writeDeflaterOutput(cancel, out compressedBytes);
             bytesWrittenToStream += compressedBytes;
 
             unsafe
@@ -125,7 +122,7 @@ namespace Nanook.GrindCore.DeflateZLib
                         _deflater!.SetInput(bufferPtr, data.AvailableRead);
                         data.Read(data.AvailableRead); //assume read at this point
                     }
-                    WriteDeflaterOutput(cancel, out compressedBytes);
+                    writeDeflaterOutput(cancel, out compressedBytes);
                     bytesWrittenToStream += compressedBytes;
                     _wroteBytes = true;
                 }
@@ -141,7 +138,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 {
                     int compressedBytes;
                     // Process any bytes left:
-                    WriteDeflaterOutput(cancel, out compressedBytes);
+                    writeDeflaterOutput(cancel, out compressedBytes);
                     bytesWrittenToStream += compressedBytes;
 
                     Debug.Assert(_deflater != null && _buffer != null);
@@ -184,7 +181,7 @@ namespace Nanook.GrindCore.DeflateZLib
                     try
                     {
                         if (!_flushed)
-                            WriteDeflaterOutput(new CancellableTask(), out bytesWrittenToStream);
+                            writeDeflaterOutput(new CancellableTask(), out bytesWrittenToStream);
 
                         // Pull out any bytes left inside deflater:
                         bool finished;
@@ -234,7 +231,7 @@ namespace Nanook.GrindCore.DeflateZLib
             }
         }
 
-        private bool InflatorIsFinished =>
+        private bool inflatorIsFinished =>
             // If the stream is finished then we have a few potential cases here:
             // 1. DeflateStream => return
             // 2. GZipStream that is finished but may have an additional GZipStream appended => feed more input
@@ -242,7 +239,7 @@ namespace Nanook.GrindCore.DeflateZLib
             _inflater!.Finished() &&
             (!_inflater.IsGzipStream() || !_inflater.NeedsInput());
 
-        private void WriteDeflaterOutput(CancellableTask cancel, out int bytesWritten)
+        private void writeDeflaterOutput(CancellableTask cancel, out int bytesWritten)
         {
             Debug.Assert(_deflater != null && _buffer != null);
             bytesWritten = 0;

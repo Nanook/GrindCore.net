@@ -1,15 +1,14 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Threading;
+
 
 
 #if !CLASSIC && (NET40_OR_GREATER || NETSTANDARD || NETCOREAPP)
 using System.Threading.Tasks;
 using static Nanook.GrindCore.Interop;
 #endif
-
-// Add Read Write buffers to support ReadByte, WriteByte
-// Add a min buffer threshold. - use onRead and onWrite to use CompressionBuffer to manage minimum size buffers (support readbyte, writebyte etc)
 
 namespace Nanook.GrindCore
 {
@@ -118,14 +117,13 @@ namespace Nanook.GrindCore
                 if (total < dataBlock.Length)
                 {
                     read = OnRead(_cache, cancel, 0, out int bytesReadFromStream);
-                    //read = OnRead(new DataBlock(_cache.Data, _cache.Size, _cache.AvailableWrite), cancel, 0, out int bytesReadFromStream);
-                    //_cache.Write(read);
                     _positionFullSize += read;
                     _position += bytesReadFromStream;
                 }
             }
             return total;
         }
+
         private void onWrite(DataBlock dataBlock, CancellableTask cancel)
         {
             int total = 0;
@@ -139,23 +137,29 @@ namespace Nanook.GrindCore
                     total += size;
                 }
 
-                if (_cache.AvailableRead >= _cacheThreshold || _cache.AvailableWrite == 0) // safeguarded, should never be if (false || true)
-                {
-                    size = _cache.AvailableRead;
-                    OnWrite(_cache, cancel, out int bytesWrittenToStream);
-                    //OnWrite(new DataBlock(_cache.Data, _cache.Pos, _cache.AvailableRead), cancel, out int bytesWrittenToStream);
-                    //_cache.Read(size);
-                    _positionFullSize += size;
-                    _position += bytesWrittenToStream;
-                }
+                onWrite(cancel);
             }
         }
+
+        private void onWrite(CancellableTask cancel)
+        {
+            int size;
+            if (_cache.AvailableRead >= _cacheThreshold || _cache.AvailableWrite == 0) // safeguarded, should never be if (false || true)
+            {
+                size = _cache.AvailableRead;
+                OnWrite(_cache, cancel, out int bytesWrittenToStream);
+                _positionFullSize += size - _cache.AvailableRead;
+                _position += bytesWrittenToStream;
+            }
+        }
+
         private void onFlush(CancellableTask cancel)
         {
             OnFlush(cancel, out int bytesWrittenToStream);
             _position += bytesWrittenToStream;
             BaseStream.Flush();
         }
+
         private void onDispose()
         {
             OnDispose(out int bytesWrittenToStream);
@@ -171,6 +175,30 @@ namespace Nanook.GrindCore
         public override void SetLength(long value)
         {
             throw new NotImplementedException();
+        }
+
+        public override int ReadByte()
+        {
+            if (_cache.AvailableRead == 0)
+            {
+                int read = OnRead(_cache, new CancellableTask(), 0, out int bytesReadFromStream);
+                _positionFullSize += read;
+                _position += bytesReadFromStream;
+            }
+            if (_cache.AvailableRead == 0)
+                return -1;
+
+            int result = _cache.Data[_cache.Pos];
+            _cache.Read(1);
+            return result;
+        }
+
+        public override void WriteByte(byte value)
+        {
+            _cache.Data[_cache.Size] = value;
+            _cache.Write(1);
+            if (_cache.AvailableRead >= this.DefaultProcessSizeMin)
+                onWrite(new CancellableTask());
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -244,6 +272,19 @@ namespace Nanook.GrindCore
                 DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
                 onWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
             }, cancellationToken).ConfigureAwait(false);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                Dispose(true);
+                return;
+            }
+            await Task.Run(() =>
+            {
+                Dispose(true);
+            }).ConfigureAwait(false);
         }
 #endif
 #if CLASSIC || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP

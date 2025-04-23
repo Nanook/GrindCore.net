@@ -467,85 +467,93 @@ namespace GrindCore.Tests
 
         }
 
-        //[Theory]
-        //[InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0xaba29, "c668fabe6e6e9235", "b81723649b82a53d")]
-        //[InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x3b9193, "c668fabe6e6e9235", "d660c36b53d5724a")]
-        //[InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x673327, "c668fabe6e6e9235", "f0980ebcdcde5d8b")]
-        //[InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x4f158, "c668fabe6e6e9235", "99bc4c760e5330db")]
-        //[InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x129aa, "c668fabe6e6e9235", "150b42d11de57fc7")]
-        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x3c8001, "c668fabe6e6e9235", "38be95553536f6c6")]
-        //[InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x3b9199, "c668fabe6e6e9235", "77e08be9bcdb4e41")]
-        //[InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x67332d, "c668fabe6e6e9235", "d682cb103ee16df0")]
-        //public void Data_Stream1MiB_ReadByteWriteByte(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
-        //{
-        //    // Process in 1MiB blocks
-        //    int total = 1 * 1024 * 1024; // Total bytes to process
-        //    int blockSize = 1 * 1024 * 1024; // 1MiB block size
-        //    byte[] buffer = new byte[blockSize * 2];
-        //    long totalCompressedBytes = 0;
-        //    long totalInProcessedBytes = 0;
-        //    long totalOutProcessedBytes = 0;
+        [Theory]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x6b42, "6d522dca7d96dfe8", "0a1ce1dc6372e770")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x25582, "6d522dca7d96dfe8", "f6f7ebd36ab15670")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x4097b, "6d522dca7d96dfe8", "0e9009f7ff7f372d")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0xd65, "6d522dca7d96dfe8", "de79b5fd4314f0e5")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x30d5, "6d522dca7d96dfe8", "cb07ceedc0627fcc")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x32ad, "6d522dca7d96dfe8", "236f82069d776982")]
+        //[InlineData(CompressionAlgorithm.GZip, CompressionType.Fastest, 0x25594, "6d522dca7d96dfe8", "d7d3020f5e9928ce")]
+        //[InlineData(CompressionAlgorithm.GZipNg, CompressionType.Fastest, 0x4098d, "6d522dca7d96dfe8", "572527c6643e493c")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x25588, "6d522dca7d96dfe8", "52939e62ee507885")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x40981, "6d522dca7d96dfe8", "63423a67659ba6ca")]
+        public void Data_Stream20MiB_ReadByteWriteByte(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
+        {
+            // Process in 1MiB blocks
+            int total = 20 * 1024 * 1024; // Total bytes to process
+            int blockSize = 1 * 1024 * 1024; // 1MiB block size
+            byte[] buffer = new byte[blockSize * 2];
+            long totalCompressedBytes = 0;
+            long totalInProcessedBytes = 0;
+            long totalOutProcessedBytes = 0;
+            byte[] properties;
+            int? threadCount = null;
 
-        //    using (var inXxhash = XXHash64.Create())
-        //    using (var compXxhash = XXHash64.Create())
-        //    using (var outXxhash = XXHash64.Create())
-        //    {
-        //        using (var inDataStream = new TestDataStream())
-        //        {
-        //            using (var compMemoryStream = new MemoryStream())
-        //            {
-        //                // Hash raw input data and Process
-        //                using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, type, true))
-        //                {
-        //                    using (var cryptoStream = new CryptoStream(compressionStream, inXxhash, CryptoStreamMode.Write, true))
-        //                    {
-        //                        while (totalInProcessedBytes < total)
-        //                        {
-        //                            int b = inDataStream.ReadByte();
-        //                            if (b == -1) break;
-        //                            cryptoStream.WriteByte((byte)b);
-        //                            totalInProcessedBytes++;
-        //                            //Trace.WriteLine($"{totalInProcessedBytes} of {total} ({compMemoryStream.Position})");
-        //                        }
-        //                    }
-        //                    compMemoryStream.Flush();
-        //                }
+            if (algorithm == CompressionAlgorithm.FastLzma2)
+                threadCount = 4;
 
-        //                // Hash Compressed data
-        //                totalCompressedBytes = compMemoryStream.Position;
-        //                compMemoryStream.Position = 0; //reset for reading
-        //                using (var cryptoStream = new CryptoStream(Stream.Null, compXxhash, CryptoStreamMode.Write, true))
-        //                {
-        //                    int b;
-        //                    while ((b = compMemoryStream.ReadByte()) != -1)
-        //                        cryptoStream.WriteByte((byte)b);
-        //                }
+            using (var inXxhash = XXHash64.Create())
+            using (var compXxhash = XXHash64.Create())
+            using (var outXxhash = XXHash64.Create())
+            {
+                using (var inDataStream = new TestDataStream())
+                {
+                    using (var compMemoryStream = new MemoryStream())
+                    {
+                        // Hash raw input data and Process
+                        using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, new CompressionOptions() { Type = type, LeaveOpen = true, ProcessSizeMin = blockSize, ProcessSizeMax = blockSize * 2, ThreadCount = threadCount, Version = CompressionVersion.Create(algorithm, "") }))
+                        {
+                            using (var cryptoStream = new CryptoStream(compressionStream, inXxhash, CryptoStreamMode.Write, true))
+                            {
+                                while (totalInProcessedBytes < total)
+                                {
+                                    int b = inDataStream.ReadByte();
+                                    if (b == -1) break;
+                                    cryptoStream.WriteByte((byte)b);
+                                    totalInProcessedBytes++;
+                                    //Trace.WriteLine($"{totalInProcessedBytes} of {total} ({compMemoryStream.Position})");
+                                }
+                            }
+                            //compMemoryStream.Flush();
+                            properties = compressionStream.Properties;
+                        }
 
-        //                // Decompress and hash
-        //                compMemoryStream.Position = 0; //reset for reading
-        //                using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, CompressionType.Decompress, true))
-        //                {
-        //                    int b;
-        //                    while (totalOutProcessedBytes < total && (b = compressionStream.ReadByte()) != -1)
-        //                    {
-        //                        outXxhash.TransformBlock(new[] { (byte)b }, 0, 1, null, 0);
-        //                        totalOutProcessedBytes++;
-        //                    }
-        //                    outXxhash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-        //                }
-        //            }
+                        // Hash Compressed data
+                        totalCompressedBytes = compMemoryStream.Position;
+                        compMemoryStream.Position = 0; //reset for reading
+                        using (var cryptoStream = new CryptoStream(Stream.Null, compXxhash, CryptoStreamMode.Write, true))
+                        {
+                            int b;
+                            while ((b = compMemoryStream.ReadByte()) != -1)
+                                cryptoStream.WriteByte((byte)b);
+                        }
 
-        //            string hashInString = inXxhash.Hash!.ToHexString();
-        //            string hashCompString = compXxhash.Hash!.ToHexString();
-        //            string hashOutString = outXxhash.Hash!.ToHexString();
-        //            Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{totalCompressedBytes:x}, \"{hashInString}\", \"{hashCompString}\")]");
-        //            //Assert.Equal(compressedSize, totalCompressedBytes); //test compressed data size matches expected
-        //            //Assert.Equal(hashInString, hashOutString); //test IN and decompressed data hashes match
-        //            //Assert.Equal(rawXxH64, hashInString); //test raw data hash matches expected
-        //            //Assert.Equal(compXxH64, hashCompString); //test compressed data hash matches expected
-        //        }
-        //    }
-        //}
+                        // Decompress and hash
+                        compMemoryStream.Position = 0; //reset for reading
+                        using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, new CompressionOptions() { Type = CompressionType.Decompress, LeaveOpen = true, InitProperties = properties, ProcessSizeMax = blockSize, Version = CompressionVersion.Create(algorithm, "") }))
+                        {
+                            int b;
+                            while (totalOutProcessedBytes < total && (b = compressionStream.ReadByte()) != -1)
+                            {
+                                outXxhash.TransformBlock(new[] { (byte)b }, 0, 1, null, 0);
+                                totalOutProcessedBytes++;
+                            }
+                            outXxhash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                        }
+                    }
+
+                    string hashInString = inXxhash.Hash!.ToHexString();
+                    string hashCompString = compXxhash.Hash!.ToHexString();
+                    string hashOutString = outXxhash.Hash!.ToHexString();
+                    Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{totalCompressedBytes:x}, \"{hashInString}\", \"{hashCompString}\")]");
+                    Assert.Equal(compressedSize, totalCompressedBytes); //test compressed data size matches expected
+                    Assert.Equal(hashInString, hashOutString); //test IN and decompressed data hashes match
+                    Assert.Equal(rawXxH64, hashInString); //test raw data hash matches expected
+                    Assert.Equal(compXxH64, hashCompString); //test compressed data hash matches expected
+                }
+            }
+        }
 
 #if !IS_32BIT
         [Theory]
