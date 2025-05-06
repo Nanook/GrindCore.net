@@ -575,7 +575,7 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_remainingOutputSize(nint fcs);
 
             /// <summary>
-            /// Compress all data remaining in the dictionary buffer(s). It may be necessary to call FL2_flushStream() more than once.
+            /// Process all data remaining in the dictionary buffer(s). It may be necessary to call FL2_flushStream() more than once.
             /// If output == NULL the compressed data must be read from the CStream object after each call.
             /// Flushing is not normally useful and produces larger output.
             /// </summary>
@@ -587,7 +587,7 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_flushStream(nint fcs, ref FL2OutBuffer output);
 
             /// <summary>
-            /// Compress all data remaining in the dictionary buffer(s) and write the stream end marker.
+            /// Process all data remaining in the dictionary buffer(s) and write the stream end marker.
             /// It may be necessary to call FL2_endStream() more than once.
             /// If output == NULL the compressed data must be read from the CStream object after each call.
             /// </summary>

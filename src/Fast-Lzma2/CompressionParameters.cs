@@ -7,10 +7,11 @@ namespace Nanook.GrindCore.Lzma
     {
         internal readonly Dictionary<FL2Parameter, int?> Values = new Dictionary<FL2Parameter, int?>();
 
-        public CompressionParameters(int threads, int dictionarySize = 64 * 1024 * 1024)
+        public CompressionParameters(int threads, int dictionarySize = 0)
         {
             this.Threads = threads;
-            this.DictionarySize = dictionarySize;
+            if (dictionarySize != 0)
+                this.DictionarySize = dictionarySize;
         }
 
         private int? getValue(FL2Parameter parameter)
@@ -33,7 +34,7 @@ namespace Nanook.GrindCore.Lzma
 
         /// <summary>
         /// Update all compression parameters according to pre-defined cLevel table
-        /// Compress Level [1..10], Default level is FL2_CLEVEL_DEFAULT==6.
+        /// Process Level [1..10], Default level is FL2_CLEVEL_DEFAULT==6.
         /// Setting FL2_p_highCompression to 1 switches to an alternate cLevel table.
         /// </summary>
         public int? CompressionLevel

@@ -1,201 +1,209 @@
-
-
-
-using System.Buffers;
 using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 using System.IO;
 using System;
 
 namespace Nanook.GrindCore.Brotli
 {
     /// <summary>Provides methods and properties used to compress and decompress streams by using the Brotli data format specification.</summary>
-    public sealed partial class BrotliStream : Stream
+    public sealed class BrotliStream : CompressionStream, ICompressionDefaults
     {
         private const int DefaultInternalBufferSize = (1 << 16) - 16; //65520;
-        private Stream _stream;
-        private byte[] _buffer;
-        private readonly bool _leaveOpen;
-        private readonly bool _compress;
-        private readonly CompressionVersion _version;
+        private BrotliEncoder _encoder;
+        private BrotliDecoder _decoder;
+        private CompressionBuffer _buffer;
+        private bool _nonEmptyInput;
 
-        /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode.</summary>
-        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
-        /// <param name="type">CompressionLevel or Decompress, indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
-        public BrotliStream(Stream stream, CompressionType type, CompressionVersion? version = null) : this(stream, type, leaveOpen: false, version) { }
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Brotli;
+        internal override int DefaultProcessSizeMin => DefaultInternalBufferSize;
+        internal override int DefaultProcessSizeMax => 0x400 * 0x400;
+
+        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
+        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level4;
+        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxBrotli;
 
         /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="Nanook.GrindCore.BrotliStream" /> object is _disposed; otherwise, <see langword="false" />.</param>
-        public BrotliStream(Stream stream, CompressionType type, bool leaveOpen, CompressionVersion? version = null)
+        public BrotliStream(Stream stream, CompressionOptions options) : base(true, stream, options)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            _version = version ?? CompressionVersion.BrotliLatest();
-
-            if (type != CompressionType.Decompress)
+            if (IsCompress)
             {
-                if (!stream.CanWrite)
-                    throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(stream));
-
-                _encoder.SetQuality(BrotliUtils.GetQualityFromCompressionLevel(type));
-                _encoder.SetWindow(BrotliUtils.WindowBits_Default);
-                _compress = true;
-            }
-            else
-            {
-                if (!stream.CanRead)
-                    throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
-
-                _compress = false;
+                _encoder.SetQuality(CompressionType);
+                _encoder.SetWindow();
             }
 
-            _stream = stream;
-            _leaveOpen = leaveOpen;
-            _buffer = ArrayPool<byte>.Shared.Rent(DefaultInternalBufferSize);
+            _buffer = new CompressionBuffer(options.InternalBufferSize ?? DefaultInternalBufferSize);
+        }
+
+        private bool tryDecompress(CompressionBuffer destination, out int allBytesConsumed, out int bytesWritten)
+        {
+            allBytesConsumed = 0;
+            // Decompress any data we may have in our buffer.
+            int bytesConsumed;
+            int origAvailableOut = destination.AvailableWrite;
+            int origAvailableIn = _buffer.AvailableRead;
+            OperationStatus lastResult = _decoder.Decompress(_buffer, destination, out bytesConsumed, out bytesWritten);
+            if (lastResult == OperationStatus.InvalidData)
+                throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
+
+            if (bytesConsumed != 0)
+                allBytesConsumed += bytesConsumed;
+
+            // If we successfully decompressed any bytes, or if we've reached the end of the decompression, we're done.
+            if (bytesWritten != 0 || lastResult == OperationStatus.Done)
+                return true;
+
+            if (origAvailableOut == 0)
+            {
+                // The caller provided a zero-byte buffer.  This is typically done in order to avoid allocating/renting
+                // a buffer until data is known to be available.  We don't have perfect knowledge here, as _decoder.Decompress
+                // will return DestinationTooSmall whether or not more data is required.  As such, we assume that if there's
+                // any data in our input buffer, it would have been decompressible into at least one byte of output, and
+                // otherwise we need to do a read on the underlying stream.  This isn't perfect, because having input data
+                // doesn't necessarily mean it'll decompress into at least one byte of output, but it's a reasonable approximation
+                // for the 99% case.  If it's wrong, it just means that a caller using zero-byte reads as a way to delay
+                // getting a buffer to use for a subsequent call may end up getting one earlier than otherwise preferred.
+                Debug.Assert(lastResult == OperationStatus.DestinationTooSmall);
+                if (origAvailableIn != 0)
+                {
+                    Debug.Assert(bytesWritten == 0);
+                    return true;
+                }
+            }
+
+            Debug.Assert(
+                lastResult == OperationStatus.NeedMoreData ||
+                (lastResult == OperationStatus.DestinationTooSmall && origAvailableOut == 0 && origAvailableIn == 0), $"{nameof(lastResult)} == {lastResult}, {nameof(destination.AvailableWrite)} == {origAvailableOut}");
+
+            // Ensure any left over data is at the beginning of the array so we can fill the remainder.
+            _buffer.Tidy(); //move any data back to start
+
+            return false;
+        }
+
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        {
+            if (IsCompress)
+                throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
+            EnsureNotDisposed();
+            bytesReadFromStream = 0;
+            int bytesWritten;
+            int bytesConsumed;
+            while (!tryDecompress(data, out bytesConsumed, out bytesWritten))
+            {
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+                bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distiction)
+
+                int bytesRead = BaseStream.Read(_buffer.Data, _buffer.Size, _buffer.AvailableWrite);
+                if (bytesRead <= 0)
+                {
+                    if (/*s_useStrictValidation &&*/ _nonEmptyInput && data.AvailableWrite != 0)
+                        throw new InvalidDataException(SR.BrotliStream_Decompress_TruncatedData);
+                    break;
+                }
+
+                _nonEmptyInput = true;
+
+                // The stream is either malicious or poorly implemented and returned a number of
+                // bytes larger than the buffer supplied to it.
+                if (bytesRead > _buffer.AvailableWrite)
+                    throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
+
+
+                _buffer.Write(bytesRead); //update bytes written to _buffer
+            }
+
+            bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distiction)
+
+            return bytesWritten;
+        }
+
+        internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
+        {
+            OnWrite(data, cancel, out bytesWrittenToStream, false);
+        }
+        internal void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool isFinalBlock)
+        {
+            if (!IsCompress)
+                throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
+            EnsureNotDisposed();
+
+            bytesWrittenToStream = 0;
+
+            OperationStatus lastResult = OperationStatus.DestinationTooSmall;
+            while (lastResult == OperationStatus.DestinationTooSmall)
+            {
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
+                int bytesConsumed;
+                int bytesWritten;
+                lastResult = _encoder.Compress(data, _buffer, out bytesConsumed, out bytesWritten, isFinalBlock);
+                if (lastResult == OperationStatus.InvalidData)
+                    throw new InvalidOperationException(SR.BrotliStream_Compress_InvalidData);
+
+                bytesWrittenToStream += bytesWritten;
+
+                if (bytesWritten > 0)
+                {
+                    BaseStream.Write(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
+                    _buffer.Read(bytesWritten);
+                }
+            }
+        }
+
+        /// <summary>If the stream is not _disposed, and the compression mode is set to compress, writes all the remaining encoder's data into this stream.</summary>
+        /// <exception cref="InvalidDataException">The encoder ran into invalid data.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is _disposed.</exception>
+        internal override void OnFlush(CancellableTask cancel, out int bytesWrittenToStream)
+        {
+            EnsureNotDisposed();
+
+            bytesWrittenToStream = 0;
+
+            if (IsCompress)
+            {
+                if (_encoder._state == null || _encoder._state.IsClosed)
+                    return;
+
+                OperationStatus lastResult = OperationStatus.DestinationTooSmall;
+                while (lastResult == OperationStatus.DestinationTooSmall)
+                {
+                    cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+
+                    int bytesWritten;
+                    lastResult = _encoder.Flush(_buffer, out bytesWritten);
+                    if (lastResult == OperationStatus.InvalidData)
+                        throw new InvalidDataException(SR.BrotliStream_Compress_InvalidData);
+
+                    bytesWrittenToStream += bytesWritten;
+
+                    if (bytesWritten > 0)
+                    {
+                        BaseStream.Write(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
+                        _buffer.Read(bytesWritten);
+                    }
+                }
+            }
         }
 
         private void EnsureNotDisposed()
         {
-            if (_stream == null)
+            if (BaseStream == null)
                 throw new ObjectDisposedException(nameof(BrotliStream));
         }
 
         /// <summary>Releases the unmanaged resources used by the <see cref="Nanook.GrindCore.BrotliStream" /> and optionally releases the managed resources.</summary>
         /// <param name="disposing"><see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
-        protected override void Dispose(bool disposing)
+        protected override void OnDispose(out int bytesWrittenToStream)
         {
-            try
-            {
-                if (disposing && _stream != null)
-                {
-                    if (_compress)
-                    {
-                        WriteCore(ReadOnlySpan<byte>.Empty, isFinalBlock: true);
-                    }
-
-                    if (!_leaveOpen)
-                    {
-                        _stream.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                ReleaseStateForDispose();
-                base.Dispose(disposing);
-            }
+            bytesWrittenToStream = 0;
+            if (BaseStream != null && IsCompress)
+                try { OnWrite(new CompressionBuffer(0), new CancellableTask(), out bytesWrittenToStream, true); } catch { }
+            try { _encoder.Dispose(); } catch { }
+            try { _decoder.Dispose(); } catch { }
+            try { _buffer.Dispose(); } catch { }
         }
-
-#if NETCOREAPP
-        /// <summary>Asynchronously releases the unmanaged resources used by the <see cref="Nanook.GrindCore.BrotliStream" />.</summary>
-        /// <returns>A task that represents the asynchronous dispose operation.</returns>
-        /// <remarks><para>This method lets you perform a resource-intensive dispose operation without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
-        /// <para>This method disposes the Brotli stream by writing any changes to the backing store and closing the stream to release resources.</para>
-        /// <para>Calling <see cref="Nanook.GrindCore.BrotliStream.DisposeAsync" /> allows the resources used by the <see cref="Nanook.GrindCore.BrotliStream" /> to be reallocated for other purposes. For more information, see [Cleaning Up Unmanaged Resources](/dotnet/standard/garbage-collection/unmanaged).</para></remarks>
-        public override async ValueTask DisposeAsync()
-        {
-            try
-            {
-                if (_stream != null)
-                {
-                    if (_compress)
-                    {
-                        await WriteAsyncMemoryCore(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true).ConfigureAwait(false);
-                    }
-
-                    if (!_leaveOpen)
-                    {
-                        await _stream.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-            }
-            finally
-            {
-                ReleaseStateForDispose();
-            }
-        }
-#endif
-
-        private void ReleaseStateForDispose()
-        {
-            _stream = null!;
-            _encoder.Dispose();
-            _decoder.Dispose();
-
-            byte[] buffer = _buffer;
-            if (buffer != null)
-            {
-                _buffer = null!;
-                if (!AsyncOperationIsActive)
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
-            }
-        }
-
-        /// <summary>Gets a reference to the underlying stream.</summary>
-        /// <value>A stream object that represents the underlying stream.</value>
-        /// <exception cref="System.ObjectDisposedException">The underlying stream is closed.</exception>
-        public Stream BaseStream => _stream;
-        /// <summary>Gets a value indicating whether the stream supports reading while decompressing a file.</summary>
-        /// <value><see langword="true" /> if the <see cref="System.IO.Compression.CompressionMode" /> value is <see langword="Decompress," /> and the underlying stream supports reading and is not closed; otherwise, <see langword="false" />.</value>
-        public override bool CanRead => !_compress && _stream != null && _stream.CanRead;
-        /// <summary>Gets a value indicating whether the stream supports writing.</summary>
-        /// <value><see langword="true" /> if the <see cref="System.IO.Compression.CompressionMode" /> value is <see langword="Compress" />, and the underlying stream supports writing and is not closed; otherwise, <see langword="false" />.</value>
-        public override bool CanWrite => _compress && _stream != null && _stream.CanWrite;
-        /// <summary>Gets a value indicating whether the stream supports seeking.</summary>
-        /// <value><see langword="false" /> in all cases.</value>
-        public override bool CanSeek => false;
-        /// <summary>This property is not supported and always throws a <see cref="System.NotSupportedException" />.</summary>
-        /// <param name="offset">The location in the stream.</param>
-        /// <param name="origin">One of the <see cref="System.IO.SeekOrigin" /> values.</param>
-        /// <returns>A long value.</returns>
-        /// <exception cref="System.NotSupportedException">This property is not supported on this stream.</exception>
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-        /// <summary>This property is not supported and always throws a <see cref="System.NotSupportedException" />.</summary>
-        /// <value>A long value.</value>
-        /// <exception cref="System.NotSupportedException">This property is not supported on this stream.</exception>
-        public override long Length => throw new NotSupportedException();
-        /// <summary>This property is not supported and always throws a <see cref="System.NotSupportedException" />.</summary>
-        /// <value>A long value.</value>
-        /// <exception cref="System.NotSupportedException">This property is not supported on this stream.</exception>
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-        /// <summary>This property is not supported and always throws a <see cref="System.NotSupportedException" />.</summary>
-        /// <param name="value">The length of the stream.</param>
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        private int _activeAsyncOperation; // 1 == true, 0 == false
-        private bool AsyncOperationIsActive => _activeAsyncOperation != 0;
-
-        private void EnsureNoActiveAsyncOperation()
-        {
-            if (AsyncOperationIsActive)
-                ThrowInvalidBeginCall();
-        }
-
-        private void AsyncOperationStarting()
-        {
-            if (Interlocked.Exchange(ref _activeAsyncOperation, 1) != 0)
-            {
-                ThrowInvalidBeginCall();
-            }
-        }
-
-        private void AsyncOperationCompleting()
-        {
-            Debug.Assert(_activeAsyncOperation == 1);
-            Volatile.Write(ref _activeAsyncOperation, 0);
-        }
-
-        private static void ThrowInvalidBeginCall() =>
-            throw new InvalidOperationException(SR.InvalidBeginCall);
     }
 }

@@ -1,7 +1,3 @@
-
-
-
-using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO;
@@ -10,7 +6,7 @@ using System;
 namespace Nanook.GrindCore.Brotli
 {
     /// <summary>Provides non-allocating, performant Brotli decompression methods. The methods decompress in a single pass without using a <see cref="Nanook.GrindCore.BrotliStream" /> instance.</summary>
-    public struct BrotliDecoder : IDisposable
+    internal struct BrotliDecoder : IDisposable
     {
         private SafeBrotliDecoderHandle? _state;
         private bool _disposed;
@@ -59,7 +55,7 @@ namespace Nanook.GrindCore.Brotli
         /// - <see cref="OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="destination" /> to decompress <paramref name="source" />.
         /// - <see cref="OperationStatus.NeedMoreData" />: The decompression action is partially done at least one more byte is required to complete the decompression task. This method should be called again with more input to decompress.
         /// - <see cref="OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be decompressed.</remarks>
-        public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
+        public OperationStatus Decompress(CompressionBuffer source, CompressionBuffer destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureInitialized();
             Debug.Assert(_state != null);
@@ -74,8 +70,8 @@ namespace Nanook.GrindCore.Brotli
             else
                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
 
-            nuint availableOutput = (nuint)destination.Length;
-            nuint availableInput = (nuint)source.Length;
+            UIntPtr availableOutput = (UIntPtr)destination.AvailableWrite;
+            UIntPtr availableInput = (UIntPtr)source.AvailableRead;
             unsafe
             {
                 // We can freely cast between int and nuint (.NET size_t equivalent) for two reasons:
@@ -83,9 +79,12 @@ namespace Nanook.GrindCore.Brotli
                 // 2. Span's have a maximum length of the int boundary.
                 while ((int)availableOutput > 0)
                 {
-                    fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-                    fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
+                    fixed (byte* inBytes = source.Data)
+                    fixed (byte* outBytes = destination.Data)
                     {
+                        *&inBytes += source.Pos;
+                        *&outBytes += destination.Size; //writePos is Size
+
                         int brotliResult;
                         if (_state.Version.Index == 0)
                             brotliResult = Interop.Brotli.DN9_BRT_v1_1_0_DecoderDecompressStream(_state, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _);
@@ -95,11 +94,11 @@ namespace Nanook.GrindCore.Brotli
                         if (brotliResult == 0) // Error
                             return OperationStatus.InvalidData;
 
-                        Debug.Assert(availableInput <= (nuint)source.Length);
-                        Debug.Assert(availableOutput <= (nuint)destination.Length);
+                        bytesConsumed += source.AvailableRead - (int)availableInput;
+                        bytesWritten += destination.AvailableWrite - (int)availableOutput;
 
-                        bytesConsumed += source.Length - (int)availableInput;
-                        bytesWritten += destination.Length - (int)availableOutput;
+                        source.Read(bytesConsumed);
+                        destination.Write(bytesWritten); //update dest
 
                         switch (brotliResult)
                         {
@@ -109,9 +108,8 @@ namespace Nanook.GrindCore.Brotli
                                 return OperationStatus.DestinationTooSmall;
                             case 2: // NeedsMoreInput
                             default:
-                                source = source.Slice(source.Length - (int)availableInput);
-                                destination = destination.Slice(destination.Length - (int)availableOutput);
-                                if (brotliResult == 2 && source.Length == 0)
+                                //source = new DataBlock(source.Data, source.AvailableRead, (int)availableInput);
+                                if (brotliResult == 2 && source.AvailableRead == 0)
                                     return OperationStatus.NeedMoreData;
                                 break;
                         }
@@ -127,23 +125,23 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="bytesWritten">The total number of bytes that were written in the <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero or greater than zero but less than the expected total.</remarks>
-        public static unsafe bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, CompressionVersion? version = null)
+        public static unsafe bool TryDecompress(DataBlock source, DataBlock destination, out int bytesWritten, CompressionVersion? version = null)
         {
-            fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-            fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
+            fixed (byte* inBytes = source.Data)
+            fixed (byte* outBytes = destination.Data)
             {
-                nuint availableOutput = (nuint)destination.Length;
+                *&inBytes += source.Offset;
+                *&outBytes += destination.Offset;
+                UIntPtr availableOutput = (UIntPtr)destination.Length;
                 bool success;
 
                 if (version == null)
                     version = CompressionVersion.BrotliLatest();
 
                 if (version.Index == 0)
-                    success = Interop.Brotli.DN9_BRT_v1_1_0_DecoderDecompress((nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
+                    success = Interop.Brotli.DN9_BRT_v1_1_0_DecoderDecompress((UIntPtr)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
                 else
                     throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
-
-                Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
 
                 bytesWritten = (int)availableOutput;
                 return success;

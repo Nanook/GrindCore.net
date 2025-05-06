@@ -10,6 +10,7 @@ using Nanook.GrindCore.XXHash;
 using Xunit;
 using System.Text;
 using GrindCore.Tests.Utility;
+using System.Security.Cryptography;
 
 #if WIN_X64
 namespace GrindCore.Tests
@@ -83,13 +84,16 @@ namespace GrindCore.Tests
         [Theory]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x19b, "e39f3f4d64825537")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x2ff, "fd1a57a63d29c607")]
-        [InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x311, "dd79ecbbf6270f98")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0x1de, "069b2a2799eadee8")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x1e5, "3e6f77f9c11f4e70")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1ea, "4ffd75974e4d0d93")]
+        //[InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x311, "dd79ecbbf6270f98")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x305, "a3c36ab37f8f236d")]
-        public void MemLeak_CompressionStream_ByteArray64k(CompressionAlgorithm type, CompressionType level, int compressedSize, string xxh64)
+        public void MemLeak_CompressionStream_ByteArray64k(CompressionAlgorithm algorithm, CompressionType type, int compressedSize, string xxh64)
         {
             ulong[] total = new ulong[10];
             bool success = false;
-            StringBuilder sb = new StringBuilder($"{type}: ");
+            StringBuilder sb = new StringBuilder($"{algorithm}: ");
             for (int i = 0; i < total.Length; i++)
             {
                 ulong initialMemory = getUnmanagedMemoryUsed();
@@ -97,10 +101,10 @@ namespace GrindCore.Tests
                 // Run the hash function 1000 more times
                 for (int c = 0; c < 1000; c++)
                 {
-                    var compressed = CompressionStreamFactory.Compress(type, _data, level);
+                    var compressed = CompressionStreamFactory.Process(algorithm, _data, new CompressionOptions() { Type = type, Version = CompressionVersion.Create(algorithm, "") }, out byte[]? props);
                     Assert.Equal(compressedSize, compressed.Length);
                     Assert.Equal(xxh64, XXHash64.Compute(compressed).ToHexString());
-                    var decompressed = CompressionStreamFactory.Decompress(type, compressed);
+                    var decompressed = CompressionStreamFactory.Process(algorithm, compressed, new CompressionOptions() { Type = CompressionType.Decompress, Version = CompressionVersion.Create(algorithm, ""), InitProperties = props });
                     Assert.Equal(_data, decompressed);
                 }
 

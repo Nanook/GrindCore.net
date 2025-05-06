@@ -1,7 +1,6 @@
 
 
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -27,7 +26,7 @@ namespace Nanook.GrindCore.DeflateZLib
         private bool _isDisposed;                           // Prevents multiple disposals
         private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
-        private MemoryHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
+        private GCHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
         private CompressionVersion _version;
@@ -45,7 +44,7 @@ namespace Nanook.GrindCore.DeflateZLib
             _nonEmptyInput = false;
             _isDisposed = false;
             _windowBits = windowBits;
-            InflateInit(windowBits);
+            inflateInit(windowBits);
             _uncompressedSize = uncompressedSize;
         }
 
@@ -60,38 +59,43 @@ namespace Nanook.GrindCore.DeflateZLib
         {
             fixed (byte* bufPtr = &b)
             {
-                int bytesRead = InflateVerified(bufPtr, 1);
+                int bytesRead = inflateVerified(bufPtr, 1);
                 Debug.Assert(bytesRead == 0 || bytesRead == 1);
                 return bytesRead != 0;
             }
         }
 
-        public unsafe int Inflate(byte[] bytes, int offset, int length)
+        //public unsafe int inflate(byte[] bytes, int offset, int length)
+        //{
+        //    // If inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
+        //    if (length == 0)
+        //        return 0;
+
+        //    Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
+        //    fixed (byte* bufPtr = bytes)
+        //    {
+        //        return inflateVerified(bufPtr + offset, length);
+        //    }
+        //}
+
+        public unsafe int Inflate(CompressionBuffer destination)
         {
-            // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
-            if (length == 0)
+            // If inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
+            if (destination.AvailableWrite == 0)
                 return 0;
 
-            Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
-            fixed (byte* bufPtr = bytes)
+            int read;
+            //fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
+            fixed (byte* bufPtr = destination.Data)
             {
-                return InflateVerified(bufPtr + offset, length);
+                *&bufPtr += destination.Size; //Size is writePos
+                read = inflateVerified(bufPtr, destination.AvailableWrite);
             }
+            destination.Write(read); //update
+            return read;
         }
 
-        public unsafe int Inflate(Span<byte> destination)
-        {
-            // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
-            if (destination.Length == 0)
-                return 0;
-
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
-            {
-                return InflateVerified(bufPtr, destination.Length);
-            }
-        }
-
-        public unsafe int InflateVerified(byte* bufPtr, int length)
+        private unsafe int inflateVerified(byte* bufPtr, int length)
         {
             // State is valid; attempt inflation
             try
@@ -99,14 +103,14 @@ namespace Nanook.GrindCore.DeflateZLib
                 int bytesRead = 0;
                 if (_uncompressedSize == -1)
                 {
-                    ReadOutput(bufPtr, length, out bytesRead);
+                    readOutput(bufPtr, length, out bytesRead);
                 }
                 else
                 {
                     if (_uncompressedSize > _currentInflatedCount)
                     {
                         length = (int)Math.Min(length, _uncompressedSize - _currentInflatedCount);
-                        ReadOutput(bufPtr, length, out bytesRead);
+                        readOutput(bufPtr, length, out bytesRead);
                         _currentInflatedCount += bytesRead;
                     }
                     else
@@ -121,24 +125,18 @@ namespace Nanook.GrindCore.DeflateZLib
             {
                 // Before returning, make sure to release input buffer if necessary:
                 if (0 == _zlibStream.AvailIn && IsInputBufferHandleAllocated)
-                {
-                    DeallocateInputBufferHandle();
-                }
+                    deallocateInputBufferHandle();
             }
         }
 
-        private unsafe void ReadOutput(byte* bufPtr, int length, out int bytesRead)
+        private unsafe void readOutput(byte* bufPtr, int length, out int bytesRead)
         {
-            if (ReadInflateOutput(bufPtr, length, ZFlushCode.NoFlush, out bytesRead) == ZErrorCode.StreamEnd)
+            if (readInflateOutput(bufPtr, length, ZFlushCode.NoFlush, out bytesRead) == ZErrorCode.StreamEnd)
             {
                 if (!NeedsInput() && IsGzipStream() && IsInputBufferHandleAllocated)
-                {
-                    _finished = ResetStreamForLeftoverInput();
-                }
+                    _finished = resetStreamForLeftoverInput();
                 else
-                {
                     _finished = true;
-                }
             }
         }
 
@@ -148,7 +146,7 @@ namespace Nanook.GrindCore.DeflateZLib
         ///
         /// Returns false if the leftover input is another GZip data stream.
         /// </summary>
-        private unsafe bool ResetStreamForLeftoverInput()
+        private unsafe bool resetStreamForLeftoverInput()
         {
             Debug.Assert(!NeedsInput());
             Debug.Assert(IsGzipStream());
@@ -162,15 +160,13 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 // Check the leftover bytes to see if they start with he gzip header ID bytes
                 if (*nextInPointer != Interop.ZLib.GZip_Header_ID1 || nextAvailIn > 1 && *(nextInPointer + 1) != Interop.ZLib.GZip_Header_ID2)
-                {
                     return true;
-                }
 
                 // Trash our existing zstream.
                 _zlibStream.Dispose();
 
                 // Create a new zstream
-                InflateInit(_windowBits);
+                inflateInit(_windowBits);
 
                 // SetInput on the new stream to the bits remaining from the last stream
                 _zlibStream.NextIn = nextInPtr;
@@ -187,35 +183,36 @@ namespace Nanook.GrindCore.DeflateZLib
 
         public bool NonEmptyInput() => _nonEmptyInput;
 
-        public void SetInput(byte[] inputBuffer, int startIndex, int count)
+        //public void SetInput(byte[] inputBuffer, int startIndex, int count)
+        //{
+        //    Debug.Assert(NeedsInput(), "We have something left in previous input!");
+        //    Debug.Assert(inputBuffer != null);
+        //    Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer!.Length);
+        //    Debug.Assert(!IsInputBufferHandleAllocated);
+
+        //    SetInput(inputBuffer.AsMemory(startIndex, count));
+        //}
+
+        public unsafe void SetInput(CompressionBuffer inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(inputBuffer != null);
-            Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer!.Length);
             Debug.Assert(!IsInputBufferHandleAllocated);
 
-            SetInput(inputBuffer.AsMemory(startIndex, count));
-        }
-
-        public unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
-        {
-            Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!IsInputBufferHandleAllocated);
-
-            if (inputBuffer.IsEmpty)
+            if (inputBuffer.AvailableRead == 0)
                 return;
 
             lock (SyncLock)
             {
-                _inputBufferHandle = inputBuffer.Pin();
-                _zlibStream.NextIn = (nint)_inputBufferHandle.Pointer;
-                _zlibStream.AvailIn = (uint)inputBuffer.Length;
+                _inputBufferHandle = GCHandle.Alloc(inputBuffer.Data, GCHandleType.Pinned);
+                _zlibStream.NextIn = _inputBufferHandle.AddrOfPinnedObject();
+                _zlibStream.AvailIn = (uint)inputBuffer.AvailableRead;
                 _finished = false;
                 _nonEmptyInput = true;
             }
+            inputBuffer.Read(inputBuffer.AvailableRead);
         }
 
-        private void Dispose(bool disposing)
+        private void dispose(bool disposing)
         {
             if (!_isDisposed)
             {
@@ -223,7 +220,7 @@ namespace Nanook.GrindCore.DeflateZLib
                     _zlibStream.Dispose();
 
                 if (IsInputBufferHandleAllocated)
-                    DeallocateInputBufferHandle();
+                    deallocateInputBufferHandle();
 
                 _isDisposed = true;
             }
@@ -231,19 +228,19 @@ namespace Nanook.GrindCore.DeflateZLib
 
         public void Dispose()
         {
-            Dispose(true);
+            dispose(true);
             GC.SuppressFinalize(this);
         }
 
         ~Inflater()
         {
-            Dispose(false);
+            dispose(false);
         }
 
         /// <summary>
         /// Creates the ZStream that will handle inflation.
         /// </summary>
-        private void InflateInit(int windowBits)
+        private void inflateInit(int windowBits)
         {
             ZErrorCode error;
             try
@@ -277,14 +274,14 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Wrapper around the ZLib inflate function, configuring the stream appropriately.
         /// </summary>
-        private unsafe ZErrorCode ReadInflateOutput(byte* bufPtr, int length, ZFlushCode flushCode, out int bytesRead)
+        private unsafe ZErrorCode readInflateOutput(byte* bufPtr, int length, ZFlushCode flushCode, out int bytesRead)
         {
             lock (SyncLock)
             {
                 _zlibStream.NextOut = (nint)bufPtr;
                 _zlibStream.AvailOut = (uint)length;
 
-                ZErrorCode errC = Inflate(flushCode);
+                ZErrorCode errC = inflate(flushCode);
                 bytesRead = length - (int)_zlibStream.AvailOut;
 
                 return errC;
@@ -294,7 +291,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Wrapper around the ZLib inflate function
         /// </summary>
-        private ZErrorCode Inflate(ZFlushCode flushCode)
+        private ZErrorCode inflate(ZFlushCode flushCode)
         {
             ZErrorCode errC;
             try
@@ -331,7 +328,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Frees the GCHandle being used to store the input buffer
         /// </summary>
-        private void DeallocateInputBufferHandle()
+        private void deallocateInputBufferHandle()
         {
             Debug.Assert(IsInputBufferHandleAllocated);
 
@@ -339,10 +336,10 @@ namespace Nanook.GrindCore.DeflateZLib
             {
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = Interop.ZLib.ZNullPtr;
-                _inputBufferHandle.Dispose();
+                _inputBufferHandle.Free();
             }
         }
 
-        private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != default;
+        private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.IsAllocated;
     }
 }

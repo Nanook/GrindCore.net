@@ -7,7 +7,6 @@ using System.IO;
 using System;
 
 using ZErrorCode = Nanook.GrindCore.Interop.ZLib.ErrorCode;
-using ZFlushCode = Nanook.GrindCore.Interop.ZLib.FlushCode;
 
 namespace Nanook.GrindCore.DeflateZLib
 {
@@ -15,7 +14,7 @@ namespace Nanook.GrindCore.DeflateZLib
     /// This is the exception that is thrown when a ZLib returns an error code indicating an unrecoverable error.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    //[System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ZLibException : IOException, ISerializable
     {
         private readonly string? _zlibErrorContext = string.Empty;
