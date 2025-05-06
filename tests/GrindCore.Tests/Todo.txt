@@ -1,8 +1,0 @@
-Tests proper streams to ICrypto thing
-Test static compute
-Test Static compute partial
-Test for memory leaks
-Test Zlib
-Test Brotli
-
-Ensure md2 is alighed to 16 bytes. Check other hashes restrictions also

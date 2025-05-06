@@ -23,7 +23,7 @@ namespace Nanook.GrindCore
             _cleanupThread.Start();
         }
 
-        public static byte[] Rent(int size)
+        public static byte[] Rent(long size)
         {
             lock (_lock)
             {
@@ -55,19 +55,6 @@ namespace Nanook.GrindCore
             }
         }
 
-#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
-        public static void RentSpan(int size, out Span<byte> span)
-        {
-            var buffer = Rent(size);
-            span = buffer.AsSpan(0, size); // Create a span of the requested size
-        }
-
-        public static void RentReadOnlySpan(int size, out ReadOnlySpan<byte> span)
-        {
-            var buffer = Rent(size);
-            span = buffer.AsSpan(0, size); // Create a read-only span of the requested size
-        }
-#endif
         private static void CleanupStaleBuffers()
         {
             while (true)

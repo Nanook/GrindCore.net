@@ -30,17 +30,25 @@ namespace Nanook.GrindCore.Lzma
         public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0) : base(true, stream, options)
         {
             _flushed = false;
-            int blockSize = options.ProcessSizeMax ?? this.DefaultProcessSizeMax;
+            long bufferSize = options.BlockSize ?? -1;
+
             if (IsCompress)
             {
-                _enc = new Lzma2Encoder((int)CompressionType, options.ThreadCount ?? 0, (ulong)blockSize, (uint)dictSize);
+                if (bufferSize <= 0 || bufferSize > int.MaxValue)
+                    bufferSize = (long)(options.ProcessSizeMax ?? this.DefaultProcessSizeMax);
+                else
+                    options.ProcessSizeMin = options.ProcessSizeMax = (int)bufferSize;
+
+                _enc = new Lzma2Encoder((int)CompressionType, options.ThreadCount ?? -1, options.BlockSize ?? -1, dictSize, 0, options.ProcessSizeMax ?? 0);
                 this.Properties = new byte[] { _enc.Properties };
-                _buffComp = BufferPool.Rent(blockSize);
-                _cbuff = new CompressionBuffer(blockSize);
-                _buff = new CompressionBuffer(blockSize);
+                _buffComp = BufferPool.Rent(bufferSize);
+                _cbuff = new CompressionBuffer(bufferSize);
+                _buff = new CompressionBuffer(bufferSize);
             }
             else
             {
+                bufferSize = (long)(options.ProcessSizeMax ?? this.DefaultProcessSizeMax);
+
                 if (options.InitProperties == null)
                     throw new Exception("LZMA requires CompressionOptions.InitProperties to be set to an array when decompressing");
 
@@ -48,8 +56,8 @@ namespace Nanook.GrindCore.Lzma
                 _dec = new Lzma2Decoder(options.InitProperties[0]);
 
                 // Compressed stream input buffer
-                _buffComp = BufferPool.Rent(blockSize);
-                _cbuff = new CompressionBuffer(blockSize);
+                _buffComp = BufferPool.Rent(bufferSize);
+                _cbuff = new CompressionBuffer(bufferSize);
             }
         }
 
@@ -114,53 +122,36 @@ namespace Nanook.GrindCore.Lzma
             return read;
         }
 
-
         internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
         {
+            if (!this.CanWrite)
+                throw new NotSupportedException("Not for Decompression mode");
+
             bytesWrittenToStream = 0;
-            int pos = 0;
-            while (data.AvailableRead != 0)
-            {
-                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+            cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
 
-                if (_buff.Pos == 0 && data.AvailableRead >= _buff.AvailableRead) // avoid copying data about and use the passed buffer
-                {
-                    int c = _enc.EncodeData(data, _buffComp, 0, _buffComp.Length);
-                    if (c != 0 && (c > 1 || _buffComp[0] != 0))
-                    {
-                        BaseStream.Write(_buffComp, 0, c - 1); //don't write terminator
-                        bytesWrittenToStream += c - 1;
-                    }
-                    pos += _buff.AvailableRead;
-                }
-                else
-                {
-                    int cp = (int)Math.Min(data.AvailableRead, _buff.AvailableRead);
-                    _buff.Write(data.Data, pos, cp);
-                    data.Read(cp); //update
-                    //data.Read(_buffMs.Data, pos, cp);
-                    pos += cp;
-                    if (_buff.AvailableRead == 0)
-                    {
-                        int c = _enc.EncodeData(_buff, _buffComp, 0, _buffComp.Length);
-                        if (c != 0 && (c > 1 || _buffComp[0] != 0))
-                        {
-                            BaseStream.Write(_buffComp, 0, c - 1); //don't write terminator
-                            bytesWrittenToStream += c - 1;
-                        }
-                        //_buffMs.Position = 0;
-                    }
-                }
+            // Use the DataBlock's properties for encoding
+            int avRead = data.AvailableRead;
+            long size = _enc.EncodeData(data, _buff, false, cancel);
+            if (avRead != data.AvailableRead)
                 _flushed = false;
-            }
 
-            //Write(buffer.AsSpan(offset, count));
+            if (size > 0)
+            {
+                // Write the encoded data to the base stream
+                BaseStream.Write(_buff.Data, _buff.Pos, _buff.AvailableRead);
+                _buff.Read(_buff.AvailableRead);
+
+                // Update the position
+                bytesWrittenToStream += (int)size;
+            }
         }
 
         /// <summary>
         /// Write Checksum in the end. finish compress progress.
         /// </summary>
         /// <exception cref="FL2Exception"></exception>
+
         internal override void OnFlush(CancellableTask cancel, out int bytesWrittenToStream)
         {
             bytesWrittenToStream = 0;
@@ -168,21 +159,16 @@ namespace Nanook.GrindCore.Lzma
             {
                 if (!_flushed)
                 {
-                    cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
-
-                    if (_buff.AvailableRead != 0)
+                    long size = _enc.EncodeData(new CompressionBuffer(0), _buff, true, cancel);
+                    if (size > 0)
                     {
-                        int c = _enc.EncodeData(_buff, _buffComp, 0, _buffComp.Length);
-                        if (c != 0 && (c > 1 || _buffComp[0] != 0))
-                        {
-                            BaseStream.Write(_buffComp, 0, c - 1); //don't write terminator
-                            bytesWrittenToStream += c - 1;
-                        }
+                        BaseStream.Write(_buff.Data, _buff.Pos, _buff.AvailableRead);
+                        _buff.Read(_buff.AvailableRead);
+                        bytesWrittenToStream = (int)size;
                     }
                 }
-                _flushed = false;
             }
-
+            _flushed = true;
         }
 
         protected override void OnDispose(out int bytesWrittenToStream)

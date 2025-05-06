@@ -7,10 +7,11 @@ namespace Nanook.GrindCore.Lzma
     {
         internal readonly Dictionary<FL2Parameter, int?> Values = new Dictionary<FL2Parameter, int?>();
 
-        public CompressionParameters(int threads, int dictionarySize = 64 * 1024 * 1024)
+        public CompressionParameters(int threads, int dictionarySize = 0)
         {
             this.Threads = threads;
-            this.DictionarySize = dictionarySize;
+            if (dictionarySize != 0)
+                this.DictionarySize = dictionarySize;
         }
 
         private int? getValue(FL2Parameter parameter)

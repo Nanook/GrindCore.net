@@ -31,6 +31,11 @@ namespace Nanook.GrindCore
         public int? ThreadCount { get; set; }
 
         /// <summary>
+        /// BlockSize. LZMA2 Blocksize, -1 will compress in full solid mode. If threads > 1 and BlockSize != -1 then the block is divided by the amount of threads and processed in subblocks. If not -1 this will override ProcessSizeMin and ProcessSizeMax
+        /// </summary>
+        public long? BlockSize { get; set; }
+
+        /// <summary>
         /// Properties required for processing, e.g. LZMA/2 requires these for decoding - they can be read from the encoder and stored
         /// </summary>
         public byte[]? InitProperties { get; set; }
@@ -46,7 +51,7 @@ namespace Nanook.GrindCore
         public int? ProcessSizeMax { get; set; }
 
         /// <summary>
-        /// This will override any internal stream defaul sizes
+        /// This will override any internal stream default sizes
         /// </summary>
         public int? InternalBufferSize { get; set; }
 

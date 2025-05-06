@@ -31,7 +31,7 @@ namespace Nanook.GrindCore.Lzma
             _flushed = false;
 
             if (compressParams == null)
-                compressParams = new CompressionParameters(options.ThreadCount ?? 0);
+                compressParams = new CompressionParameters(options.ThreadCount ?? 0, 128 * 1024 * 1024);
 
             if (IsCompress)
                 _enc = new FastLzma2Encoder((int)CompressionType, compressParams);

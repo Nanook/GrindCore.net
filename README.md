@@ -4,7 +4,7 @@ A compression and hashing library built the System.IO.Compression way... A manag
 
 Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore) and supports multiple platforms.
 
-This library is in the early stages of development. There may be many breaking changes over the following months.
+This library is in the early stages of development. There may be many breaking changes over the following months. Error handling and bounds checking is minimal. 
 
 ## Overview
 
@@ -16,19 +16,26 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 
 ## Current Features
 
-### Compression
+### Supported Frameworks
 
-- Streams
-  - Brotli v1.1.0 (From DotNet 9.0)
-  - Fast-Lzma2 v1.0.1 (From 7Zip-mcmilk)
-  - ZLib v1.3.1 [GZip, ZLib, Deflate] (From DotNet 8.0)
-  - ZLib-NG v2.2.1 [GZip, ZLib, Deflate] (From DotNet 9.0)
+`net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35`
 
-- Archives
-  - Zip
-  - SharpCompress (Subject to rework and breaking changes)
+### Compression Streams
+
+All compression streams inherit from a CompressionStream class that provides common features and behaviour. 
+
+- Brotli v1.1.0 (From DotNet 9.0)
+- Lzma v24.7.0 (From 7Zip-mcmilk)
+- Lzma2 v24.7.0 (From 7Zip-mcmilk)
+- Fast-Lzma2 v1.0.1 (From 7Zip-mcmilk)
+- ZLib v1.3.1 [GZip, ZLib, Deflate] (From DotNet 8.0)
+- ZLib-NG v2.2.1 [GZip, ZLib, Deflate] (From DotNet 9.0)
+
+ *!! The Fast-Lzma2 dotnet interop requires more work, certain configs don't seem correct and streaming is not fully implemented*
 
 ### Hashing
+
+Hashes inherit from HashingAlgorithm allowing them to be use with CryptoStream for standard dotnet use.
 
 - Blake3, Blake2sp
 - MD5, MD4, MD2
@@ -36,8 +43,6 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 - SHA2 [SHA256, SHA384, SHA512]
 - SHA3 [SHA3-224, SHA3-256, SHA3-384, SHA3-512]
 - XXHash [XXH32, XXH64]
-
-Lots more functionality to be added.
 
 ## Continuous Integration (CI) Status
 
@@ -65,8 +70,6 @@ GrindCore integrates robust solutions from several key projects:
   - Supplies zlib/deflate and Brotli from the dotnet 8 code, combined with C# wrappers, to offer efficient and reliable compression algorithms.
 - **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):**
   - Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
-- **[SharpCompress GitHub Repository](https://github.com/adamhathcock/sharpcompress):**
-  - Expected to provide managed code to process archives and wrap native compression streams, further enhancing the library's capabilities and user experience.
 
 ## Addressing Current Issues
 

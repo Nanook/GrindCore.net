@@ -15,7 +15,6 @@ namespace Nanook.GrindCore.Lzma
 
         public byte[] Properties { get; }
         public int BlockSize { get; }
-        public uint KeepBlockSize { get; }
 
         public LzmaEncoder(int level = 5, uint dictSize = 0, int wordSize = 0)
         {

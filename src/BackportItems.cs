@@ -29,11 +29,16 @@ namespace Nanook.GrindCore
             if (!source.CanRead) throw new NotSupportedException("Source stream must be readable.");
             if (!destination.CanWrite) throw new NotSupportedException("Destination stream must be writable.");
 
-            byte[] buffer = new byte[bufferSize];
-            int bytesRead;
-            while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
+            byte[] buffer = BufferPool.Rent(bufferSize);
+            try
             {
-                destination.Write(buffer, 0, bytesRead);
+                int bytesRead;
+                while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
+                    destination.Write(buffer, 0, bytesRead);
+            }
+            finally
+            {
+                BufferPool.Return(buffer);
             }
         }
     }
@@ -52,14 +57,10 @@ namespace Nanook.GrindCore
             for (int i = 0; i < values.Length; i++)
             {
                 if (values[i] != null)
-                {
                     sb.Append(values[i]);
-                }
 
                 if (i < values.Length - 1)
-                {
                     sb.Append(separator);
-                }
             }
             return sb.ToString();
         }

@@ -15,7 +15,7 @@ namespace Nanook.GrindCore
         public int Size;
         public int TidyThreshold = 0x400;
 
-        public CompressionBuffer(int size)
+        public CompressionBuffer(long size)
         {
             Data = BufferPool.Rent(size);
             Size = 0;
@@ -85,7 +85,7 @@ namespace Nanook.GrindCore
             Data.AsSpan(Pos, sz).CopyTo(data);
             Pos += sz;
 
-            if (Pos != 0 && Size - Pos < 0x400)
+            if (Pos != 0 && Size - Pos < TidyThreshold)
             {
                 // Move data to start using Span.CopyTo
                 Data.AsSpan(Pos, Size - Pos).CopyTo(Data.AsSpan());
