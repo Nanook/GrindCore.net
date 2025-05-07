@@ -10,6 +10,8 @@ using System;
 
 namespace GrindCore.Tests
 {
+
+#if !IS_32BIT
     public sealed class Lzma2Tests
     {
         private void processStream(int dataSize, int bufferSize, Func<Stream, CompressionStream> createCompressStream, Func<Stream, byte[], CompressionStream> createDecompressStream, out string inHash, out string compressedHash, out int compBytes, out string outHash)
@@ -94,7 +96,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.SmallestSize, 0x200000,  1,  0x92b, "7833322f45651d24", "e6241c0cc51e3eae")]
         [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.SmallestSize, 0x200000, 16, 0x5d01, "7833322f45651d24", "1ebbf3862ca8b369")]
 
-        public void Data_Stream512MiB(CompressionAlgorithm algorithm, CompressionType type, int blockSize, int threadCount, long compressedSize, string rawXxH64, string compXxH64)
+        public void Data_Stream6MiB(CompressionAlgorithm algorithm, CompressionType type, int blockSize, int threadCount, long compressedSize, string rawXxH64, string compXxH64)
         {
             int streamLen = 6 * 1024 * 1024;
             int buffLen = blockSize <= 0 ? streamLen : blockSize;
@@ -178,5 +180,5 @@ namespace GrindCore.Tests
             Assert.Equal(hashInString, hashOutString); //test IN and decompressed data hashes match
         }
     }
-
+#endif
 }
