@@ -157,8 +157,8 @@ namespace Nanook.GrindCore.Lzma
             bytesWrittenToStream = 0;
             if (IsCompress)
             {
-                if (!_flushed)
-                {
+                //if (!_flushed)
+                //{
                     long size = _enc.EncodeData(new CompressionBuffer(0), _buff, true, cancel);
                     if (size > 0)
                     {
@@ -166,7 +166,7 @@ namespace Nanook.GrindCore.Lzma
                         _buff.Read(_buff.AvailableRead);
                         bytesWrittenToStream = (int)size;
                     }
-                }
+                //}
             }
             _flushed = true;
         }
