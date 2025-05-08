@@ -33,7 +33,7 @@ namespace Nanook.GrindCore.Lzma
             else
                 _context = Interop.FastLzma2.FL2_createCStreamMt((uint)compressParams.Threads, 1);
 
-            _bufferSize = compressParams.DictionarySize;
+            _bufferSize = compressParams.DictionarySize * 4;
             _flushed = false;
 
             foreach (var kv in compressParams.Values)
