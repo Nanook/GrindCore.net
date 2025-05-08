@@ -14,7 +14,7 @@ namespace Nanook.GrindCore.Lzma
     {
         private Lzma2Decoder _dec;
         private Lzma2Encoder _enc;
-        private bool _flushed;
+        //private bool _flushed;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma2;
         internal override int DefaultProcessSizeMin => 2 * 0x400 * 0x400;
@@ -29,7 +29,7 @@ namespace Nanook.GrindCore.Lzma
 
         public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0) : base(true, stream, options)
         {
-            _flushed = false;
+            //_flushed = false;
             long bufferSize = options.BlockSize ?? -1;
 
             if (IsCompress)
@@ -133,8 +133,8 @@ namespace Nanook.GrindCore.Lzma
             // Use the DataBlock's properties for encoding
             int avRead = data.AvailableRead;
             long size = _enc.EncodeData(data, _buff, false, cancel);
-            if (avRead != data.AvailableRead)
-                _flushed = false;
+            //if (avRead != data.AvailableRead)
+            //    _flushed = false;
 
             if (size > 0)
             {
@@ -168,7 +168,7 @@ namespace Nanook.GrindCore.Lzma
                     }
                 //}
             }
-            _flushed = true;
+            //_flushed = true;
         }
 
         protected override void OnDispose(out int bytesWrittenToStream)

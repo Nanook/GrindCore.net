@@ -92,7 +92,7 @@ namespace Nanook.GrindCore.Brotli
             if (_state.Version.Index == 0)
             {
                 if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)level) == Interop.BOOL.FALSE)
-                    throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
+                    throw new InvalidOperationException(string.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
             }
             else
                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
@@ -113,12 +113,12 @@ namespace Nanook.GrindCore.Brotli
             }
 
             if (window < WindowBits_Min || window > WindowBits_Max)
-                throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, WindowBits_Min, WindowBits_Max));
+                throw new ArgumentOutOfRangeException(nameof(window), string.Format(SR.BrotliEncoder_Window, window, WindowBits_Min, WindowBits_Max));
 
             if (_state.Version.Index == 0)
             {
                 if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
-                    throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Window"));
+                    throw new InvalidOperationException(string.Format(SR.BrotliEncoder_InvalidSetParameter, "Window"));
             }
             else
                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
