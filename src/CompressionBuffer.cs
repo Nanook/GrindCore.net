@@ -6,7 +6,7 @@ using System.Text;
 namespace Nanook.GrindCore
 {
     /// <summary>
-    /// A light class to wrap a buffer
+    /// A light class to wrap a _outBuffer
     /// </summary>
     internal class CompressionBuffer: IDisposable
     {
@@ -38,7 +38,7 @@ namespace Nanook.GrindCore
         }
 
         /// <summary>
-        /// Update if data was modified in the Data buffer by other means
+        /// Update if data was modified in the Data _outBuffer by other means
         /// </summary>
         public int Read(int length)
         {
@@ -57,7 +57,7 @@ namespace Nanook.GrindCore
         }
 
         /// <summary>
-        /// Update if data was modified in the Data buffer by other means
+        /// Update if data was modified in the Data _outBuffer by other means
         /// </summary>
         public int Write(int length)
         {

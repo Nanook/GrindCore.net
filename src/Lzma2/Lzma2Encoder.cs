@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using static Nanook.GrindCore.Lzma.Interop.Lzma;
-using static Nanook.GrindCore.Lzma.Interop;
+using static Nanook.GrindCore.Interop.Lzma;
+using static Nanook.GrindCore.Interop;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace Nanook.GrindCore.Lzma
 {
     // This lzma2 encoder does not support true SOLID mode. The C code requires a blocks or streams to perform its encoding.
     // Internally, LZMA2 Stream mode starts encoding a block in SOLID mode and loops reading the stream and encoding until the block is complete.
-    // In C# we want to supply data in a Stream.Write() style, so LZMA buffers must be used. A pseudo solid mode is to sacrifice memory for larger buffers.
+    // In C# we want to supply inData in a Stream.Write() style, so LZMA buffers must be used. A pseudo solid mode is to sacrifice memory for larger buffers.
 
     internal unsafe class Lzma2Encoder : IDisposable
     {
@@ -89,25 +90,30 @@ namespace Nanook.GrindCore.Lzma
             S7_Lzma2_v24_07_Enc_EncodeMultiCallPrepare(_encoder);
         }
 
-        public int EncodeData(CompressionBuffer data, CompressionBuffer outData, bool final, CancellableTask cancel)
+        public int EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
+            if (inData.Pos != 0)
+                throw new ArgumentException($"inData should have a Pos of 0");
+            if (outData.Size != 0)
+                throw new ArgumentException($"outData should have a Size of 0");
+
             if (_solid)
-                return encodeDataSolid(data, outData, final, cancel);
+                return encodeDataSolid(inData, outData, final, cancel);
             else
-                return encodeDataMt(data, outData, final, cancel);
+                return encodeDataMt(inData, outData, final, cancel);
         }
 
-        private int encodeDataMt(CompressionBuffer data, CompressionBuffer outData, bool final, CancellableTask cancel)
+        private int encodeDataMt(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             ulong outSz = (ulong)outData.AvailableWrite;
-            uint available = (uint)data.AvailableRead;
+            uint available = (uint)inData.AvailableRead;
             fixed (byte* outPtr = outData.Data)
-            fixed (byte* inPtr = data.Data)
+            fixed (byte* inPtr = inData.Data)
             {
                 *&outPtr += outData.Size;
-                *&inPtr += data.Pos;
+                *&inPtr += inData.Pos;
                 // setting indata forces S7_Lzma2_v24_07_Enc_Encode2 mode with multithreading support
-                int res = S7_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)data.AvailableRead, IntPtr.Zero);
+                int res = S7_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)inData.AvailableRead, IntPtr.Zero);
 
                 outSz--; //remove the null
                 outData.Write((int)outSz);
@@ -116,7 +122,7 @@ namespace Nanook.GrindCore.Lzma
                     throw new Exception($"Encode Error {res}");
             }
 
-            data.Read(data.AvailableRead);
+            inData.Read(inData.AvailableRead);
 
             return (int)outSz;
         }
@@ -144,7 +150,7 @@ namespace Nanook.GrindCore.Lzma
                 int endSz = (int)(_inStream.size - (ulong)p);
                 inData.Read(_inBuffer, (int)p, (int)Math.Min(sz, endSz));
 
-                // copy data at start of circular buffer
+                // copy inData at start of circular _outBuffer
                 if (sz > endSz)
                     inData.Read(_inBuffer, 0, (int)(sz - endSz));
 
@@ -155,7 +161,7 @@ namespace Nanook.GrindCore.Lzma
                 finalfinal = final && inData.AvailableRead == 0 && _inStream.remaining == 0;
                 blkFinal = this.BlockSize == _blkTotal;
 
-                if (!final && !blkFinal && _inStream.remaining < _inStream.size) //need more data 
+                if (!final && !blkFinal && _inStream.remaining < _inStream.size) //need more inData 
                     break;
 
                 long inSz = (long)_inStream.remaining;

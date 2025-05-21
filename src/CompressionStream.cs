@@ -15,6 +15,7 @@ namespace Nanook.GrindCore
     public abstract class CompressionStream : Stream
     {
         private bool _disposed;
+        private bool _complete;
         protected readonly bool LeaveOpen;
         protected readonly bool IsCompress;
         protected readonly CompressionType CompressionType;
@@ -57,6 +58,7 @@ namespace Nanook.GrindCore
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
+            _complete = false;
             _position = positionSupport ? 0 : -1;
             CompressionType = options.Type;
 
@@ -66,8 +68,8 @@ namespace Nanook.GrindCore
             BaseStream = stream;
             Version = options.Version ?? CompressionVersion.Create(this.Algorithm, ""); // latest
 
-            _cacheThreshold = options.ProcessSizeMin ?? 0x1000;
-            _cache = new CompressionBuffer(options.ProcessSizeMax ?? 0x200000);
+            _cacheThreshold = options.BufferSize ?? this.DefaultBufferSize;
+            _cache = new CompressionBuffer(IsCompress ? (options.BufferOverflowSize ?? this.DefaultBufferOverflowSize) : (options.BufferSize ?? this.DefaultBufferSize));
 
             if (!IsCompress) //Decompress
             {
@@ -93,12 +95,12 @@ namespace Nanook.GrindCore
 
         internal abstract CompressionAlgorithm Algorithm { get; }
         internal CompressionVersion Version { get; }
-        internal abstract int DefaultProcessSizeMin { get; }
-        internal abstract int DefaultProcessSizeMax { get; }
+        internal abstract int DefaultBufferOverflowSize { get; }
+        internal abstract int DefaultBufferSize { get; }
         internal abstract int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream);
         internal abstract void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream);
-        internal abstract void OnFlush(CancellableTask cancel, out int bytesWrittenToStream);
-        protected abstract void OnDispose(out int bytesWrittenToStream);
+        internal abstract void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete);
+        protected abstract void OnDispose();
 
         private int onRead(DataBlock dataBlock, CancellableTask cancel)
         {
@@ -143,27 +145,44 @@ namespace Nanook.GrindCore
 
         private void onWrite(CancellableTask cancel)
         {
-            int size;
+            int size2;
             if (_cache.AvailableRead >= _cacheThreshold || _cache.AvailableWrite == 0) // safeguarded, should never be if (false || true)
             {
-                size = _cache.AvailableRead;
+                size2 = _cache.AvailableRead;
                 OnWrite(_cache, cancel, out int bytesWrittenToStream);
-                _positionFullSize += size - _cache.AvailableRead;
+                _positionFullSize += size2 - _cache.AvailableRead;
                 _position += bytesWrittenToStream;
             }
         }
 
-        private void onFlush(CancellableTask cancel)
+        /// <summary>
+        /// Flush compression buffers and finalise stream writes and positions. If not called from Flush() then onDispose().
+        /// Best practice is to call flush if the object Positions are to be read as the object be be Garbage Collected.
+        /// </summary>
+        /// <param name="cancel"></param>
+        private void onFlush(CancellableTask cancel, bool flush, bool complete)
         {
-            OnFlush(cancel, out int bytesWrittenToStream);
-            _position += bytesWrittenToStream;
-            BaseStream.Flush();
+            if (!_complete)
+            {
+                if (IsCompress)
+                {
+                    int size = _cache.AvailableRead;
+                    OnFlush(_cache, cancel, out int bytesWrittenToStream, flush, complete);
+                    _position += bytesWrittenToStream;
+                    _positionFullSize += size;
+                    BaseStream.Flush();
+                }
+                _complete = complete;
+            }
         }
 
+        /// <summary>
+        /// Only called once from Dispose(), will flush if onFlush was not already called
+        /// </summary>
         private void onDispose()
         {
-            OnDispose(out int bytesWrittenToStream);
-            _position += bytesWrittenToStream;
+            onFlush(new CancellableTask(), false, true);
+            OnDispose();
         }
 
         // Abstract method for Seek, since it's required by Stream
@@ -197,7 +216,7 @@ namespace Nanook.GrindCore
         {
             _cache.Data[_cache.Size] = value;
             _cache.Write(1);
-            if (_cache.AvailableRead >= this.DefaultProcessSizeMin)
+            if (_cache.AvailableRead >= this.DefaultBufferOverflowSize)
                 onWrite(new CancellableTask());
         }
 
@@ -213,7 +232,12 @@ namespace Nanook.GrindCore
 
         public override void Flush()
         {
-            onFlush(new CancellableTask());
+            onFlush(new CancellableTask(), true, false);
+        }
+
+        public void Complete()
+        {
+            onFlush(new CancellableTask(), false, true);
         }
 
         /// <summary>
@@ -329,13 +353,13 @@ namespace Nanook.GrindCore
         {
             if (SynchronizationContext.Current == null)
             {
-                onFlush(new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+                onFlush(new CancellableTask(cancellationToken), true, false); // Wrap the token to simplify frameworks that don't support it
                 return;
             }
 
             await Task.Run(() =>
             {
-                onFlush(new CancellableTask(cancellationToken));
+                onFlush(new CancellableTask(cancellationToken), true, false);
             }, cancellationToken).ConfigureAwait(false);
         }
 #endif

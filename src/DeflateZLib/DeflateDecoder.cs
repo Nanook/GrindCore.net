@@ -16,7 +16,7 @@ namespace Nanook.GrindCore.DeflateZLib
     /// <summary>
     /// Provides a wrapper around the ZLib decompression API.
     /// </summary>
-    internal sealed class Inflater : IDisposable
+    internal sealed class DeflateDecoder : IDisposable
     {
         private const int MinWindowBits = -15;              // WindowBits must be between -8..-15 to ignore the header, 8..15 for
         private const int MaxWindowBits = 47;               // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
@@ -26,7 +26,7 @@ namespace Nanook.GrindCore.DeflateZLib
         private bool _isDisposed;                           // Prevents multiple disposals
         private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
-        private GCHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
+        private GCHandle _inputBufferHandle;            // The handle to the _outBuffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
         private CompressionVersion _version;
@@ -36,7 +36,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
         /// </summary>
-        internal Inflater(CompressionVersion version, int windowBits, long uncompressedSize = -1)
+        internal DeflateDecoder(CompressionVersion version, int windowBits, long uncompressedSize = -1)
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
             _version = version;
@@ -71,27 +71,27 @@ namespace Nanook.GrindCore.DeflateZLib
         //    if (length == 0)
         //        return 0;
 
-        //    Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
+        //    Debug.Assert(null != bytes, "Can't pass in a null output _outBuffer!");
         //    fixed (byte* bufPtr = bytes)
         //    {
         //        return inflateVerified(bufPtr + offset, length);
         //    }
         //}
 
-        public unsafe int Inflate(CompressionBuffer destination)
+        public unsafe int Inflate(CompressionBuffer outData)
         {
             // If inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
-            if (destination.AvailableWrite == 0)
+            if (outData.AvailableWrite == 0)
                 return 0;
 
             int read;
-            //fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
-            fixed (byte* bufPtr = destination.Data)
+            //fixed (byte* bufPtr = &MemoryMarshal.GetReference(outData))
+            fixed (byte* bufPtr = outData.Data)
             {
-                *&bufPtr += destination.Size; //Size is writePos
-                read = inflateVerified(bufPtr, destination.AvailableWrite);
+                *&bufPtr += outData.Size; //Size is writePos
+                read = inflateVerified(bufPtr, outData.AvailableWrite);
             }
-            destination.Write(read); //update
+            outData.Write(read); //update
             return read;
         }
 
@@ -123,7 +123,7 @@ namespace Nanook.GrindCore.DeflateZLib
             }
             finally
             {
-                // Before returning, make sure to release input buffer if necessary:
+                // Before returning, make sure to release input _outBuffer if necessary:
                 if (0 == _zlibStream.AvailIn && IsInputBufferHandleAllocated)
                     deallocateInputBufferHandle();
             }
@@ -232,7 +232,7 @@ namespace Nanook.GrindCore.DeflateZLib
             GC.SuppressFinalize(this);
         }
 
-        ~Inflater()
+        ~DeflateDecoder()
         {
             dispose(false);
         }
@@ -308,7 +308,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 case ZErrorCode.StreamEnd:    // The end of the input stream has been reached
                     return errC;
 
-                case ZErrorCode.BufError:     // No room in the output buffer - inflate() can be called again with more space to continue
+                case ZErrorCode.BufError:     // No room in the output _outBuffer - inflate() can be called again with more space to continue
                     return errC;
 
                 case ZErrorCode.MemError:     // Not enough memory to complete the operation
@@ -326,7 +326,7 @@ namespace Nanook.GrindCore.DeflateZLib
         }
 
         /// <summary>
-        /// Frees the GCHandle being used to store the input buffer
+        /// Frees the GCHandle being used to store the input _outBuffer
         /// </summary>
         private void deallocateInputBufferHandle()
         {

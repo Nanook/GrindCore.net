@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using static Nanook.GrindCore.Lzma.Interop.Lzma;
-using static Nanook.GrindCore.Lzma.Interop;
 using System.Linq;
 using System.Threading;
 using System.IO;
@@ -45,7 +43,7 @@ namespace Nanook.GrindCore.Lzma
             UIntPtr code = Interop.FastLzma2.FL2_initCStream(_context, level);
             if (FL2Exception.IsError(code))
                 throw new FL2Exception(code);
-            // Compressed stream output buffer
+            // Compressed stream output _outBuffer
             _bufferArray = BufferPool.Rent(_bufferSize);
             _bufferHandle = GCHandle.Alloc(_bufferArray, GCHandleType.Pinned);
             _compOutBuffer = new FL2OutBuffer()
@@ -81,7 +79,7 @@ namespace Nanook.GrindCore.Lzma
 
         public unsafe int EncodeData(CompressionBuffer buffer, bool appending, Stream output, CancellableTask cancel, out int bytesWrittenToStream)
         {
-            //ref byte ref_buffer = ref MemoryMarshal.GetReference(buffer.Data);
+            //ref byte ref_buffer = ref MemoryMarshal.GetReference(_outBuffer.Data);
             //fixed (byte* pBuffer = &ref_buffer)
 
             bytesWrittenToStream = 0;

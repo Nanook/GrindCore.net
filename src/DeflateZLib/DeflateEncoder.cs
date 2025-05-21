@@ -7,13 +7,14 @@ using System;
 
 using ZErrorCode = Nanook.GrindCore.Interop.ZLib.ErrorCode;
 using ZFlushCode = Nanook.GrindCore.Interop.ZLib.FlushCode;
+using System.Xml.Linq;
 
 namespace Nanook.GrindCore.DeflateZLib
 {
     /// <summary>
     /// Provides a wrapper around the ZLib compression API.
     /// </summary>
-    internal sealed class Deflater : IDisposable
+    internal sealed class DeflateEncoder : IDisposable
     {
         private readonly ZLibNative.ZLibStreamHandle _zlibStream;
         private bool _isDisposed;
@@ -24,11 +25,11 @@ namespace Nanook.GrindCore.DeflateZLib
         // Note, DeflateStream or the deflater do not try to be thread safe.
         // The lock is just used to make writing to unmanaged structures atomic to make sure
         // that they do not get inconsistent fields that may lead to an unmanaged memory violation.
-        // To prevent *managed* buffer corruption or other weird behaviour users need to synchronise
+        // To prevent *managed* _outBuffer corruption or other weird behaviour users need to synchronise
         // on the stream explicitly.
         private object SyncLock => this;
 
-        internal Deflater(CompressionVersion version, CompressionType compressionLevel, int windowBits)
+        internal DeflateEncoder(CompressionVersion version, CompressionType compressionLevel, int windowBits)
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
             _version = version;
@@ -93,7 +94,7 @@ namespace Nanook.GrindCore.DeflateZLib
             }
         }
 
-        ~Deflater()
+        ~DeflateEncoder()
         {
             Dispose(false);
         }
@@ -119,6 +120,9 @@ namespace Nanook.GrindCore.DeflateZLib
 
         internal unsafe void SetInput(byte* inputBufferPtr, int count)
         {
+            if (_zlibStream.AvailIn != 0)
+                throw new ArgumentException($"_zlibStream should have a AvailIn of 0");
+
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(inputBufferPtr != null);
 
@@ -132,51 +136,54 @@ namespace Nanook.GrindCore.DeflateZLib
             }
         }
 
-        internal int GetDeflateOutput(CompressionBuffer outputBuffer)
+        internal int GetDeflateOutput(CompressionBuffer outData)
         {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(null != outData, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
 
             int bytesRead;
-            ReadDeflateOutput(outputBuffer!, ZFlushCode.NoFlush, out bytesRead);
+            readDeflateOutput(outData!, ZFlushCode.NoFlush, out bytesRead);
             return bytesRead;
 
         }
 
-        private unsafe ZErrorCode ReadDeflateOutput(CompressionBuffer outputBuffer, ZFlushCode flushCode, out int bytesRead)
+        private unsafe ZErrorCode readDeflateOutput(CompressionBuffer outData, ZFlushCode flushCode, out int bytesRead)
         {
+            if (outData.Size != 0)
+                throw new ArgumentException($"outData should have a Size of 0");
+
             lock (SyncLock)
             {
-                fixed (byte* bufPtr = &outputBuffer.Data[0])
+                fixed (byte* bufPtr = &outData.Data[0])
                 {
                     _zlibStream.NextOut = (nint)bufPtr;
-                    _zlibStream.AvailOut = (uint)outputBuffer.AvailableWrite;
+                    _zlibStream.AvailOut = (uint)outData.AvailableWrite;
 
                     ZErrorCode errC = Deflate(flushCode);
-                    bytesRead = outputBuffer.AvailableWrite - (int)_zlibStream.AvailOut;
+                    bytesRead = outData.AvailableWrite - (int)_zlibStream.AvailOut;
 
-                    outputBuffer.Write(bytesRead);
+                    outData.Write(bytesRead);
                     return errC;
                 }
             }
         }
 
-        internal bool Finish(CompressionBuffer outputBuffer, out int bytesRead)
+        internal bool Finish(CompressionBuffer outData, out int bytesRead)
         {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Debug.Assert(outputBuffer.AvailableWrite > 0, "Can't pass in an empty output buffer!");
+            Debug.Assert(null != outData, "Can't pass in a null output buffer!");
+            Debug.Assert(outData.AvailableWrite > 0, "Can't pass in an empty output buffer!");
 
-            ZErrorCode errC = ReadDeflateOutput(outputBuffer, ZFlushCode.Finish, out bytesRead);
+            ZErrorCode errC = readDeflateOutput(outData, ZFlushCode.Finish, out bytesRead);
             return errC == ZErrorCode.StreamEnd;
         }
 
         /// <summary>
         /// Returns true if there was something to flush. Otherwise False.
         /// </summary>
-        internal bool Flush(CompressionBuffer outputBuffer, out int bytesRead)
+        internal bool Flush(CompressionBuffer outData, out int bytesRead)
         {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Debug.Assert(outputBuffer.AvailableWrite > 0, "Can't pass in an empty output buffer!");
+            Debug.Assert(null != outData, "Can't pass in a null output buffer!");
+            Debug.Assert(outData.AvailableWrite > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
 
 
@@ -184,7 +191,7 @@ namespace Nanook.GrindCore.DeflateZLib
             // If there is still input left we should never be getting here; instead we
             // should be calling GetDeflateOutput.
 
-            return ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
+            return readDeflateOutput(outData, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
         }
 
         private void DeallocateInputBufferHandle()

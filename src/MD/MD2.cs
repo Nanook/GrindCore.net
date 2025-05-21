@@ -11,7 +11,7 @@ public unsafe class MD2 : HashAlgorithm
     private const int _hashSizeBytes = 16;
     private Interop.MD2_CTX _ctx;
     private HashBuffer _buffer;
-    private const int BufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+    private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
     /// <summary>
     /// Initializes a new instance of the MD2 class.
@@ -51,7 +51,7 @@ public unsafe class MD2 : HashAlgorithm
             Interop.MD2_CTX* ctxPtr = &ctx;
             // Process the data in 256 MiB chunks
             processData(data, offset, length, ctxPtr, buffer);
-            // Complete the buffer and finalize the hash
+            // Complete the _outBuffer and finalize the hash
             buffer.Complete((d, o, s) => bufferPadProcess(ctxPtr, d, o, s));
             Interop.MD.SZ_MD2_Final(resultPtr, &ctx);
         }
@@ -69,7 +69,7 @@ public unsafe class MD2 : HashAlgorithm
         {
             // Determine the size of the current chunk to process
             int bytesRead = Math.Min(remainingSize, BufferSize);
-            // Process the buffer with the current chunk
+            // Process the _outBuffer with the current chunk
             buffer.Process(data, offset, bytesRead, (d, o, s) => bufferProcess(ctx, d, o, s));
             // Decrease the remaining size by the number of bytes read
             remainingSize -= bytesRead;
@@ -96,13 +96,13 @@ public unsafe class MD2 : HashAlgorithm
     }
 
     /// <summary>
-    /// Processes the buffer with padding.
+    /// Processes the _outBuffer with padding.
     /// </summary>
     private static void bufferPadProcess(Interop.MD2_CTX* ctx, byte[] data, int offset, int size)
     {
         byte paddingValue = (byte)(data.Length - size);
 
-        // Pad the buffer with the padding value
+        // Pad the _outBuffer with the padding value
         for (int i = size; i < data.Length; i++)
             data[i] = paddingValue;
 
@@ -152,7 +152,7 @@ public unsafe class MD2 : HashAlgorithm
     /// <returns>The computed hash code.</returns>
     protected override byte[] HashFinal()
     {
-        // Complete the buffer and finalize the hash
+        // Complete the _outBuffer and finalize the hash
         _buffer.Complete((d, o, s) =>
         {
             // Pin the hash context in memory to obtain a pointer

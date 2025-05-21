@@ -225,7 +225,7 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_estimateCCtxSize_usingCCtx(IntPtr context);
 
             /// <summary>
-            /// The size of a DCtx does not include a dictionary buffer because the caller must supply one.
+            /// The size of a DCtx does not include a dictionary _outBuffer because the caller must supply one.
             /// </summary>
             /// <param name="nbThreads"></param>
             /// <returns></returns>
@@ -419,17 +419,17 @@ namespace Nanook.GrindCore.Lzma
             //
             //  Use FL2_compressStream() repetitively to consume input stream.
             //  The function will automatically update the `pos` field.
-            // It will always consume the entire input unless an error occurs or the dictionary buffer is filled,
+            // It will always consume the entire input unless an error occurs or the dictionary _outBuffer is filled,
             // unlike the decompression function.
             //
             // The radix match finder allows compressed data to be stored in its match table during encoding.
             // Applications may call streaming compression functions with output == NULL.In this case,
             // when the function returns 1, the compressed data must be read from the internal buffers.
             // Call FL2_getNextCompressedBuffer() repeatedly until it returns 0.
-            //  Each call returns buffer information in the FL2_inBuffer parameter.Applications typically will
+            //  Each call returns _outBuffer information in the FL2_inBuffer parameter.Applications typically will
             // passed this to an I/O write function or downstream filter.
             //  Alternately, applications may pass an FL2_outBuffer object pointer to receive the output. In this
-            //  case the return value is 1 if the buffer is full and more compressed data remains.
+            //  case the return value is 1 if the _outBuffer is full and more compressed data remains.
             //
             //  FL2_endStream() instructs to finish a stream. It will perform a flush and write the LZMA2
             // termination byte (required). Call FL2_endStream() repeatedly until it returns 0.
@@ -475,8 +475,8 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_setCStreamTimeout(nint fcs, uint timeout);
 
             /// <summary>
-            /// Reads data from input into the dictionary buffer. Compression will begin if the buffer fills up.
-            /// A dual buffering stream will fill the second buffer while compression proceeds on the first.
+            /// Reads data from input into the dictionary _outBuffer. Compression will begin if the _outBuffer fills up.
+            /// A dual buffering stream will fill the second _outBuffer while compression proceeds on the first.
             /// A call to FL2_compressStream() will wait for ongoing compression to complete if all dictionary space is filled.
             ///  FL2_compressStream() must not be called with output == NULL unless the caller has read all compressed data from the CStream object.
             /// </summary>
@@ -489,7 +489,7 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_compressStream(nint fcs, ref FL2OutBuffer output, ref FL2InBuffer input);
 
             /// <summary>
-            /// Copies compressed data to the output buffer until the buffer is full or all available data is copied.
+            /// Copies compressed data to the output _outBuffer until the _outBuffer is full or all available data is copied.
             /// If asynchronous compression is in progress, the function returns 0 without waiting.
             /// </summary>
             /// <param name="fcs"></param>
@@ -500,8 +500,8 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_copyCStreamOutput(nint fcs, ref FL2OutBuffer output);
 
             /// <summary>
-            /// Returns a buffer in the FL2_outBuffer object, which the caller can directly read data into.
-            /// Applications will normally pass this buffer to an I/O read function or upstream filter.
+            /// Returns a _outBuffer in the FL2_outBuffer object, which the caller can directly read data into.
+            /// Applications will normally pass this _outBuffer to an I/O read function or upstream filter.
             /// </summary>
             /// <param name="fcs"></param>
             /// <param name="dict"></param>
@@ -511,7 +511,7 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_getDictionaryBuffer(nint fcs, ref FL2DictBuffer dict);
 
             /// <summary>
-            /// Informs the CStream how much data was added to the buffer. Compression begins if the dictionary was filled.
+            /// Informs the CStream how much data was added to the _outBuffer. Compression begins if the dictionary was filled.
             /// </summary>
             /// <param name="fcs"></param>
             /// <param name="addedSize"></param>
@@ -521,8 +521,8 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_updateDictionary(nint fcs, nuint addedSize);
 
             /// <summary>
-            /// Returns a buffer containing a slice of the compressed data. Call this function and process the data until the function returns zero.
-            ///  In most cases it will return a buffer for each compression thread used.
+            /// Returns a _outBuffer containing a slice of the compressed data. Call this function and process the data until the function returns zero.
+            ///  In most cases it will return a _outBuffer for each compression thread used.
             /// It is sometimes less but never more than nbThreads.If asynchronous compression is in progress,
             ///  this function will wait for completion before returning, or it will return the timeout code.
             /// </summary>
@@ -575,7 +575,7 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_remainingOutputSize(nint fcs);
 
             /// <summary>
-            /// Process all data remaining in the dictionary buffer(s). It may be necessary to call FL2_flushStream() more than once.
+            /// Process all data remaining in the dictionary _outBuffer(s). It may be necessary to call FL2_flushStream() more than once.
             /// If output == NULL the compressed data must be read from the CStream object after each call.
             /// Flushing is not normally useful and produces larger output.
             /// </summary>
@@ -587,7 +587,7 @@ namespace Nanook.GrindCore.Lzma
             internal static extern nuint FL2_flushStream(nint fcs, ref FL2OutBuffer output);
 
             /// <summary>
-            /// Process all data remaining in the dictionary buffer(s) and write the stream end marker.
+            /// Process all data remaining in the dictionary _outBuffer(s) and write the stream end marker.
             /// It may be necessary to call FL2_endStream() more than once.
             /// If output == NULL the compressed data must be read from the CStream object after each call.
             /// </summary>

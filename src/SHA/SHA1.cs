@@ -14,7 +14,7 @@ namespace Nanook.GrindCore.SHA
     {
         private const int _hashSizeBytes = 20;
         private Interop.CSha1 _ctx;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
         /// Initializes a new instance of the SHA1 class.

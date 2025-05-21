@@ -1,6 +1,6 @@
 ﻿using System;
-using static Nanook.GrindCore.Lzma.Interop.Lzma;
-using static Nanook.GrindCore.Lzma.Interop;
+using static Nanook.GrindCore.Interop.Lzma;
+using static Nanook.GrindCore.Interop;
 
 namespace Nanook.GrindCore.Lzma
 {

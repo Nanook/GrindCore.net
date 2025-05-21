@@ -31,7 +31,7 @@ namespace Nanook.GrindCore
         public int? ThreadCount { get; set; }
 
         /// <summary>
-        /// BlockSize. LZMA2 Blocksize, -1 will compress in full solid mode. If threads > 1 and BlockSize != -1 then the block is divided by the amount of threads and processed in subblocks. If not -1 this will override ProcessSizeMin and ProcessSizeMax
+        /// BlockSize. LZMA2 Blocksize, -1 will compress in full solid mode. If threads > 1 and BlockSize != -1 then the block is divided by the amount of threads and processed in subblocks. If not -1 this will override ProcessSizeMin and BufferSize
         /// </summary>
         public long? BlockSize { get; set; }
 
@@ -41,19 +41,14 @@ namespace Nanook.GrindCore
         public byte[]? InitProperties { get; set; }
 
         /// <summary>
-        /// Compression/Decompression will be performed when the internal buffer is at least this size. Useful when using WriteByte etc
+        /// Compression/Decompression will be performed when the internal _outBuffer is at least this size. Useful when using WriteByte etc Maximum size of _outBuffer. This size will be used where possible
         /// </summary>
-        public int? ProcessSizeMin { get; set; }
+        public int? BufferSize { get; set; }
 
         /// <summary>
-        /// Maximum size of buffer. This size will be used where possible
+        /// Actual allocated buffer size large enough to allow overflow bounds. E.g. when data expands when compressing. Decompressors will often split data in to smaller chunks internally
         /// </summary>
-        public int? ProcessSizeMax { get; set; }
-
-        /// <summary>
-        /// This will override any internal stream default sizes
-        /// </summary>
-        public int? InternalBufferSize { get; set; }
+        public int? BufferOverflowSize { get; set; }
 
         public static CompressionOptions DefaultDecompress() => new CompressionOptions() { Type = CompressionType.Decompress };
 

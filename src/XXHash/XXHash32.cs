@@ -14,7 +14,7 @@ namespace Nanook.GrindCore.XXHash
     public unsafe class XXHash32 : HashAlgorithm
     {
         private XXH32_CTX _ctx;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
         /// Initializes a new instance of the XXHash32 class.

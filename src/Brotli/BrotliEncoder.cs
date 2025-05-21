@@ -7,7 +7,7 @@ using System;
 namespace Nanook.GrindCore.Brotli
 {
     /// <summary>Provides methods and static methods to encode and decode data in a streamless, non-allocating, and performant manner using the Brotli data format specification.</summary>
-    internal partial struct BrotliEncoder : IDisposable
+    internal struct BrotliEncoder : IDisposable
     {
         private const int WindowBits_Min = 10;
         private const int WindowBits_Default = 22;
@@ -147,35 +147,40 @@ namespace Nanook.GrindCore.Brotli
             return result;
         }
 
-        //internal OperationStatus Flush(DataBlock destination, out int bytesWritten) => Flush(destination.Span, out bytesWritten);
+        //internal OperationStatus Flush(DataBlock outData, out int bytesWritten) => Flush(outData.Span, out bytesWritten);
 
-        /// <summary>Compresses an empty read-only span of bytes into its destination, which ensures that output is produced for all the processed input. An actual flush is performed when the source is depleted and there is enough space in the destination for the remaining data.</summary>
-        /// <param name="destination">When this method returns, a span of bytes where the compressed data will be stored.</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
+        /// <summary>Compresses an empty read-only span of bytes into its outData, which ensures that output is produced for all the processed input. An actual flush is performed when the inData is depleted and there is enough space in the outData for the remaining data.</summary>
+        /// <param name="outData">When this method returns, a span of bytes where the compressed data will be stored.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="outData" />.</param>
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
-        public OperationStatus Flush(CompressionBuffer destination, out int bytesWritten) => Compress(new CompressionBuffer(0), destination, out _, out bytesWritten, BrotliEncoderOperation.Flush);
+        public OperationStatus Flush(CompressionBuffer outData, out int bytesWritten) => Compress(new CompressionBuffer(0), outData, out _, out bytesWritten, BrotliEncoderOperation.Flush);
 
-        //internal OperationStatus Process(DataBlock source, DataBlock destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Process(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
+        //internal OperationStatus Process(DataBlock inData, DataBlock outData, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Process(inData, outData, out bytesConsumed, out bytesWritten, isFinalBlock);
 
-        /// <summary>Compresses a read-only byte span into a destination span.</summary>
-        /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
-        /// <param name="destination">When this method returns, a byte span where the compressed is stored.</param>
+        /// <summary>Compresses a read-only byte span into a outData span.</summary>
+        /// <param name="source">A read-only span of bytes containing the inData data to compress.</param>
+        /// <param name="outData">When this method returns, a byte span where the compressed is stored.</param>
         /// <param name="bytesConsumed">When this method returns, the total number of bytes that were read from <paramref name="source" />.</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="outData" />.</param>
         /// <param name="isFinalBlock"><see langword="true" /> to finalize the internal stream, which prevents adding more input data when this method returns; <see langword="false" /> to allow the encoder to postpone the production of output until it has processed enough input.</param>
         /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
-        public OperationStatus Compress(CompressionBuffer source, CompressionBuffer destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock ? BrotliEncoderOperation.Finish : BrotliEncoderOperation.Process);
+        public OperationStatus Compress(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(inData, outData, out bytesConsumed, out bytesWritten, isFinalBlock ? BrotliEncoderOperation.Finish : BrotliEncoderOperation.Process);
 
-        internal OperationStatus Compress(CompressionBuffer source, CompressionBuffer destination, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
+        internal OperationStatus Compress(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
         {
+            if (inData.Pos != 0)
+                throw new ArgumentException($"inData should have a Pos of 0");
+            if (outData.Size != 0)
+                throw new ArgumentException($"outData should have a Size of 0");
+
             EnsureInitialized();
             Debug.Assert(_state != null);
-            bool skipFirstFlush = operation == BrotliEncoderOperation.Flush && source.AvailableRead == 0;
+            bool skipFirstFlush = operation == BrotliEncoderOperation.Flush && inData.AvailableRead == 0;
 
             bytesWritten = 0;
             bytesConsumed = 0;
-            nuint availableOutput = (nuint)destination.AvailableWrite;
-            nuint availableInput = (nuint)source.AvailableRead;
+            nuint availableOutput = (nuint)outData.AvailableWrite;
+            nuint availableInput = (nuint)inData.AvailableRead;
 
             unsafe
             {
@@ -184,11 +189,11 @@ namespace Nanook.GrindCore.Brotli
                 // 2. Span's have a maximum length of the int boundary.
                 while ((int)availableOutput > 0)
                 {
-                    fixed (byte* inBytes = source.Data)
-                    fixed (byte* outBytes = destination.Data)
+                    fixed (byte* inBytes = inData.Data)
+                    fixed (byte* outBytes = outData.Data)
                     {
-                        *&inBytes += source.Pos;
-                        *&outBytes += destination.Size; //writePos is Size
+                        *&inBytes += inData.Pos;
+                        *&outBytes += outData.Size; //writePos is Size
 
                         if (!skipFirstFlush) //don't flush if there's no data as it can add 2 bytes (that check is after)
                         {
@@ -201,16 +206,16 @@ namespace Nanook.GrindCore.Brotli
                                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
                         }
 
-                        bytesConsumed += source.AvailableRead - (int)availableInput;
-                        bytesWritten += destination.AvailableWrite - (int)availableOutput;
+                        bytesConsumed += inData.AvailableRead - (int)availableInput;
+                        bytesWritten += outData.AvailableWrite - (int)availableOutput;
 
-                        source.Read(bytesConsumed); //update
-                        destination.Write(bytesWritten); //update
+                        inData.Read(bytesConsumed); //update
+                        outData.Write(bytesWritten); //update
 
                         if (_state.Version.Index == 0)
                         {
                             // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
-                            if ((int)availableOutput == destination.AvailableWrite && Interop.Brotli.DN9_BRT_v1_1_0_EncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
+                            if ((int)availableOutput == outData.AvailableWrite && Interop.Brotli.DN9_BRT_v1_1_0_EncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
                                 return OperationStatus.Done;
                             skipFirstFlush = false; //will loop if there's data to be flushed - prevent extra 2 bytes being written when there's extra data
                         }

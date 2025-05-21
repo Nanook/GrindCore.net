@@ -1,6 +1,6 @@
 ﻿using System;
-using static Nanook.GrindCore.Lzma.Interop.Lzma;
-using static Nanook.GrindCore.Lzma.Interop;
+using static Nanook.GrindCore.Interop.Lzma;
+using static Nanook.GrindCore.Interop;
 
 namespace Nanook.GrindCore.Lzma
 {
@@ -19,7 +19,7 @@ namespace Nanook.GrindCore.Lzma
             _decCtx = new CLzmaDec();
             fixed (byte* outPtr = properties)
             {
-                res = Interop.Lzma.S7_Lzma_v24_07_Dec_Allocate(ref _decCtx, outPtr, (uint)properties.Length);
+                res = S7_Lzma_v24_07_Dec_Allocate(ref _decCtx, outPtr, (uint)properties.Length);
                 S7_Lzma_v24_07_Dec_Init(ref _decCtx);
             }
             if (res != 0)

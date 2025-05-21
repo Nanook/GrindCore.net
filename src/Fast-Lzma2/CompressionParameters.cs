@@ -101,10 +101,10 @@ namespace Nanook.GrindCore.Lzma
 
         /// <summary>
         /// Buffering speeds up the matchfinder. Buffer resize determines the percentage of
-        /// the normal buffer size used, which depends on dictionary size.
+        /// the normal _outBuffer size used, which depends on dictionary size.
         /// 0=50, 1=75, 2=100, 3=150, 4=200. Higher number = slower, better
         /// compression, higher memory usage. A CPU with a large memory cache
-        /// may make effective use of a larger buffer.
+        /// may make effective use of a larger _outBuffer.
         /// Default = 2
         /// </summary>
         public int? BufferResize

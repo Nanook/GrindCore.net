@@ -12,7 +12,7 @@ namespace Nanook.GrindCore.XXHash
         public uint total_len_32; // XXH32_hash_t is assumed to be uint
         public uint large_len;
         public fixed uint v[4]; // Accumulator lanes
-        public fixed uint mem32[4]; // Internal buffer for partial reads
+        public fixed uint mem32[4]; // Internal _outBuffer for partial reads
         public uint memsize;
         public uint reserved; // Reserved field
     }
@@ -23,7 +23,7 @@ namespace Nanook.GrindCore.XXHash
         public ulong total_len; // Assuming similar structure for XXH64 with ulong for total length
         public ulong large_len;
         public fixed ulong v[4]; // Accumulator lanes
-        public fixed ulong mem64[4]; // Internal buffer for partial reads
+        public fixed ulong mem64[4]; // Internal _outBuffer for partial reads
         public ulong memsize;
         public ulong reserved; // Reserved field
     }

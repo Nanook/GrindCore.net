@@ -43,11 +43,11 @@ namespace GrindCore.Tests
                                     totalInProcessedBytes += bytesRead;
                                     //Trace.WriteLine($"{totalInProcessedBytes} of {total} ({compMemoryStream.Position})");
                                 }
+                                properties = compressionStream.Properties;
+                                compressionStream.Complete();
+                                Assert.Equal(compMemoryStream.Position, compressionStream.Position); //compression position is correct
+                                Assert.Equal(inDataStream.Position, compressionStream.PositionFullSize); //compression position is correct
                             }
-                            properties = compressionStream.Properties;
-                            compMemoryStream.Flush();
-                            Assert.Equal(compMemoryStream.Position, compressionStream.Position); //compression position is correct
-                            Assert.Equal(inDataStream.Position, compressionStream.PositionFullSize); //compression position is correct
                         }
 
                         // Hash Compressed data
@@ -83,8 +83,8 @@ namespace GrindCore.Tests
         [Theory]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x200000,  1,  0x953, "7833322f45651d24", "eb4d661eaefb646f")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x200000,  4,  0xec5, "7833322f45651d24", "5f71c3fb6c0b1c7b")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x600000,  1,  0x8bb, "7833322f45651d24", "f728b3d543c6e2cb")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x600000,  4,  0xe7c, "7833322f45651d24", "d545ad69abce9f99")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x600000,  1,  0x908, "7833322f45651d24", "6237a569f033aaa4")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x600000,  4,  0xe7c, "7833322f45651d24", "ac01d99f087f75a2")]
 
         [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.Fastest,            -1,  1,  0x572, "7833322f45651d24", "9b0d306d9158f3f1")]
         [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.Fastest,            -1,  4,  0x572, "7833322f45651d24", "9b0d306d9158f3f1")]
@@ -105,7 +105,7 @@ namespace GrindCore.Tests
             {
                 Type = type,
                 LeaveOpen = true,
-                ProcessSizeMax = buffLen,
+                BufferSize = buffLen,
                 BlockSize = blockSize,
                 ThreadCount = threadCount,
                 Version = CompressionVersion.Create(algorithm, "")
@@ -115,7 +115,7 @@ namespace GrindCore.Tests
             {
                 Type = CompressionType.Decompress,
                 LeaveOpen = true,
-                ProcessSizeMax = buffLen,
+                BufferSize = buffLen,
                 Version = CompressionVersion.Create(algorithm, "")
             };
 
@@ -149,7 +149,7 @@ namespace GrindCore.Tests
             {
                 Type = type,
                 LeaveOpen = true,
-                ProcessSizeMax = buffLen,
+                BufferSize = buffLen,
                 BlockSize = blockSize,
                 ThreadCount = threadCount,
                 Version = CompressionVersion.Create(algorithm, "")
@@ -159,7 +159,7 @@ namespace GrindCore.Tests
             {
                 Type = CompressionType.Decompress,
                 LeaveOpen = true,
-                ProcessSizeMax = buffLen,
+                BufferSize = buffLen,
                 Version = CompressionVersion.Create(algorithm, "")
             };
 

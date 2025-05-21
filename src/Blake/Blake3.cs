@@ -14,7 +14,7 @@ namespace Nanook.GrindCore.Blake
     {
         private const int _hashSizeBytes = 32;
         private Interop.Blake3Hasher _hasher;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
         /// Initializes a new instance of the Blake3 class.

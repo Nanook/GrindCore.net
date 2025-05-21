@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using static Nanook.GrindCore.Lzma.Interop.Lzma;
-using static Nanook.GrindCore.Lzma.Interop;
+using static Nanook.GrindCore.Interop.Lzma;
+using static Nanook.GrindCore.Interop;
 using System.Linq;
 
 namespace Nanook.GrindCore.Lzma
@@ -40,12 +40,13 @@ namespace Nanook.GrindCore.Lzma
             if (res != 0)
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
-            byte[] p = new byte[0x10];
+            byte[] p = BufferPool.Rent(0x10);
             ulong sz = (ulong)p.Length;
 
             fixed (byte* inPtr = p)
                 S7_Lzma_v24_07_Enc_WriteProperties(_encoder, inPtr, &sz);
             this.Properties = p.Take((int)sz).ToArray();
+            BufferPool.Return(p);
 
             uint bufferSize = 0;
             uint dSize = 0;
@@ -80,6 +81,11 @@ namespace Nanook.GrindCore.Lzma
 
         public long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
+            if (inData.Pos != 0)
+                throw new ArgumentException($"inData should have a Pos of 0");
+            if (outData.Size != 0)
+                throw new ArgumentException($"outData should have a Size of 0");
+
             uint available = 0;
             int total = 0;
             bool finalfinal = false;
@@ -102,7 +108,7 @@ namespace Nanook.GrindCore.Lzma
                 int endSz = (int)(_inStream.size - (ulong)p);
                 inData.Read(_inBuffer, (int)p, (int)Math.Min(sz, endSz));
 
-                // copy data at start of circular buffer
+                // copy data at start of circular _outBuffer
                 if (sz > endSz)
                     inData.Read(_inBuffer, 0, (int)(sz - endSz));
 

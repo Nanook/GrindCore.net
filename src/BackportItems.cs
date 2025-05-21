@@ -21,7 +21,7 @@ namespace Nanook.GrindCore
         /// </summary>
         /// <param name="source">The source stream.</param>
         /// <param name="destination">The destination stream.</param>
-        /// <param name="bufferSize">The buffer size for copying.</param>
+        /// <param name="bufferSize">The _outBuffer size for copying.</param>
         public static void CopyTo(this Stream source, Stream destination, int bufferSize = 81920)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -104,18 +104,18 @@ namespace Nanook.GrindCore
 
 //    public static class StreamExtensions
 //    {
-//        public static int ReadAtLeast(this Stream stream, Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream = false)
+//        public static int ReadAtLeast(this Stream stream, Span<byte> _outBuffer, int minimumBytes, bool throwOnEndOfStream = false)
 //        {
 //            if (minimumBytes < 0)
 //                throw new ArgumentOutOfRangeException(nameof(minimumBytes), "Minimum bytes to read cannot be negative.");
 
-//            if (buffer.Length < minimumBytes)
-//                throw new ArgumentException("Buffer length must be at least as long as minimumBytes.", nameof(buffer));
+//            if (_outBuffer.Length < minimumBytes)
+//                throw new ArgumentException("Buffer length must be at least as long as minimumBytes.", nameof(_outBuffer));
 
 //            int totalBytesRead = 0;
 //            while (totalBytesRead < minimumBytes)
 //            {
-//                int bytesRead = stream.Read(buffer.Slice(totalBytesRead));
+//                int bytesRead = stream.Read(_outBuffer.Slice(totalBytesRead));
 //                if (bytesRead == 0)
 //                {
 //                    if (throwOnEndOfStream)

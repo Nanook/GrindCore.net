@@ -23,14 +23,14 @@ namespace Nanook.GrindCore
         {
             if (_used > 0)
             {
-                // Add bytes from data to fill _buffer
+                // Add bytes from data to fill _inData
                 int toCopy = Math.Min(length, _buffer.Length - _used);
                 Array.Copy(data, offset, _buffer, _used, toCopy);
                 _used += toCopy;
                 offset += toCopy;
                 length -= toCopy;
 
-                // Call process if we have a full buffer
+                // Call process if we have a full _outBuffer
                 if (_used == _buffer.Length)
                 {
                     process(_buffer, 0, _used);
@@ -40,7 +40,7 @@ namespace Nanook.GrindCore
 
             if (length != 0)
             {
-                // Add the remainder bytes to the buffer
+                // Add the remainder bytes to the _outBuffer
                 int remainder = length % _buffer.Length;
                 if (remainder != 0)
                 {
@@ -63,10 +63,10 @@ namespace Nanook.GrindCore
                 int paddingLength = _buffer.Length - _used;
                 byte paddingValue = (byte)paddingLength;
 
-                // Process the full buffer
+                // Process the full _outBuffer
                 process(_buffer, 0, _used);
 
-                // Reset the buffer
+                // Reset the _outBuffer
                 _used = 0;
             }
         }

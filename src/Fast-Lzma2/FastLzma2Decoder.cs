@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using static Nanook.GrindCore.Lzma.Interop.Lzma;
-using static Nanook.GrindCore.Lzma.Interop;
+using static Nanook.GrindCore.Interop.Lzma;
+using static Nanook.GrindCore.Interop;
 using System.Linq;
 using System.Threading;
 using System.IO;
@@ -36,7 +36,7 @@ namespace Nanook.GrindCore.Lzma
             nuint code = Interop.FastLzma2.FL2_initDStream(_context);
             if (FL2Exception.IsError(code))
                 throw new FL2Exception(code);
-            // Compressed stream input buffer
+            // Compressed stream input _outBuffer
             _bufferSize = 64 * 0x400 * 0x400; // compressParams.DictionarySize;
             _bufferArray = BufferPool.Rent((int)(size < _bufferSize ? size : _bufferSize));
             int bytesRead = input.Read(_bufferArray, 0, _bufferArray.Length);
@@ -68,10 +68,10 @@ namespace Nanook.GrindCore.Lzma
         {
             bytesReadFromStream = 0;
 
-            // Set the memory limit for the decompression stream under MT. Otherwise decode will failed if buffer is too small.
-            // Guess 64mb buffer is enough for most case.
+            // Set the memory limit for the decompression stream under MT. Otherwise decode will failed if _outBuffer is too small.
+            // Guess 64mb _outBuffer is enough for most case.
             //Interop.FastLzma2.FL2_setDStreamMemoryLimitMt(_context, (nuint)64 * 1024 * 1024);
-            //ref byte ref_buffer = ref MemoryMarshal.GetReference(buffer.Data);
+            //ref byte ref_buffer = ref MemoryMarshal.GetReference(_outBuffer.Data);
             //fixed (byte* pBuffer = &ref_buffer)
             fixed (byte* pBuffer = buffer.Data)
             {

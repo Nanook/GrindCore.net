@@ -10,7 +10,7 @@ public unsafe class MD4 : HashAlgorithm
 {
     private const int _hashSizeBytes = 16;
     private Interop.MD4_CTX _ctx;
-    private const int BufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+    private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
     /// <summary>
     /// Initializes a new instance of the MD4 class.

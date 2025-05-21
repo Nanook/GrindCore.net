@@ -46,12 +46,12 @@ namespace Nanook.GrindCore.Brotli
     {
         //
         // Summary:
-        //     The entire input buffer has been processed and the operation is complete.
+        //     The entire input _outBuffer has been processed and the operation is complete.
         Done = 0,
         //
         // Summary:
-        //     The input is partially processed, up to what could fit into the destination buffer.
-        //     The caller can enlarge the destination buffer, slice the buffers appropriately,
+        //     The input is partially processed, up to what could fit into the destination _outBuffer.
+        //     The caller can enlarge the destination _outBuffer, slice the buffers appropriately,
         //     and retry.
         DestinationTooSmall = 1,
         //

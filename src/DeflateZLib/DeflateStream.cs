@@ -11,17 +11,14 @@ namespace Nanook.GrindCore.DeflateZLib
 {
     public class DeflateStream : CompressionStream, ICompressionDefaults
     {
-        private const int DefaultBufferSize = 8192;
-
-        private Inflater? _inflater;
-        private Deflater? _deflater;
+        private DeflateDecoder? _inflater;
+        private DeflateEncoder? _deflater;
         private CompressionBuffer _buffer;
         private bool _wroteBytes;
-        private bool _flushed;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.DeflateNg;
-        internal override int DefaultProcessSizeMin => DefaultBufferSize;
-        internal override int DefaultProcessSizeMax => 0x400 * 0x400;
+        internal override int DefaultBufferOverflowSize => 0x200000;
+        internal override int DefaultBufferSize => 0x200000;
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level6;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxZLib;
@@ -36,13 +33,12 @@ namespace Nanook.GrindCore.DeflateZLib
         /// </summary>
         internal DeflateStream(Stream stream, CompressionOptions options, int windowBits, long uncompressedSize = -1) : base(true, stream, options)
         {
-            _buffer = new CompressionBuffer(options.InternalBufferSize ?? DefaultBufferSize);
-            _flushed = false;
+            _buffer = new CompressionBuffer(8192);
 
             if (!IsCompress)
-                _inflater = new Inflater(base.Version, windowBits, uncompressedSize);
+                _inflater = new DeflateDecoder(base.Version, windowBits, uncompressedSize);
             else
-                _deflater = new Deflater(base.Version, CompressionType, windowBits);
+                _deflater = new DeflateEncoder(base.Version, CompressionType, windowBits);
         }
 
         internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
@@ -53,7 +49,7 @@ namespace Nanook.GrindCore.DeflateZLib
             {
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
 
-                // Try to decompress any data from the inflater into the caller's buffer.
+                // Try to decompress any data from the inflater into the caller's _outBuffer.
                 // If we're able to decompress any bytes, or if decompression is completed, we're done.
                 bytesRead = _inflater!.Inflate(data);
                 if (bytesRead != 0 || inflatorIsFinished)
@@ -66,7 +62,7 @@ namespace Nanook.GrindCore.DeflateZLib
                     int n = BaseStream.Read(_buffer.Data, 0, _buffer.AvailableWrite);
                     if (n <= 0)
                     {
-                        // - Inflater didn't return any data although a non-empty output buffer was passed by the caller.
+                        // - Inflater didn't return any data although a non-empty output _outBuffer was passed by the caller.
                         // - More input is needed but there is no more input available.
                         // - Inflation is not finished yet.
                         // - Provided input wasn't completely empty
@@ -75,7 +71,7 @@ namespace Nanook.GrindCore.DeflateZLib
                             throw new InvalidDataException(SR.TruncatedData);
                         break;
                     }
-                    else if (n > _buffer.AvailableWrite) // The stream is either malicious or poorly implemented and returned a number of - bytes < 0 || > than the buffer supplied to it.
+                    else if (n > _buffer.AvailableWrite) // The stream is either malicious or poorly implemented and returned a number of - bytes < 0 || > than the _outBuffer supplied to it.
                         throw new InvalidDataException(SR.GenericInvalidData);
 
 
@@ -86,11 +82,11 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 if (data.AvailableWrite == 0)
                 {
-                    // The caller provided a zero-byte buffer.  This is typically done in order to avoid allocating/renting
-                    // a buffer until data is known to be available.  We don't have perfect knowledge here, as _inflater.inflate
+                    // The caller provided a zero-byte _outBuffer.  This is typically done in order to avoid allocating/renting
+                    // a _outBuffer until data is known to be available.  We don't have perfect knowledge here, as _inflater.inflate
                     // will return 0 whether or not more data is required, and having input data doesn't necessarily mean it'll
                     // decompress into at least one byte of output, but it's a reasonable approximation for the 99% case.  If it's
-                    // wrong, it just means that a caller using zero-byte reads as a way to delay getting a buffer to use for a
+                    // wrong, it just means that a caller using zero-byte reads as a way to delay getting a _outBuffer to use for a
                     // subsequent call may end up getting one earlier than otherwise preferred.
                     Debug.Assert(bytesRead == 0);
                     break;
@@ -129,12 +125,27 @@ namespace Nanook.GrindCore.DeflateZLib
             }
         }
 
-        internal override void OnFlush(CancellableTask cancel, out int bytesWrittenToStream)
+        internal override void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete)
         {
             bytesWrittenToStream = 0;
             if (IsCompress)
             {
-                if (_wroteBytes && !_flushed)
+                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+                OnWrite(data, cancel, out bytesWrittenToStream); //data may have 0 bytes
+
+                // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
+                // This round-trips and we should be ok with this, but our legacy managed deflater
+                // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
+                // took dependencies on it. Thus, make sure to only "flush" when we actually had
+                // some input:
+
+                // In case of zero length _outBuffer, we still need to clean up the native created stream before
+                // the object get _disposed because eventually ZLibNative.ReleaseHandle will get called during
+                // the dispose operation and although it frees the stream but it return error code because the
+                // stream state was still marked as in use. The symptoms of this problem will not be seen except
+                // if running any diagnostic tools which check for disposing safe handle objects
+
+                if (flush && _wroteBytes)
                 {
                     int compressedBytes;
                     // Process any bytes left:
@@ -146,6 +157,7 @@ namespace Nanook.GrindCore.DeflateZLib
                     bool flushSuccessful;
                     do
                     {
+                        cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
                         flushSuccessful = _deflater!.Flush(_buffer!, out compressedBytes);
                         if (flushSuccessful)
                         {
@@ -155,80 +167,42 @@ namespace Nanook.GrindCore.DeflateZLib
                         }
                         Debug.Assert(flushSuccessful == compressedBytes > 0);
                     } while (flushSuccessful);
-                    _flushed = true;
                 }
-            }
-        }
 
-        protected override void OnDispose(out int bytesWrittenToStream)
-        {
-            try //purge
-            {
-                bytesWrittenToStream = 0;
-
-                if (BaseStream == null || !IsCompress)
-                    return;
-
-                Debug.Assert(_deflater != null && _buffer != null);
-                // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
-                // This round-trips and we should be ok with this, but our legacy managed deflater
-                // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
-                // took dependencies on it. Thus, make sure to only "flush" when we actually had
-                // some input:
-                if (_wroteBytes)
+                if (complete)
                 {
                     // Process any bytes left
                     try
                     {
-                        if (!_flushed)
-                            writeDeflaterOutput(new CancellableTask(), out bytesWrittenToStream);
-
                         // Pull out any bytes left inside deflater:
                         bool finished;
                         do
                         {
-                            int compressedBytes;
-                            finished = _deflater!.Finish(_buffer!, out compressedBytes);
+                            finished = _deflater!.Finish(_buffer!, out int compressedBytes);
 
-                            if (compressedBytes > 0)
+                            if (_wroteBytes && compressedBytes > 0)
                             {
                                 BaseStream.Write(_buffer.Data, _buffer.Pos, compressedBytes);
                                 _buffer.Read(compressedBytes);
+                                bytesWrittenToStream += compressedBytes;
                             }
                         } while (!finished);
                     }
                     catch { }
                 }
-                else
-                {
-                    // In case of zero length buffer, we still need to clean up the native created stream before
-                    // the object get _disposed because eventually ZLibNative.ReleaseHandle will get called during
-                    // the dispose operation and although it frees the stream but it return error code because the
-                    // stream state was still marked as in use. The symptoms of this problem will not be seen except
-                    // if running any diagnostic tools which check for disposing safe handle objects
-                    bool finished;
-                    try
-                    {
-                        do
-                        {
-                            finished = _deflater!.Finish(_buffer!, out _);
-                        } while (!finished);
-                    }
-                    catch { }
-                }
+            }
+        }
 
-            }
-            finally
-            {
-                // Close the underlying stream even if PurgeBuffers threw.
-                // Stream.Close() may throw here (may or may not be due to the same error).
-                // In this case, we still need to clean up internal resources, hence the inner finally blocks.
-                try { _deflater?.Dispose(); } catch { }
-                try { _inflater?.Dispose(); } catch { }
-                try { _buffer?.Dispose(); } catch { }
-                _deflater = null;
-                _inflater = null;
-            }
+        protected override void OnDispose()
+        {
+            // Close the underlying stream even if PurgeBuffers threw.
+            // Stream.Close() may throw here (may or may not be due to the same error).
+            // In this case, we still need to clean up internal resources, hence the inner finally blocks.
+            try { _deflater?.Dispose(); } catch { }
+            try { _inflater?.Dispose(); } catch { }
+            try { _buffer?.Dispose(); } catch { }
+            _deflater = null;
+            _inflater = null;
         }
 
         private bool inflatorIsFinished =>

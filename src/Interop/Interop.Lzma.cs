@@ -4,10 +4,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static Nanook.GrindCore.Interop;
-using static Nanook.GrindCore.Lzma.Interop;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore
 {
     internal static partial class Interop
     {
@@ -37,10 +35,10 @@ namespace Nanook.GrindCore.Lzma
         public unsafe struct CBufferInStream
         {
             public IntPtr vt;
-            public IntPtr buffer;     // Pointer to the byte buffer
-            public ulong size;        // Total size of the buffer
-            public ulong pos;         // Current position in the buffer
-            public ulong remaining;   // Remaining bytes in the buffer
+            public IntPtr buffer;     // Pointer to the byte _outBuffer
+            public ulong size;        // Total size of the _outBuffer
+            public ulong pos;         // Current position in the _outBuffer
+            public ulong remaining;   // Remaining bytes in the _outBuffer
             public ulong processed;   // Total bytes processed (running total)
             public int finished;
             public int count;

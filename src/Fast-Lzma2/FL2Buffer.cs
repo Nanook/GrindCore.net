@@ -3,12 +3,12 @@
     internal struct FL2InBuffer
     {
         /// <summary>
-        /// start of input buffer
+        /// start of input _outBuffer
         /// </summary>
         public nint src;
 
         /// <summary>
-        /// size of input buffer
+        /// size of input _outBuffer
         /// </summary>
         public nuint size;
 
@@ -21,12 +21,12 @@
     internal struct FL2OutBuffer
     {
         /// <summary>
-        /// start of output buffer
+        /// start of output _outBuffer
         /// </summary>
         public nint dst;
 
         /// <summary>
-        /// size of output buffer
+        /// size of output _outBuffer
         /// </summary>
         public nuint size;
 
@@ -39,7 +39,7 @@
     internal struct FL2DictBuffer
     {
         /// <summary>
-        /// start of available dict buffer
+        /// start of available dict _outBuffer
         /// </summary>
         public nint dst;
 

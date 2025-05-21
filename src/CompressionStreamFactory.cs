@@ -1,17 +1,19 @@
 using Nanook.GrindCore.Brotli;
 using Nanook.GrindCore.DeflateZLib;
 using Nanook.GrindCore.GZip;
+using Nanook.GrindCore.Lz4;
 using Nanook.GrindCore.Lzma;
 using Nanook.GrindCore.ZLib;
+using Nanook.GrindCore.ZStd;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Emit;
 
 namespace Nanook.GrindCore
 {
     public enum CompressionAlgorithm
     {
+        Copy,
         GZip,
         ZLib,
         Deflate,
@@ -21,13 +23,16 @@ namespace Nanook.GrindCore
         Brotli,
         Lzma,
         Lzma2,
-        FastLzma2
+        FastLzma2,
+        Lz4,
+        ZStd
     }
 
     public class CompressionStreamFactory
     {
         private static readonly Dictionary<CompressionAlgorithm, Func<Stream, CompressionOptions, CompressionStream>> streamCreators = new Dictionary<CompressionAlgorithm, Func<Stream, CompressionOptions, CompressionStream>>()
         {
+            { CompressionAlgorithm.Copy, (stream, options) => new CopyStream(stream, options) },
             { CompressionAlgorithm.GZip, (stream, options) => new GZipStream(stream, options) },
             { CompressionAlgorithm.ZLib, (stream, options) => new ZLibStream(stream, options) },
             { CompressionAlgorithm.Deflate, (stream, options) => new DeflateStream(stream, options) },
@@ -37,7 +42,9 @@ namespace Nanook.GrindCore
             { CompressionAlgorithm.Brotli, (stream, options) => new BrotliStream(stream, options) },
             { CompressionAlgorithm.Lzma, (stream, options) => new LzmaStream(stream, options) },
             { CompressionAlgorithm.Lzma2, (stream, options) => new Lzma2Stream(stream, options) },
-            { CompressionAlgorithm.FastLzma2, (stream, options) => new FastLzma2Stream(stream, options) }
+            { CompressionAlgorithm.FastLzma2, (stream, options) => new FastLzma2Stream(stream, options) },
+            { CompressionAlgorithm.Lz4, (stream, options) => new Lz4Stream(stream, options) },
+            { CompressionAlgorithm.ZStd, (stream, options) => new ZStdStream(stream, options) }
         };
 
         public static CompressionStream Create(CompressionAlgorithm algorithm, Stream stream, CompressionOptions options)
