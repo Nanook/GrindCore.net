@@ -52,7 +52,7 @@ namespace Nanook.GrindCore
 
         public static CompressionOptions DefaultDecompress() => new CompressionOptions() { Type = CompressionType.Decompress };
 
-        public static CompressionOptions DefaultCompressOptimal() => new CompressionOptions() { Type = CompressionType.Decompress };
+        public static CompressionOptions DefaultCompressOptimal() => new CompressionOptions() { Type = CompressionType.Optimal };
 
     }
 }

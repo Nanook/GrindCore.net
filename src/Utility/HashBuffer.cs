@@ -23,7 +23,7 @@ namespace Nanook.GrindCore
         {
             if (_used > 0)
             {
-                // Add bytes from data to fill _inData
+                // Add bytes from data to fill _buffer
                 int toCopy = Math.Min(length, _buffer.Length - _used);
                 Array.Copy(data, offset, _buffer, _used, toCopy);
                 _used += toCopy;

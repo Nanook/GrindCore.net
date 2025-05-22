@@ -10,7 +10,7 @@ namespace Nanook.GrindCore.Brotli
     {
         private BrotliEncoder _encoder;
         private BrotliDecoder _decoder;
-        private CompressionBuffer _inData;
+        private CompressionBuffer _buffer;
         private bool _nonEmptyInput;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Brotli;
@@ -33,7 +33,7 @@ namespace Nanook.GrindCore.Brotli
                 _encoder.SetWindow();
             }
 
-            _inData = new CompressionBuffer((1 << 16) - 16); //65520
+            _buffer = new CompressionBuffer((1 << 16) - 16); //65520
         }
 
         private bool tryDecompress(CompressionBuffer outData, out int allBytesConsumed, out int bytesWritten)
@@ -42,8 +42,8 @@ namespace Nanook.GrindCore.Brotli
             // Decompress any data we may have in our _outBuffer.
             int bytesConsumed;
             int origAvailableOut = outData.AvailableWrite;
-            int origAvailableIn = _inData.AvailableRead;
-            OperationStatus lastResult = _decoder.Decompress(_inData, outData, out bytesConsumed, out bytesWritten);
+            int origAvailableIn = _buffer.AvailableRead;
+            OperationStatus lastResult = _decoder.Decompress(_buffer, outData, out bytesConsumed, out bytesWritten);
             if (lastResult == OperationStatus.InvalidData)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
 
@@ -77,7 +77,7 @@ namespace Nanook.GrindCore.Brotli
                 (lastResult == OperationStatus.DestinationTooSmall && origAvailableOut == 0 && origAvailableIn == 0), $"{nameof(lastResult)} == {lastResult}, {nameof(outData.AvailableWrite)} == {origAvailableOut}");
 
             // Ensure any left over data is at the beginning of the array so we can fill the remainder.
-            _inData.Tidy(); //move any data back to start
+            _buffer.Tidy(); //move any data back to start
 
             return false;
         }
@@ -95,7 +95,7 @@ namespace Nanook.GrindCore.Brotli
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
                 bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distiction)
 
-                int bytesRead = BaseStream.Read(_inData.Data, _inData.Size, _inData.AvailableWrite);
+                int bytesRead = BaseStream.Read(_buffer.Data, _buffer.Size, _buffer.AvailableWrite);
                 if (bytesRead <= 0)
                 {
                     if (/*s_useStrictValidation &&*/ _nonEmptyInput && data.AvailableWrite != 0)
@@ -107,11 +107,11 @@ namespace Nanook.GrindCore.Brotli
 
                 // The stream is either malicious or poorly implemented and returned a number of
                 // bytes larger than the _outBuffer supplied to it.
-                if (bytesRead > _inData.AvailableWrite)
+                if (bytesRead > _buffer.AvailableWrite)
                     throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
 
 
-                _inData.Write(bytesRead); //update bytes written to _inData
+                _buffer.Write(bytesRead); //update bytes written to _buffer
             }
 
             bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distiction)
@@ -138,7 +138,7 @@ namespace Nanook.GrindCore.Brotli
 
                 int bytesConsumed;
                 int bytesWritten;
-                lastResult = _encoder.Compress(data, _inData, out bytesConsumed, out bytesWritten, isFinalBlock);
+                lastResult = _encoder.Compress(data, _buffer, out bytesConsumed, out bytesWritten, isFinalBlock);
                 if (lastResult == OperationStatus.InvalidData)
                     throw new InvalidOperationException(SR.BrotliStream_Compress_InvalidData);
 
@@ -146,8 +146,8 @@ namespace Nanook.GrindCore.Brotli
 
                 if (bytesWritten > 0)
                 {
-                    BaseStream.Write(_inData.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
-                    _inData.Read(bytesWritten);
+                    BaseStream.Write(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
+                    _buffer.Read(bytesWritten);
                 }
             }
         }
@@ -175,7 +175,7 @@ namespace Nanook.GrindCore.Brotli
 
                     int bytesWritten = 0;
 
-                    lastResult = _encoder.Flush(_inData, out bytesWritten);
+                    lastResult = _encoder.Flush(_buffer, out bytesWritten);
                     if (lastResult == OperationStatus.InvalidData)
                         throw new InvalidDataException(SR.BrotliStream_Compress_InvalidData);
 
@@ -183,8 +183,8 @@ namespace Nanook.GrindCore.Brotli
 
                     if (bytesWritten > 0)
                     {
-                        BaseStream.Write(_inData.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
-                        _inData.Read(bytesWritten);
+                        BaseStream.Write(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
+                        _buffer.Read(bytesWritten);
                     }
                 }
             }
@@ -204,7 +204,7 @@ namespace Nanook.GrindCore.Brotli
                 try { _encoder.Dispose(); } catch { }
             else
                 try { _decoder.Dispose(); } catch { }
-            try { _inData.Dispose(); } catch { }
+            try { _buffer.Dispose(); } catch { }
         }
     }
 }

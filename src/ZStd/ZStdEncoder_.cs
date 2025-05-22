@@ -8,7 +8,7 @@
 //    internal unsafe class ZStdEncoder : IDisposable
 //    {
 //        private SZ_ZStd_v1_5_6_CompressionContext _context;
-//        private byte[] _inData;
+//        private byte[] _buffer;
 //        private GCHandle _bufferPinned;
 //        private IntPtr _bufferPtr;
 //        private bool _headerWritten;
@@ -29,11 +29,11 @@
 //                    throw new Exception("Failed to create Zstd compression context");
 //            }
 
-//            _inData = BufferPool.Rent(BlockSize);
-//            if (_inData == null)
+//            _buffer = BufferPool.Rent(BlockSize);
+//            if (_buffer == null)
 //                throw new Exception("Failed to allocate buffer for Zstd compression");
 
-//            _bufferPinned = GCHandle.Alloc(_inData, GCHandleType.Pinned);
+//            _bufferPinned = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
 //            _bufferPtr = _bufferPinned.AddrOfPinnedObject();
 
 //            _headerWritten = false;
@@ -54,14 +54,14 @@
 //                {
 //                    *&inputPtr += inData.Pos;
 //                    UIntPtr compressedSize = SZ_ZStd_v1_5_6_CompressBlock(
-//                        ctxPtr, _bufferPtr, (UIntPtr)_inData.Length,
+//                        ctxPtr, _bufferPtr, (UIntPtr)_buffer.Length,
 //                        inputPtr, (UIntPtr)inputSize, _compressionLevel);
 
 //                    if (compressedSize == UIntPtr.Zero)
 //                        throw new Exception("Zstd compression failed");
 
 //                    inData.Read(inputSize);
-//                    outData.Write(_inData, 0, (int)compressedSize);
+//                    outData.Write(_buffer, 0, (int)compressedSize);
 //                    totalCompressed += (int)compressedSize;
 //                }
 //            }
@@ -73,17 +73,17 @@
 //        {
 //            fixed (SZ_ZStd_v1_5_6_CompressionContext* ctxPtr = &_context)
 //            {
-//                UIntPtr flushedSize = SZ_ZStd_v1_5_6_FlushStream(ctxPtr, _bufferPtr, (UIntPtr)_inData.Length);
+//                UIntPtr flushedSize = SZ_ZStd_v1_5_6_FlushStream(ctxPtr, _bufferPtr, (UIntPtr)_buffer.Length);
 //                if ((uint)flushedSize < 0)
 //                    throw new Exception("Zstd flush failed");
 
-//                outData.Write(_inData, 0, (int)flushedSize);
+//                outData.Write(_buffer, 0, (int)flushedSize);
 
-//                UIntPtr endSize = UIntPtr.Zero; // SZ_ZStd_v1_5_6_EndStream(ctxPtr, _bufferPtr, (UIntPtr)_inData.Length);
+//                UIntPtr endSize = UIntPtr.Zero; // SZ_ZStd_v1_5_6_EndStream(ctxPtr, _bufferPtr, (UIntPtr)_buffer.Length);
 //                if ((uint)endSize < 0)
 //                    throw new Exception("Failed to finalize Zstd compression");
 
-//                outData.Write(_inData, 0, (int)endSize);
+//                outData.Write(_buffer, 0, (int)endSize);
 
 //                return (long)((ulong)flushedSize + (ulong)endSize);
 //            }
@@ -99,7 +99,7 @@
 //            if (_bufferPinned.IsAllocated)
 //                _bufferPinned.Free();
 
-//            BufferPool.Return(_inData);
+//            BufferPool.Return(_buffer);
 //        }
 //    }
 //}

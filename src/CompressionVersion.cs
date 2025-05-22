@@ -64,6 +64,11 @@ namespace Nanook.GrindCore
 
         private static string enumStringToVersionString(string enumName) => enumName.Replace("v", "").Replace("_", ".");
 
+        public static CompressionVersion Create(CompressionAlgorithm algorithm)
+        {
+            return create(algorithm, "");
+        }
+
         public static CompressionVersion Create(CompressionAlgorithm algorithm, string version)
         {
             return create(algorithm, version);
