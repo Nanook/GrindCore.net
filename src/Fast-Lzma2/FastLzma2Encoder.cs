@@ -44,7 +44,7 @@ namespace Nanook.GrindCore.Lzma
             if (FL2Exception.IsError(code))
                 throw new FL2Exception(code);
             // Compressed stream output _outBuffer
-            _bufferArray = BufferPool.Rent(_bufferSize);
+            _bufferArray = BufferPool.Rent(_bufferSize << 2);
             _bufferHandle = GCHandle.Alloc(_bufferArray, GCHandleType.Pinned);
             _compOutBuffer = new FL2OutBuffer()
             {

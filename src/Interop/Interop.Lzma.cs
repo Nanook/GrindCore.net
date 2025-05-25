@@ -22,16 +22,6 @@ namespace Nanook.GrindCore
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe struct CLimitedSeqInStream
-        {
-            public IntPtr vt;         // ISeqInStream pointer
-            public IntPtr realStream; // ISeqInStreamPtr pointer
-            public ulong limit;       // UInt64
-            public ulong processed;   // UInt64
-            public int finished;      // int
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
         public unsafe struct CBufferInStream
         {
             public IntPtr vt;
@@ -190,7 +180,7 @@ namespace Nanook.GrindCore
             public static extern int S7_Lzma2_v24_07_Enc_EncodeMultiCallPrepare(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.StdCall)]
-            public static extern int S7_Lzma2_v24_07_Enc_EncodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, ref CLimitedSeqInStream limitedStream, uint init, uint final);
+            public static extern int S7_Lzma2_v24_07_Enc_EncodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, uint init, uint final);
 
 
 

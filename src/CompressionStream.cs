@@ -164,6 +164,8 @@ namespace Nanook.GrindCore
         {
             if (!_complete)
             {
+                _complete = complete; //set straight away in case OnFlush causes a recall on the same thread
+
                 if (IsCompress)
                 {
                     int size = _cache.AvailableRead;
@@ -172,7 +174,6 @@ namespace Nanook.GrindCore
                     _positionFullSize += size;
                     BaseStream.Flush();
                 }
-                _complete = complete;
             }
         }
 
@@ -235,7 +236,7 @@ namespace Nanook.GrindCore
             onFlush(new CancellableTask(), true, false);
         }
 
-        public void Complete()
+        public virtual void Complete()
         {
             onFlush(new CancellableTask(), false, true);
         }
@@ -296,6 +297,11 @@ namespace Nanook.GrindCore
                 DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
                 onWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
             }, cancellationToken).ConfigureAwait(false);
+        }
+
+        public virtual async ValueTask CompleteAsync()
+        {
+            await this.CompleteAsync(new CancellationToken());
         }
 
         public override async ValueTask DisposeAsync()
@@ -360,6 +366,20 @@ namespace Nanook.GrindCore
             await Task.Run(() =>
             {
                 onFlush(new CancellableTask(cancellationToken), true, false);
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        public virtual async Task CompleteAsync(CancellationToken cancellationToken)
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                onFlush(new CancellableTask(cancellationToken), false, true); // Wrap the token to simplify frameworks that don't support it
+                return;
+            }
+
+            await Task.Run(() =>
+            {
+                onFlush(new CancellableTask(cancellationToken), false, true);
             }, cancellationToken).ConfigureAwait(false);
         }
 #endif

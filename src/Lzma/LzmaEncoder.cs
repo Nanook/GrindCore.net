@@ -12,6 +12,7 @@ namespace Nanook.GrindCore.Lzma
         private CBufferInStream _inStream;
         private byte[] _inBuffer;
         private GCHandle _inBufferPinned;
+        private long _toFlush;
 
         public byte[] Properties { get; }
         public int BlockSize { get; }
@@ -115,10 +116,9 @@ namespace Nanook.GrindCore.Lzma
                 total += sz;
                 _inStream.remaining += (ulong)sz;
 
-                finalfinal = final && inData.AvailableRead == 0;
-
-                if (!finalfinal && _inStream.remaining < (ulong)this.BlockSize)
+                if (!final && _inStream.remaining < (ulong)this.BlockSize)
                     break;
+                finalfinal = final && inData.AvailableRead == 0 && _toFlush == 0;
 
                 outSz = (ulong)(outData.AvailableWrite);
 
@@ -128,6 +128,7 @@ namespace Nanook.GrindCore.Lzma
                     res = S7_Lzma_v24_07_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
                     outTotal += (int)outSz;
                 }
+                _toFlush = available;
                 outData.Write((int)outSz);
 
                 if (res != 0)

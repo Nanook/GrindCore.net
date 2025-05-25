@@ -16,7 +16,7 @@ namespace Nanook.GrindCore.Lzma
         private readonly CompressionBuffer _buffer;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma;
-        internal override int DefaultBufferOverflowSize => 0x400 * 0x400;
+        internal override int DefaultBufferOverflowSize => 3 * 0x400 * 0x400;
         internal override int DefaultBufferSize => 2 * 0x400 * 0x400;
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level5;
@@ -28,7 +28,7 @@ namespace Nanook.GrindCore.Lzma
             {
                 _encoder = new LzmaEncoder((int)CompressionType, (uint)dictionarySize, 0);
                 Properties = _encoder.Properties;
-                _buffer = new CompressionBuffer(options.BufferSize ?? _encoder.BlockSize << 1);
+                _buffer = new CompressionBuffer((long)(options.BufferSize! ?? DefaultBufferSize) << 1); // options.BufferOverflowSize ?? _encoder.BlockSize << 2);
             }
             else
             {
@@ -112,12 +112,14 @@ namespace Nanook.GrindCore.Lzma
             if (IsCompress)
             {
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
-                long size = _encoder.EncodeData(data, _buffer, true, cancel);
-                if (size > 0)
+                while (true)
                 {
+                    long size = _encoder.EncodeData(data, _buffer, true, cancel);
+                    if (size == 0)
+                        break;
                     BaseStream.Write(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
                     _buffer.Read(_buffer.AvailableRead);
-                    bytesWrittenToStream = (int)size;
+                    bytesWrittenToStream += (int)size;
                 }
             }
         }

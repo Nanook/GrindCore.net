@@ -14,7 +14,6 @@ namespace Nanook.GrindCore.Lzma
     {
         private Lzma2Decoder _decoder;
         private Lzma2Encoder _encoder;
-        private int _bufferSize;
         private CompressionBuffer _buffer;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma2;
@@ -38,7 +37,7 @@ namespace Nanook.GrindCore.Lzma
                 _encoder = new Lzma2Encoder((int)CompressionType, options.ThreadCount ?? -1, options.BlockSize ?? -1, dictSize, 0, options.BufferSize ?? 0);
                 this.Properties = new byte[] { _encoder.Properties };
                 //_buffComp = BufferPool.Rent(_bufferSize);
-                _buffer = new CompressionBuffer(bufferSize);
+                _buffer = new CompressionBuffer(bufferSize << 2);
             }
             else
             {

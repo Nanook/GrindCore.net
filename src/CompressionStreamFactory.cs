@@ -81,6 +81,7 @@ namespace Nanook.GrindCore
                     {
                         compressionStream.Write(data, 0, data.Length);
                         properties = compressionStream.Properties;
+                        compressionStream.Complete();
                     }
                     return outputStream.ToArray();
                 }

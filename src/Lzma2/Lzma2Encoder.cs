@@ -5,6 +5,7 @@ using static Nanook.GrindCore.Interop;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.Lzma
 {
@@ -16,12 +17,16 @@ namespace Nanook.GrindCore.Lzma
     {
         private const int LZMA2_BLOCK_SIZE = 1 << 21; // size of unpacked blocks - important for multicall solid encoding
         private IntPtr _encoder;
+
         private CBufferInStream _inStream;
-        private CLimitedSeqInStream _limitedInStream;
+
         private byte[] _inBuffer;
         private GCHandle _inBufferPinned;
+
         private bool _solid;
         private long _blkTotal;
+        private bool _blockComplete;
+        private int _disposeCount;
 
         public byte Properties { get; }
         public long BlockSize { get; }
@@ -72,18 +77,19 @@ namespace Nanook.GrindCore.Lzma
             int res = S7_Lzma2_v24_07_Enc_SetProps(_encoder, ref props);
 
 #if NET6_0_OR_GREATER
-            CLzma2Enc myStruct = Marshal.PtrToStructure<CLzma2Enc>(_encoder);
+            //CLzma2Enc myStruct = Marshal.PtrToStructure<CLzma2Enc>(_encoder);
 #endif
             if (res != 0)
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
             this.Properties = S7_Lzma2_v24_07_Enc_WriteProperties(_encoder);
-            _limitedInStream = new CLimitedSeqInStream();
+            //_limitedInStream = new CLimitedSeqInStream();
 
             long bufferSize = (_solid || this.BlockSize > int.MaxValue ? 0x400000L : this.BlockSize) + 0x8; // only needs 1 extra byte to ensure the end is not reached. Just allign to 8
 
             _inBuffer = BufferPool.Rent(bufferSize); //plus a bit to make sure we don't reach the end
             _inBufferPinned = GCHandle.Alloc(_inBuffer, GCHandleType.Pinned);
+
             _inStream = new CBufferInStream() { buffer = _inBufferPinned.AddrOfPinnedObject(), size = (ulong)bufferSize };
             _blkTotal = 0;
 
@@ -172,7 +178,8 @@ namespace Nanook.GrindCore.Lzma
                     {
                         outSz = (ulong)outData.AvailableWrite;
                         byte* outPtr2 = *&outPtr + outData.Size; //writePos is Size
-                        res = S7_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, ref _limitedInStream, 0u, finalfinal || blkFinal ? 1u : 0u);
+                        _blockComplete = finalfinal || blkFinal;
+                        res = S7_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u, _blockComplete ? 1u : 0u);
                         outTotal += (int)outSz;
                         outData.Write((int)outSz);
                     } while (outSz != 0 && (finalfinal || blkFinal));
@@ -196,11 +203,22 @@ namespace Nanook.GrindCore.Lzma
 
         public void Dispose()
         {
+            if (!_blockComplete)
+            {
+                byte[] dummy = new byte[0];
+                ulong zero = 0;
+                fixed (byte* d = dummy) //close things
+                    S7_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, d, &zero, ref _inStream, 0u, 1u);
+            }
             if (_encoder != IntPtr.Zero)
             {
                 S7_Lzma2_v24_07_Enc_Destroy(_encoder);
                 _encoder = IntPtr.Zero;
             }
+            if (_inBufferPinned.IsAllocated)
+                _inBufferPinned.Free();
+            BufferPool.Return(_inBuffer);
+
         }
 
     }
