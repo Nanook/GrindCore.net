@@ -15,8 +15,8 @@ namespace Nanook.GrindCore.Lzma
         private FastLzma2Decoder _decoder;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.FastLzma2;
-        internal override int DefaultBufferOverflowSize => 3 * 0x400 * 0x400;
-        internal override int DefaultBufferSize => 2 * 0x400 * 0x400;
+        internal override int BufferSizeInput => 2 * 0x400 * 0x400;
+        internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level6;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxFastLzma2;
@@ -27,13 +27,18 @@ namespace Nanook.GrindCore.Lzma
 
         public FastLzma2Stream(Stream stream, CompressionOptions options, CompressionParameters? compressParams = null) : base (true, stream, options)
         {
+            if (IsCompress)
+                this.BufferSizeOutput = CacheThreshold * 4;
+            else
+                this.BufferSizeOutput = CacheThreshold;
+
             if (compressParams == null)
-                compressParams = new CompressionParameters(options.ThreadCount ?? 0, 2 * 1024 * 1024);
+                compressParams = new CompressionParameters(options.ThreadCount ?? 0, CacheThreshold);
 
             if (IsCompress)
-                _encoder = new FastLzma2Encoder((int)CompressionType, compressParams);
+                _encoder = new FastLzma2Encoder(this.BufferSizeOutput, (int)CompressionType, compressParams);
             else
-                _decoder = new FastLzma2Decoder(BaseStream, BaseStream.Length, (int)CompressionType, compressParams);
+                _decoder = new FastLzma2Decoder(BaseStream, this.BufferSizeOutput, BaseStream.Length, (int)CompressionType, compressParams);
         }
 
         internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)

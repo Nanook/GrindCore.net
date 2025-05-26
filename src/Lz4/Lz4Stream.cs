@@ -17,8 +17,8 @@ namespace Nanook.GrindCore.Lz4
         private readonly CompressionBuffer _buffer;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lz4;
-        internal override int DefaultBufferOverflowSize => 2 * 0x400 * 0x400;
-        internal override int DefaultBufferSize => 2 * 0x400 * 0x400;
+        internal override int BufferSizeInput => 2 * 0x400 * 0x400;
+        internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level5;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxLz4;
@@ -27,13 +27,15 @@ namespace Nanook.GrindCore.Lz4
         {
             if (IsCompress)
             {
-                _encoder = new Lz4Encoder(options.BufferSize ?? DefaultBufferSize, (int)this.CompressionType);
-                _buffer = new CompressionBuffer(options.BufferSize ?? _encoder.BlockSize << 1);
+                this.BufferSizeOutput = CacheThreshold + (CacheThreshold / 255) + 0x10 + 1;
+                _encoder = new Lz4Encoder(CacheThreshold, (int)this.CompressionType);
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
             {
-                _decoder = new Lz4Decoder(options.BufferSize ?? DefaultBufferSize);
-                _buffer = new CompressionBuffer(options.BufferSize ?? this.DefaultBufferSize);
+                this.BufferSizeOutput = CacheThreshold;
+                _decoder = new Lz4Decoder(this.BufferSizeOutput);
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
 

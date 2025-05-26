@@ -10,8 +10,8 @@ namespace Nanook.GrindCore.Lzma
     public class CopyStream : CompressionStream, ICompressionDefaults
     {
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Copy;
-        internal override int DefaultBufferOverflowSize => 1 * 0x400 * 0x400;
-        internal override int DefaultBufferSize => 1 * 0x400 * 0x400;
+        internal override int BufferSizeInput => 1 * 0x400 * 0x400;
+        internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level0;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level0;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.Level0;
@@ -21,6 +21,7 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public CopyStream(Stream stream, CompressionOptions options) : base(true, stream, options)
         {
+            BufferSizeOutput = CacheThreshold;
         }
 
         /// <summary>

@@ -17,8 +17,8 @@ namespace Nanook.GrindCore.ZStd
         private readonly CompressionBuffer _buffer;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.ZStd;
-        internal override int DefaultBufferOverflowSize => 2 * 0x400 * 0x400;
-        internal override int DefaultBufferSize => 2 * 0x400 * 0x400;
+        internal override int BufferSizeInput => 2 * 0x400 * 0x400;
+        internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level3;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxZStd;
@@ -27,13 +27,15 @@ namespace Nanook.GrindCore.ZStd
         {
             if (IsCompress)
             {
-                _encoder = new ZStdEncoder(options.BufferSize ?? DefaultBufferSize, (int)this.CompressionType);
-                _buffer = new CompressionBuffer(_encoder.InputBufferSize);
+                this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 7) + 128;
+                _encoder = new ZStdEncoder(CacheThreshold, (int)this.CompressionType);
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
             {
+                this.BufferSizeOutput = CacheThreshold;
                 _decoder = new ZStdDecoder();
-                _buffer = new CompressionBuffer(options.BufferSize ?? this.DefaultBufferSize);
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
 

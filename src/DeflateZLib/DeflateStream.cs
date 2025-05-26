@@ -17,8 +17,8 @@ namespace Nanook.GrindCore.DeflateZLib
         private bool _wroteBytes;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.DeflateNg;
-        internal override int DefaultBufferOverflowSize => 0x200000;
-        internal override int DefaultBufferSize => 0x200000;
+        internal override int BufferSizeInput => 0x200000;
+        internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level6;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxZLib;
@@ -33,12 +33,18 @@ namespace Nanook.GrindCore.DeflateZLib
         /// </summary>
         internal DeflateStream(Stream stream, CompressionOptions options, int windowBits, long uncompressedSize = -1) : base(true, stream, options)
         {
-            _buffer = new CompressionBuffer(8192);
-
             if (!IsCompress)
+            {
+                this.BufferSizeOutput = 8192;
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
                 _inflater = new DeflateDecoder(base.Version, windowBits, uncompressedSize);
+            }
             else
+            {
+                this.BufferSizeOutput = this.CacheThreshold;
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
                 _deflater = new DeflateEncoder(base.Version, CompressionType, windowBits);
+            }
         }
 
         internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)

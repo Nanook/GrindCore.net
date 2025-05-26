@@ -21,7 +21,7 @@ namespace Nanook.GrindCore.Lzma
         public uint KeepBlockSize { get; }
         public long BytesFullSize { get; private set; }
 
-        public FastLzma2Encoder(int level = 6, CompressionParameters? compressParams = null)
+        public FastLzma2Encoder(int bufferSize, int level = 6, CompressionParameters? compressParams = null)
         {
             if (compressParams == null)
                 compressParams = new CompressionParameters(0);
@@ -31,7 +31,7 @@ namespace Nanook.GrindCore.Lzma
             else
                 _context = Interop.FastLzma2.FL2_createCStreamMt((uint)compressParams.Threads, 1);
 
-            _bufferSize = compressParams.DictionarySize * 4;
+            _bufferSize = bufferSize;
             _flushed = false;
 
             foreach (var kv in compressParams.Values)
@@ -44,7 +44,7 @@ namespace Nanook.GrindCore.Lzma
             if (FL2Exception.IsError(code))
                 throw new FL2Exception(code);
             // Compressed stream output _outBuffer
-            _bufferArray = BufferPool.Rent(_bufferSize << 2);
+            _bufferArray = BufferPool.Rent(_bufferSize + (_bufferSize >> 1) + 0x20);
             _bufferHandle = GCHandle.Alloc(_bufferArray, GCHandleType.Pinned);
             _compOutBuffer = new FL2OutBuffer()
             {

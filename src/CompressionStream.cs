@@ -22,7 +22,7 @@ namespace Nanook.GrindCore
 
         public Stream BaseStream { get; }
 
-        protected readonly int _cacheThreshold;
+        protected readonly int CacheThreshold;
         private CompressionBuffer _cache;
 
         public override bool CanSeek => false;
@@ -68,8 +68,8 @@ namespace Nanook.GrindCore
             BaseStream = stream;
             Version = options.Version ?? CompressionVersion.Create(this.Algorithm, ""); // latest
 
-            _cacheThreshold = options.BufferSize ?? this.DefaultBufferSize;
-            _cache = new CompressionBuffer(IsCompress ? (options.BufferOverflowSize ?? this.DefaultBufferOverflowSize) : (options.BufferSize ?? this.DefaultBufferSize));
+            CacheThreshold = options.BufferSize ?? this.BufferSizeInput;
+            _cache = new CompressionBuffer(options.BufferSize ?? this.BufferSizeInput);
 
             if (!IsCompress) //Decompress
             {
@@ -95,8 +95,8 @@ namespace Nanook.GrindCore
 
         internal abstract CompressionAlgorithm Algorithm { get; }
         internal CompressionVersion Version { get; }
-        internal abstract int DefaultBufferOverflowSize { get; }
-        internal abstract int DefaultBufferSize { get; }
+        internal abstract int BufferSizeInput { get; }
+        internal abstract int BufferSizeOutput { get; }
         internal abstract int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream);
         internal abstract void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream);
         internal abstract void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete);
@@ -146,7 +146,7 @@ namespace Nanook.GrindCore
         private void onWrite(CancellableTask cancel)
         {
             int size2;
-            if (_cache.AvailableRead >= _cacheThreshold || _cache.AvailableWrite == 0) // safeguarded, should never be if (false || true)
+            if (_cache.AvailableRead >= CacheThreshold || _cache.AvailableWrite == 0) // safeguarded, should never be if (false || true)
             {
                 size2 = _cache.AvailableRead;
                 OnWrite(_cache, cancel, out int bytesWrittenToStream);
@@ -217,7 +217,7 @@ namespace Nanook.GrindCore
         {
             _cache.Data[_cache.Size] = value;
             _cache.Write(1);
-            if (_cache.AvailableRead >= this.DefaultBufferOverflowSize)
+            if (_cache.AvailableRead >= this.BufferSizeOutput)
                 onWrite(new CancellableTask());
         }
 

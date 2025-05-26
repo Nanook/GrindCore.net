@@ -33,7 +33,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x1dba, "bdd8b43a296a44ad")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x2652, "f2324065e2e34d09")]
 #else
-        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x860, "4565a78bfb006340")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x5d1, "2b444156a4305ae3")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x4fa, "bd7a15fc895f1b65")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x1db4, "2464d64063e022ba")]
@@ -83,7 +83,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x3d3, "faf781046fb77de8")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x4c5, "1c5c2490ab900308")]
 #else
-        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x1f6, "1fd0ab5c0058d51a")]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x209, "9aeff4be079e6ed5")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x19b, "e39f3f4d64825537")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x18a, "03e8b1d250f7e6aa")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x3cd, "eefbb1f99743a612")]
@@ -563,7 +563,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x16749, "6d522dca7d96dfe8", "3a6e1acfa971804d")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0x16749, "6d522dca7d96dfe8", "3a6e1acfa971804d")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x40976, "6d522dca7d96dfe8", "a519415c475fd0d2")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x16752, "6d522dca7d96dfe8", "b06b0aca5eede514")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x16749, "6d522dca7d96dfe8", "3a6e1acfa971804d")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x16749, "6d522dca7d96dfe8", "3a6e1acfa971804d")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x16fa3, "6d522dca7d96dfe8", "f0e78620b0b3ca96")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Optimal, 0x15310, "6d522dca7d96dfe8", "023838e061289d25")]
@@ -587,7 +587,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x1674f, "6d522dca7d96dfe8", "7266f745c4d9b110")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0x1674f, "6d522dca7d96dfe8", "ac87e7997d39673a")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x4097c, "6d522dca7d96dfe8", "e157de4720ea78e2")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x16758, "6d522dca7d96dfe8", "ec3a916cd9c8b7de")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x1674f, "6d522dca7d96dfe8", "7266f745c4d9b110")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0x1674f, "6d522dca7d96dfe8", "ac87e7997d39673a")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x908, "6d522dca7d96dfe8", "5b083390d9bfcdf9")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x908, "6d522dca7d96dfe8", "08a25673b5c2050d")]
@@ -603,10 +603,10 @@ namespace GrindCore.Tests
                 TestResults r = await Utl.TestStreamBlocksAsync(data, algorithm, type, streamLen, bufferSize, (int)compressedSize);
 
                 Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
-                //Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
-                //Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
-                //Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
-                //Assert.Equal(r.InHash, r.OutHash); //test IN and decompressed data hashes match
+                Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
+                Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
+                Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
+                Assert.Equal(r.InHash, r.OutHash); //test IN and decompressed data hashes match
             }
         }
 
@@ -646,7 +646,7 @@ namespace GrindCore.Tests
         [Theory]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x129aa, "c668fabe6e6e9235", "150b42d11de57fc7")]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x138c1, "c668fabe6e6e9235", "cc526df9a9d44632")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x49d1d, "c668fabe6e6e9235", "6f7def11d3567702")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x485cb, "c668fabe6e6e9235", "e851d48fa1396962")]
         public void Data_Stream512MiB_Chunk128MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
         {
             int streamLen = 512 * 1024 * 1024; // Total bytes to process
@@ -664,26 +664,6 @@ namespace GrindCore.Tests
             }
         }
 
-        [Theory]
-        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x129aa, "c668fabe6e6e9235", "150b42d11de57fc7")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x138c1, "c668fabe6e6e9235", "cc526df9a9d44632")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x49d1d, "c668fabe6e6e9235", "6f7def11d3567702")]
-        public void Data_Stream2512MiB_Chunk128MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
-        {
-            int streamLen = 512 * 1024 * 1024; // Total bytes to process
-            int bufferSize = 128 * 1024 * 1024; // 128MiB block size
-
-            using (var data = new TestDataStream())
-            {
-                TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, (int)compressedSize);
-
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
-                Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
-                Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
-                Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
-                Assert.Equal(r.InHash, r.OutHash); //test IN and decompressed data hashes match
-            }
-        }
 #endif
 #endif
 

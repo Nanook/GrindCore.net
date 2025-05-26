@@ -16,8 +16,8 @@ namespace Nanook.GrindCore.Lzma
         private readonly CompressionBuffer _buffer;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma;
-        internal override int DefaultBufferOverflowSize => 3 * 0x400 * 0x400;
-        internal override int DefaultBufferSize => 2 * 0x400 * 0x400;
+        internal override int BufferSizeInput => 2 * 0x400 * 0x400;
+        internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level5;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxLzma2;
@@ -28,15 +28,17 @@ namespace Nanook.GrindCore.Lzma
             {
                 _encoder = new LzmaEncoder((int)CompressionType, (uint)dictionarySize, 0);
                 Properties = _encoder.Properties;
-                _buffer = new CompressionBuffer((long)(options.BufferSize! ?? DefaultBufferSize) << 1); // options.BufferOverflowSize ?? _encoder.BlockSize << 2);
+                this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 1) + 0x10;
+                _buffer = new CompressionBuffer(this.BufferSizeOutput); // options.BufferOverflowSize ?? _encoder.BlockSize << 2);
             }
             else
             {
                 if (options.InitProperties == null)
                     throw new Exception("LZMA requires CompressionOptions.InitProperties to be set to an array when decompressing");
 
+                this.BufferSizeOutput = CacheThreshold;
                 _decoder = new LzmaDecoder(options.InitProperties);
-                _buffer = new CompressionBuffer(options.BufferSize ?? this.DefaultBufferSize);
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
 

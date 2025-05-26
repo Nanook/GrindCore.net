@@ -14,8 +14,8 @@ namespace Nanook.GrindCore.Brotli
         private bool _nonEmptyInput;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Brotli;
-        internal override int DefaultBufferOverflowSize => 0x200000;
-        internal override int DefaultBufferSize => 0x200000;
+        internal override int BufferSizeInput => (1 << 16) - 16; //65520;
+        internal override int BufferSizeOutput => (1 << 16) - 16; //65520
 
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level4;
@@ -33,7 +33,7 @@ namespace Nanook.GrindCore.Brotli
                 _encoder.SetWindow();
             }
 
-            _buffer = new CompressionBuffer((1 << 16) - 16); //65520
+            _buffer = new CompressionBuffer(this.BufferSizeOutput); 
         }
 
         private bool tryDecompress(CompressionBuffer outData, out int allBytesConsumed, out int bytesWritten)

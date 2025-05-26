@@ -26,7 +26,6 @@ namespace Nanook.GrindCore.Lzma
         private bool _solid;
         private long _blkTotal;
         private bool _blockComplete;
-        private int _disposeCount;
 
         public byte Properties { get; }
         public long BlockSize { get; }

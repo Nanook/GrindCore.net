@@ -17,40 +17,36 @@ namespace Nanook.GrindCore.Lzma
         private CompressionBuffer _buffer;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma2;
-        internal override int DefaultBufferOverflowSize => 3 * 0x400 * 0x400;
-        internal override int DefaultBufferSize => 2 * 0x400 * 0x400;
+        internal override int BufferSizeInput => 2 * 0x400 * 0x400;
+        internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level5;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxLzma2;
 
         public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0) : base(true, stream, options)
         {
-            long bufferSize = options.BlockSize ?? -1;
 
             if (IsCompress)
             {
-                if (bufferSize <= 0 || bufferSize > int.MaxValue)
-                    bufferSize = options.BufferSize ?? this.DefaultBufferSize;
-                else
-                    options.BufferOverflowSize = options.BufferSize = (int)bufferSize;
+                this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 1) + 0x20;
+                if (this.BufferSizeOutput > int.MaxValue)
+                    this.BufferSizeOutput = int.MaxValue;
 
                 _encoder = new Lzma2Encoder((int)CompressionType, options.ThreadCount ?? -1, options.BlockSize ?? -1, dictSize, 0, options.BufferSize ?? 0);
                 this.Properties = new byte[] { _encoder.Properties };
-                //_buffComp = BufferPool.Rent(_bufferSize);
-                _buffer = new CompressionBuffer(bufferSize << 2);
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
             {
-                bufferSize = (int)(options.BufferSize ?? this.DefaultBufferSize);
-
                 if (options.InitProperties == null)
                     throw new Exception("LZMA requires CompressionOptions.InitProperties to be set to an array when decompressing");
 
                 this.Properties = options.InitProperties;
                 _decoder = new Lzma2Decoder(options.InitProperties[0]);
 
-                // Compressed stream input _outBuffer
-                _buffer = new CompressionBuffer(bufferSize);
+                this.BufferSizeOutput = CacheThreshold;
+
+                _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
 
