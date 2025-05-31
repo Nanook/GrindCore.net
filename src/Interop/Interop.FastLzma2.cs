@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Nanook.GrindCore.FastLzma2;
+using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static Nanook.GrindCore.Interop;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore
 {
     internal static partial class Interop
     {
@@ -122,7 +122,7 @@ namespace Nanook.GrindCore.Lzma
             /// </returns>
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "FL2_decompressMt", CallingConvention = CallingConvention.Cdecl)]
             internal static extern nuint FL2_decompressMt(
-                [In] byte[] dst, nuint dstCapacity, [In] byte[] src, nuint compressedSize, uint nbThreads);
+                byte* dst, nuint dstCapacity, byte* src, nuint compressedSize, uint nbThreads);
 
             #endregion Simple Function
 

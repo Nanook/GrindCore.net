@@ -17,9 +17,9 @@ namespace GrindCore.Tests
     {
 
         [Theory]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x200000,  1,  0xec5, "7833322f45651d24", "5f71c3fb6c0b1c7b")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x200000,  1,  0x953, "7833322f45651d24", "eb4d661eaefb646f")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x200000,  4,  0xec5, "7833322f45651d24", "5f71c3fb6c0b1c7b")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x600000,  1,  0xe7c, "7833322f45651d24", "d545ad69abce9f99")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x600000,  1,  0x8bb, "7833322f45651d24", "f728b3d543c6e2cb")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x600000,  4,  0xe7c, "7833322f45651d24", "d545ad69abce9f99")]
 
         [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.Fastest,            -1,  1,  0x572, "7833322f45651d24", "9b0d306d9158f3f1")]

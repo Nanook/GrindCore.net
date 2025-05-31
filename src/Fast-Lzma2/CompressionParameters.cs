@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using static Nanook.GrindCore.Lzma.Interop;
+using static Nanook.GrindCore.Interop;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore.FastLzma2
 {
     public class CompressionParameters
     {

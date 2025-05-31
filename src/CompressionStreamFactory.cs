@@ -1,5 +1,6 @@
 using Nanook.GrindCore.Brotli;
 using Nanook.GrindCore.DeflateZLib;
+using Nanook.GrindCore.FastLzma2;
 using Nanook.GrindCore.GZip;
 using Nanook.GrindCore.Lz4;
 using Nanook.GrindCore.Lzma;
@@ -67,36 +68,5 @@ namespace Nanook.GrindCore
             throw new ArgumentException("Unsupported stream algorithm", nameof(algorithm));
         }
 
-        public static byte[] Process(CompressionAlgorithm algorithm, byte[] data, CompressionOptions options)
-        {
-            return Process(algorithm, data, options, out _);
-        }
-        public static byte[] Process(CompressionAlgorithm algorithm, byte[] data, CompressionOptions options, out byte[]? properties)
-        {
-            if (options.Type != CompressionType.Decompress)
-            {
-                using (var outputStream = new MemoryStream())
-                {
-                    using (var compressionStream = Create(algorithm, outputStream, options))
-                    {
-                        compressionStream.Write(data, 0, data.Length);
-                        properties = compressionStream.Properties;
-                        compressionStream.Complete();
-                    }
-                    return outputStream.ToArray();
-                }
-            }
-            else
-            {
-                using (var outputStream = new MemoryStream())
-                {
-                    properties = null;
-                    using (var inputStream = new MemoryStream(data))
-                    using (var decompressionStream = Create(algorithm, inputStream, options))
-                        decompressionStream.CopyTo(outputStream);
-                    return outputStream.ToArray();
-                }
-            }
-        }
     }
 }

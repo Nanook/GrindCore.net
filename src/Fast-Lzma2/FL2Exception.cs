@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore.FastLzma2
 {
     public enum FL2ErrorCode
     {

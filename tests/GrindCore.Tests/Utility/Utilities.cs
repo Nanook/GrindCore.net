@@ -28,7 +28,7 @@ namespace GrindCore.Tests.Utility
             long totalInProcessedBytes = 0;
             long totalOutProcessedBytes = 0;
 
-            int? threadCount = algorithm != CompressionAlgorithm.FastLzma2 ? threads : 4;
+            int? threadCount = threads;
 
             CompressionOptions compOptions = new CompressionOptions()
             {
@@ -87,10 +87,12 @@ namespace GrindCore.Tests.Utility
                         using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, decompOptions))
                         {
                             int bytesRead;
-                            while (totalOutProcessedBytes < total && (bytesRead = compressionStream.Read(buffer, 0, Math.Min(buffer.Length, (int)(total - totalOutProcessedBytes)))) > 0)
+                            int fixTotal = total == 0 ? 1 : total;
+                            while (totalOutProcessedBytes < fixTotal && (bytesRead = compressionStream.Read(buffer, 0, Math.Min(buffer.Length, (int)(fixTotal - totalOutProcessedBytes)))) > 0)
                             {
                                 outXxhash.TransformBlock(buffer, 0, bytesRead, null, 0);
                                 totalOutProcessedBytes += bytesRead;
+                                fixTotal = total; //reset
                             }
                             outXxhash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
@@ -124,7 +126,7 @@ namespace GrindCore.Tests.Utility
             long totalInProcessedBytes = 0;
             long totalOutProcessedBytes = 0;
 
-            int? threadCount = algorithm != CompressionAlgorithm.FastLzma2 ? null : 4;
+            int? threadCount = 0;
 
             CompressionOptions compOptions = new CompressionOptions()
             {
@@ -215,7 +217,7 @@ namespace GrindCore.Tests.Utility
             long totalInProcessedBytes = 0;
             long totalOutProcessedBytes = 0;
 
-            int? threadCount = algorithm != CompressionAlgorithm.FastLzma2 ? null : 4;
+            int? threadCount = 0;
 
             CompressionOptions compOptions = new CompressionOptions()
             {

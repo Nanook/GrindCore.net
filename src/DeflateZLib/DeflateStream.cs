@@ -47,7 +47,7 @@ namespace Nanook.GrindCore.DeflateZLib
             }
         }
 
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             bytesReadFromStream = 0;
             int bytesRead;

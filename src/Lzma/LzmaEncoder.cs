@@ -66,20 +66,6 @@ namespace Nanook.GrindCore.Lzma
             //var s = getState();
         }
 
-        public ulong EncodeTest(byte[] inData, long inSize, byte[] outData, long outSize)
-        {
-            GCHandle inBufferPinned = GCHandle.Alloc(inData, GCHandleType.Pinned);
-            CBufferInStream inStream = new CBufferInStream() { buffer = inBufferPinned.AddrOfPinnedObject(), size = (ulong)inSize, remaining = (ulong)inSize };
-            ulong sz = (ulong)outSize;
-            fixed (byte* inPtr = inData)
-            fixed (byte* outPtr = outData)
-            {
-                int res = S7_Lzma_v24_07_Enc_EncodeTest(_encoder, outPtr, &sz, ref inStream);
-            }
-            inBufferPinned.Free();
-            return sz;
-        }
-
         public long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             if (inData.Pos != 0)

@@ -49,16 +49,8 @@ namespace Nanook.GrindCore.Lz4
             _headerWritten = false;
         }
 
-        public long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
+        private int writeHeader(CompressionBuffer outData, int totalCompressed)
         {
-            if (inData.Pos != 0)
-                throw new ArgumentException($"inData should have a Pos of 0");
-            if (outData.Size != 0)
-                throw new ArgumentException($"outData should have a Size of 0");
-
-            int totalCompressed = 0;
-
-            // Write frame header if not already written
             if (!_headerWritten)
             {
                 ulong headerSize;
@@ -76,6 +68,19 @@ namespace Nanook.GrindCore.Lz4
                 outData.Write(_buffer, 0, (int)headerSize);
                 _headerWritten = true;
             }
+
+            return totalCompressed;
+        }
+
+        public long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
+        {
+            if (inData.Pos != 0)
+                throw new ArgumentException($"inData should have a Pos of 0");
+            if (outData.Size != 0)
+                throw new ArgumentException($"outData should have a Size of 0");
+
+            // Write frame header if not already written
+            int totalCompressed = writeHeader(outData, 0);
 
             while (inData.AvailableRead > 0 || final)
             {
@@ -111,6 +116,9 @@ namespace Nanook.GrindCore.Lz4
                 ulong flushedSize = 0;
                 ulong endSize = 0;
 
+                // Write frame header if not already written
+                int headerBytes = writeHeader(outData, 0);
+
                 if (flush)
                 {
                     flushedSize = SZ_Lz4F_v1_9_4_Flush(ctxPtr, _bufferPtr, (ulong)_buffer.Length, IntPtr.Zero);
@@ -128,7 +136,7 @@ namespace Nanook.GrindCore.Lz4
                     outData.Write(_buffer, 0, (int)endSize);
                 }
 
-                return (long)(flushedSize + endSize);
+                return (long)((ulong)headerBytes + flushedSize + endSize);
             }
         }
 

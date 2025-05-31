@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.IO;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore.FastLzma2
 {
     internal unsafe class FastLzma2Encoder : IDisposable
     {
@@ -26,7 +26,7 @@ namespace Nanook.GrindCore.Lzma
             if (compressParams == null)
                 compressParams = new CompressionParameters(0);
 
-            if (compressParams.Threads == 1)
+            if (compressParams.Threads <= 1)
                 _context = Interop.FastLzma2.FL2_createCStream();
             else
                 _context = Interop.FastLzma2.FL2_createCStreamMt((uint)compressParams.Threads, 1);

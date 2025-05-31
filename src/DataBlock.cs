@@ -2,7 +2,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
 
-
 namespace Nanook.GrindCore
 {
 #if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
@@ -20,6 +19,7 @@ namespace Nanook.GrindCore
             Offset = offset;
             Length = length;
         }
+
         public DataBlock(ReadOnlySpan<byte> span) : this(span, 0, span.Length) { }
 
         // Constructor for Span<byte>
@@ -68,7 +68,22 @@ namespace Nanook.GrindCore
 
             buffer.Read(_mutableData.Slice(this.Offset + sourceOffset, length));
         }
+
+        public void CopyTo(DataBlock target, int sourceOffset, int targetOffset, int length)
+        {
+            if (sourceOffset < 0 || targetOffset < 0 || length < 0)
+                throw new ArgumentOutOfRangeException("Offsets and length must be non-negative.");
+
+            if (sourceOffset + length > Length)
+                throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
+
+            if (targetOffset + length > target.Length)
+                throw new ArgumentOutOfRangeException(nameof(targetOffset), "Target range is out of bounds.");
+
+            Data.Slice(Offset + sourceOffset, length).CopyTo(target.AsWritableSpan().Slice(target.Offset + targetOffset, length));
+        }
     }
+
 #else
 
     internal readonly struct DataBlock
@@ -114,6 +129,19 @@ namespace Nanook.GrindCore
             buffer.Read(Data, Offset + sourceOffset, length);
         }
 
+        public void CopyTo(DataBlock target, int sourceOffset, int targetOffset, int length)
+        {
+            if (sourceOffset < 0 || targetOffset < 0 || length < 0)
+                throw new ArgumentOutOfRangeException("Offsets and length must be non-negative.");
+
+            if (sourceOffset + length > Length)
+                throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
+
+            if (targetOffset + length > target.Length)
+                throw new ArgumentOutOfRangeException(nameof(targetOffset), "Target range is out of bounds.");
+
+            Array.Copy(Data, Offset + sourceOffset, target.Data, target.Offset + targetOffset, length);
+        }
     }
 #endif
 }

@@ -38,15 +38,6 @@ namespace Nanook.GrindCore
 
         public byte[] Properties { get; protected set; }
 
-        public void ResetForBlockRead(int blockLength)
-        {
-            if (!this.CanRead)
-                throw new InvalidOperationException("Stream must be in read mode");
-
-            //TODO: Reset the decoder
-            //_blockSize = blockLength;
-        }
-
         public override long Position
         {
             get => _position != -1 ? _position : throw new NotSupportedException("Seeking is not supported.");
@@ -97,7 +88,7 @@ namespace Nanook.GrindCore
         internal CompressionVersion Version { get; }
         internal abstract int BufferSizeInput { get; }
         internal abstract int BufferSizeOutput { get; }
-        internal abstract int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream);
+        internal abstract int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream);
         internal abstract void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream);
         internal abstract void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete);
         protected abstract void OnDispose();
@@ -118,7 +109,7 @@ namespace Nanook.GrindCore
 
                 if (total < dataBlock.Length)
                 {
-                    read = OnRead(_cache, cancel, 0, out int bytesReadFromStream);
+                    read = OnRead(_cache, cancel, out int bytesReadFromStream);
                     _positionFullSize += read;
                     _position += bytesReadFromStream;
                 }
@@ -201,7 +192,7 @@ namespace Nanook.GrindCore
         {
             if (_cache.AvailableRead == 0)
             {
-                int read = OnRead(_cache, new CancellableTask(), 0, out int bytesReadFromStream);
+                int read = OnRead(_cache, new CancellableTask(), out int bytesReadFromStream);
                 _positionFullSize += read;
                 _position += bytesReadFromStream;
             }

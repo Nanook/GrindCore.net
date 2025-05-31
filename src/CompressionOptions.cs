@@ -45,11 +45,6 @@ namespace Nanook.GrindCore
         /// </summary>
         public int? BufferSize { get; set; }
 
-        /// <summary>
-        /// Actual allocated buffer size large enough to allow overflow bounds. E.g. when data expands when compressing. Decompressors will often split data in to smaller chunks internally
-        /// </summary>
-        public int? BufferOverflowSize { get; set; }
-
         public static CompressionOptions DefaultDecompress() => new CompressionOptions() { Type = CompressionType.Decompress };
 
         public static CompressionOptions DefaultCompressOptimal() => new CompressionOptions() { Type = CompressionType.Optimal };

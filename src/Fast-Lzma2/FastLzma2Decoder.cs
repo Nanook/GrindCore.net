@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using static Nanook.GrindCore.Interop.Lzma;
+using static Nanook.GrindCore.Interop.FastLzma2;
 using static Nanook.GrindCore.Interop;
 using System.Linq;
 using System.Threading;
 using System.IO;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore.FastLzma2
 {
     internal unsafe class FastLzma2Decoder : IDisposable
     {

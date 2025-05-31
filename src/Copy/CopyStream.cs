@@ -27,7 +27,7 @@ namespace Nanook.GrindCore.Lzma
         /// <summary>
         /// Reads data from the stream and decompresses it using LZMA. Position is updated with running total of bytes processed from source stream.
         /// </summary>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             if (!this.CanRead)
                 throw new NotSupportedException("Not for Compression mode");

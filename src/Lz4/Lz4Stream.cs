@@ -43,7 +43,7 @@ namespace Nanook.GrindCore.Lz4
         /// Reads data from the stream and decompresses it using LZ4.
         /// Position is updated with running total of bytes processed from source stream.
         /// </summary>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             if (!this.CanRead)
                 throw new NotSupportedException("Not for Compression mode");

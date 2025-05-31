@@ -82,7 +82,7 @@ namespace Nanook.GrindCore.Brotli
             return false;
         }
 
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             if (IsCompress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);

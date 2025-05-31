@@ -15,6 +15,7 @@ namespace Nanook.GrindCore.ZStd
         private readonly ZStdDecoder _decoder;
         private readonly ZStdEncoder _encoder;
         private readonly CompressionBuffer _buffer;
+        private bool _wroteData;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.ZStd;
         internal override int BufferSizeInput => 2 * 0x400 * 0x400;
@@ -25,6 +26,8 @@ namespace Nanook.GrindCore.ZStd
 
         public ZStdStream(Stream stream, CompressionOptions options) : base(true, stream, options)
         {
+            _wroteData = false;
+
             if (IsCompress)
             {
                 this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 7) + 128;
@@ -43,7 +46,7 @@ namespace Nanook.GrindCore.ZStd
         /// Reads data from the stream and decompresses it using LZ4.
         /// Position is updated with running total of bytes processed from source stream.
         /// </summary>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             if (!this.CanRead)
                 throw new NotSupportedException("Not for Compression mode");
@@ -83,6 +86,7 @@ namespace Nanook.GrindCore.ZStd
 
             int avRead = data.AvailableRead;
             long size = _encoder.EncodeData(data, _buffer, false, cancel);
+            _wroteData = true;
 
             if (size > 0)
             {
@@ -102,8 +106,8 @@ namespace Nanook.GrindCore.ZStd
             if (IsCompress)
             {
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
-                long size = data.AvailableRead == 0 ? 0 : _encoder.EncodeData(data, _buffer, true, cancel);
-                if (flush)
+                long size = data.AvailableRead == 0 && _wroteData ? 0 : _encoder.EncodeData(data, _buffer, true, cancel);
+                //if (flush || !_wroteData)
                     size += _encoder.Flush(_buffer);
                 if (size > 0)
                 {

@@ -1,4 +1,4 @@
-﻿namespace Nanook.GrindCore.Lzma
+﻿namespace Nanook.GrindCore.FastLzma2
 {
     internal struct FL2InBuffer
     {

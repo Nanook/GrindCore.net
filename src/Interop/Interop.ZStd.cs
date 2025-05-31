@@ -150,12 +150,16 @@ namespace Nanook.GrindCore
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.StdCall)]
             public static extern UIntPtr SZ_ZStd_v1_5_6_FlushStream(
                 SZ_ZStd_v1_5_6_CompressionContext* ctx,
-                IntPtr dst, UIntPtr dstCapacity, out long outSize);
+                IntPtr dst, UIntPtr dstCapacity,
+                byte* src, UIntPtr srcCapacity,
+                out long inSize, out long outSize);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.StdCall)]
             public static extern UIntPtr SZ_ZStd_v1_5_6_EndStream(
                 SZ_ZStd_v1_5_6_CompressionContext* ctx,
-                IntPtr dst, UIntPtr dstCapacity, out long outSize);
+                IntPtr dst, UIntPtr dstCapacity,
+                byte* src, UIntPtr srcCapacity,
+                out long inSize, out long outSize);
 
 
             /* ===== Streaming Decompression ===== */

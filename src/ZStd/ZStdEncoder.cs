@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 using static Nanook.GrindCore.Interop;
 using static Nanook.GrindCore.Interop.ZStd;
 
@@ -76,6 +77,7 @@ namespace Nanook.GrindCore.ZStd
                     inData.Read((int)inSize);
                     outData.Write(_outputBuffer, 0, (int)outSize);
                     totalCompressed += (int)outSize;
+                    final = false;
                 }
             }
 
@@ -84,19 +86,23 @@ namespace Nanook.GrindCore.ZStd
 
         public long Flush(CompressionBuffer outData)
         {
-            long flushedSize;
+            long flushedSize = 0;
             long endSize;
+            byte[] buff = new byte[1];
+            long inSize = 0;
 
+            fixed (byte* inputPtr = buff)
             fixed (SZ_ZStd_v1_5_6_CompressionContext* ctxPtr = &_context)
             {
-                UIntPtr res = SZ_ZStd_v1_5_6_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, out flushedSize);
+                UIntPtr res = SZ_ZStd_v1_5_6_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out flushedSize);
 
                 if (res != UIntPtr.Zero)
                     throw new Exception("ZStd flush failed");
 
                 outData.Write(_outputBuffer, 0, (int)flushedSize);
 
-                res = SZ_ZStd_v1_5_6_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, out endSize);
+                res = SZ_ZStd_v1_5_6_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out endSize);
+
                 if (res != UIntPtr.Zero)
                     throw new Exception("Failed to finalize Zstd compression");
 

@@ -4,7 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore.FastLzma2
 {
     /// <summary>
     /// Streaming Fast LZMA2 compress
@@ -33,7 +33,7 @@ namespace Nanook.GrindCore.Lzma
                 this.BufferSizeOutput = CacheThreshold;
 
             if (compressParams == null)
-                compressParams = new CompressionParameters(options.ThreadCount ?? 0, CacheThreshold);
+                compressParams = new CompressionParameters(options.ThreadCount ?? 0, 0);
 
             if (IsCompress)
                 _encoder = new FastLzma2Encoder(this.BufferSizeOutput, (int)CompressionType, compressParams);
@@ -50,7 +50,7 @@ namespace Nanook.GrindCore.Lzma
             _encoder.EncodeData(data, true, BaseStream, cancel, out bytesWrittenToStream);
         }
 
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             return _decoder.DecodeData(data, BaseStream, cancel, out bytesReadFromStream);
         }

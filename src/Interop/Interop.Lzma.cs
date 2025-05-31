@@ -251,9 +251,6 @@ namespace Nanook.GrindCore
             public static extern int S7_Lzma_v24_07_Enc_LzmaEncode(byte* dest, ulong* destLen, byte* src, ulong srcLen, ref CLzmaEncProps props, byte* propsEncoded, ulong* propsSize, int writeEndMark, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.StdCall)]
-            public static extern int S7_Lzma_v24_07_Enc_EncodeTest(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream inStream);
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.StdCall)]
             public static extern int S7_Lzma_v24_07_Enc_LzmaCodeMultiCallPrepare(IntPtr p, uint* blockSize, uint* dictSize, uint final);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.StdCall)]
