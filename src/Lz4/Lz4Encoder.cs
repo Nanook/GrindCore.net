@@ -16,7 +16,7 @@ namespace Nanook.GrindCore.Lz4
 
         public int BlockSize { get; }
 
-        public Lz4Encoder(int blockSize, int compressionLevel = 0)
+        public Lz4Encoder(int blockSize, int compressionLevel)
         {
             BlockSize = blockSize;
 
@@ -27,15 +27,21 @@ namespace Nanook.GrindCore.Lz4
                 if (SZ_Lz4F_v1_9_4_CreateCompressionContext(ctxPtr) < 0)
                     throw new Exception("Failed to create LZ4 Frame compression context");
             }
+
+            //level 1 is lz4 - LZ4F_blockLinked favour decompression
+            //level 2 is lz4 - LZ4F_blockLinked
+            //level 3 to 12 is lz4 - LZ4F_blockIndependent
+
             // Properly allocate _preferences and pin memory
             _preferences = new LZ4F_preferences_t
             {
                 frameInfo = new LZ4F_frameInfo_t
                 {
                     //blockSizeID = LZ4F_blockSizeID_t.LZ4F_max4MB,
-                    blockMode = LZ4F_blockMode_t.LZ4F_blockLinked,
-                    contentChecksumFlag = LZ4F_contentChecksum_t.LZ4F_contentChecksumEnabled
+                    blockMode = compressionLevel < 3 ? LZ4F_blockMode_t.LZ4F_blockLinked : LZ4F_blockMode_t.LZ4F_blockIndependent, //Independent required to use HC levels 3 to 12
+                    contentChecksumFlag = LZ4F_contentChecksum_t.LZ4F_noContentChecksum
                 },
+                favorDecSpeed = compressionLevel == 1 ? 1u : 0u,
                 compressionLevel = compressionLevel
             };
 
@@ -93,8 +99,8 @@ namespace Nanook.GrindCore.Lz4
                 {
                     *&inputPtr += inData.Pos;
                     ulong compressedSize = SZ_Lz4F_v1_9_4_CompressUpdate(
-                        ctxPtr, _bufferPtr, (ulong)_buffer.Length,
-                        inputPtr, (ulong)inputSize, IntPtr.Zero);
+                            ctxPtr, _bufferPtr, (ulong)_buffer.Length,
+                            inputPtr, (ulong)inputSize, IntPtr.Zero);
 
                     if (compressedSize < 0)
                         throw new Exception($"LZ4 Frame compression failed with error code {compressedSize}");

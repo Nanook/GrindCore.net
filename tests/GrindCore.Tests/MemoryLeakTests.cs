@@ -86,7 +86,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x19b, "e39f3f4d64825537")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x2ff, "fd1a57a63d29c607")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1ea, "4ffd75974e4d0d93")]
-        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Optimal, 0x29e, "5f7ee7aedc2cb44c")]
+        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Optimal, 0x29a, "55372f7b165ee9e8")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0x1de, "069b2a2799eadee8")]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x1e5, "3e6f77f9c11f4e70")]
         [InlineData(CompressionAlgorithm.GZip, CompressionType.Optimal, 0x311, "dd79ecbbf6270f98")]

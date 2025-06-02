@@ -21,7 +21,7 @@ namespace Nanook.GrindCore.Lzma
         {
             CLzmaEncProps props = new CLzmaEncProps();
 
-            S7_Lzma_v24_07_EncProps_Init(ref props);
+            SZ_Lzma_v24_07_EncProps_Init(ref props);
 
             props.level = level;
             props.dictSize = props.mc = dictSize;
@@ -35,9 +35,9 @@ namespace Nanook.GrindCore.Lzma
 
             props.reduceSize = ulong.MaxValue; //this is the full filesize - -1 means set to blocksize if blocksize not -1(solid)|0(auto) && blocksize<filesize
 
-            _encoder = S7_Lzma_v24_07_Enc_Create();
+            _encoder = SZ_Lzma_v24_07_Enc_Create();
 
-            int res = S7_Lzma_v24_07_Enc_SetProps(_encoder, ref props); //normalises properties
+            int res = SZ_Lzma_v24_07_Enc_SetProps(_encoder, ref props); //normalises properties
             if (res != 0)
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
@@ -45,14 +45,14 @@ namespace Nanook.GrindCore.Lzma
             ulong sz = (ulong)p.Length;
 
             fixed (byte* inPtr = p)
-                S7_Lzma_v24_07_Enc_WriteProperties(_encoder, inPtr, &sz);
+                SZ_Lzma_v24_07_Enc_WriteProperties(_encoder, inPtr, &sz);
             this.Properties = p.Take((int)sz).ToArray();
             BufferPool.Return(p);
 
             uint bufferSize = 0;
             uint dSize = 0;
 
-            res = S7_Lzma_v24_07_Enc_LzmaCodeMultiCallPrepare(_encoder, &bufferSize, &dSize, 0);
+            res = SZ_Lzma_v24_07_Enc_LzmaCodeMultiCallPrepare(_encoder, &bufferSize, &dSize, 0);
             if (res != 0)
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
@@ -111,7 +111,7 @@ namespace Nanook.GrindCore.Lzma
                 fixed (byte* outPtr = outData.Data)
                 {
                     *&outPtr += outData.Size; //writePos is Size
-                    res = S7_Lzma_v24_07_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
+                    res = SZ_Lzma_v24_07_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
                     outTotal += (int)outSz;
                 }
                 _toFlush = available;
@@ -128,7 +128,7 @@ namespace Nanook.GrindCore.Lzma
         {
             if (_encoder != IntPtr.Zero)
             {
-                S7_Lzma_v24_07_Enc_Destroy(_encoder);
+                SZ_Lzma_v24_07_Enc_Destroy(_encoder);
                 _encoder = IntPtr.Zero;
             }
             if (_inBufferPinned.IsAllocated)

@@ -59,9 +59,9 @@ namespace Nanook.GrindCore.DeflateZLib
                 uint dstLen = (uint)dstData.Length;
                 int ret;
                 if (base.Options.Version == null || base.Options.Version.Index == 0)
-                    ret = Interop.ZLib.DN9_ZLibNg_v2_2_1_Uncompress3(d, ref dstLen, s, ref srcLen);
+                    ret = Interop.ZLib.DN9_ZLibNg_v2_2_1_Uncompress3(d, ref dstLen, s, ref srcLen, _windowBits);
                 else if (base.Options.Version.Index == 1)
-                    ret = Interop.ZLib.DN8_ZLib_v1_3_1_Uncompress3(d, ref dstLen, s, ref srcLen);
+                    ret = Interop.ZLib.DN8_ZLib_v1_3_1_Uncompress3(d, ref dstLen, s, ref srcLen, _windowBits);
                 else
                     throw new Exception($"{base.Options.Version.Algorithm} version {base.Options.Version.Version} is not supported");
                 return (int)dstLen;

@@ -33,13 +33,25 @@ namespace Nanook.GrindCore.Lz4
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                SZ_Lz4_v1_9_4_Stream stream = new SZ_Lz4_v1_9_4_Stream();
-                SZ_Lz4_v1_9_4_Init(ref stream);
+                int compressedSize;
 
-                int compressedSize = SZ_Lz4_v1_9_4_CompressFastContinue(
-                    ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstData.Length, _acceleration);
+                if ((int)this.Options.Type >= 3) // Use HC compression for level 3 or higher
+                {
+                    compressedSize = Interop.Lz4.SZ_Lz4_v1_9_4_CompressHC(
+                        srcPtr, (IntPtr)dstPtr,
+                        srcData.Length, dstData.Length,
+                        (int)this.Options.Type); // Pass HC compression level
+                }
+                else
+                {
+                    SZ_Lz4_v1_9_4_Stream stream = new SZ_Lz4_v1_9_4_Stream();
+                    SZ_Lz4_v1_9_4_Init(ref stream);
 
-                SZ_Lz4_v1_9_4_End(ref stream);
+                    compressedSize = SZ_Lz4_v1_9_4_CompressFastContinue(
+                        ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstData.Length, this.Options.Type == CompressionType.Level1 ? 1 : 0);
+
+                    SZ_Lz4_v1_9_4_End(ref stream);
+                }
 
                 if (compressedSize <= 0)
                     throw new InvalidOperationException("LZ4 Block Compression failed.");

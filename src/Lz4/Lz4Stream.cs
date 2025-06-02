@@ -20,7 +20,7 @@ namespace Nanook.GrindCore.Lz4
         internal override int BufferSizeInput => 2 * 0x400 * 0x400;
         internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level5;
+        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level9;
         CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxLz4;
 
         public Lz4Stream(Stream stream, CompressionOptions options) : base(true, stream, options)

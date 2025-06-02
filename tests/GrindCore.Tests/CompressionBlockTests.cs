@@ -41,16 +41,18 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Brotli, 1, 0x1f6, "1fd0ab5c0058d51a")]
         [InlineData(CompressionAlgorithm.Brotli, 4, 0x19b, "e39f3f4d64825537")]
         [InlineData(CompressionAlgorithm.Brotli, 11, 0x18a, "03e8b1d250f7e6aa")]
-        //[InlineData(CompressionAlgorithm.Deflate, 1, 0x3cd, "eefbb1f99743a612")]
-        //[InlineData(CompressionAlgorithm.Deflate, 6, 0x2ff, "fd1a57a63d29c607")]
-        //[InlineData(CompressionAlgorithm.Deflate, 9, 0x2ff, "fd1a57a63d29c607")]
-        //[InlineData(CompressionAlgorithm.DeflateNg, 1, 0x4be, "6564467a7a492f66")]
-        //[InlineData(CompressionAlgorithm.DeflateNg, 6, 0x2ff, "fd1a57a63d29c607")]
-        //[InlineData(CompressionAlgorithm.DeflateNg, 9, 0x2ff, "fd1a57a63d29c607")]
+        [InlineData(CompressionAlgorithm.Deflate, 1, 0x3cd, "eefbb1f99743a612")]
+        [InlineData(CompressionAlgorithm.Deflate, 6, 0x2ff, "fd1a57a63d29c607")]
+        [InlineData(CompressionAlgorithm.Deflate, 9, 0x2ff, "fd1a57a63d29c607")]
+        [InlineData(CompressionAlgorithm.DeflateNg, 1, 0x4be, "6564467a7a492f66")]
+        [InlineData(CompressionAlgorithm.DeflateNg, 6, 0x2ff, "fd1a57a63d29c607")]
+        [InlineData(CompressionAlgorithm.DeflateNg, 9, 0x2ff, "fd1a57a63d29c607")]
         [InlineData(CompressionAlgorithm.FastLzma2, 1, 0x1ea, "5cf931277dcafef1")]
         [InlineData(CompressionAlgorithm.FastLzma2, 6, 0x1ea, "5cf931277dcafef1")]
         [InlineData(CompressionAlgorithm.FastLzma2, 10, 0x1ea, "5cf931277dcafef1")]
         [InlineData(CompressionAlgorithm.Lz4, 1, 0x28b, "3eac7ba192b0f661")]
+        [InlineData(CompressionAlgorithm.Lz4, 4, 0x28b, "3eac7ba192b0f661")]
+        [InlineData(CompressionAlgorithm.Lz4, 12, 0x28b, "3eac7ba192b0f661")]
         [InlineData(CompressionAlgorithm.Lzma, 1, 0x1de, "6d7905044230ec1f")]
         [InlineData(CompressionAlgorithm.Lzma, 5, 0x1de, "069b2a2799eadee8")]
         [InlineData(CompressionAlgorithm.Lzma, 9, 0x1de, "069b2a2799eadee8")]
@@ -99,6 +101,8 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.FastLzma2, 6, 0x1000c, "03b1e2cafe441952")]
         [InlineData(CompressionAlgorithm.FastLzma2, 10, 0x1000c, "03b1e2cafe441952")]
         [InlineData(CompressionAlgorithm.Lz4, 1, 0x10102, "d26190b7008c1829")]
+        [InlineData(CompressionAlgorithm.Lz4, 4, 0x10102, "d26190b7008c1829")]
+        [InlineData(CompressionAlgorithm.Lz4, 12, 0x10102, "d26190b7008c1829")]
         [InlineData(CompressionAlgorithm.Lzma, 1, 0x103c6, "37e1e569c57d08d8")]
         [InlineData(CompressionAlgorithm.Lzma, 6, 0x103a0, "0965194c263a54e8")]
         [InlineData(CompressionAlgorithm.Lzma, 10, 0x103a0, "0965194c263a54e8")]
@@ -145,6 +149,8 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.FastLzma2, 6, 0x733, "b3c5d10c6777b8b2")]
         [InlineData(CompressionAlgorithm.FastLzma2, 10, 0x733, "b3c5d10c6777b8b2")]
         [InlineData(CompressionAlgorithm.Lz4, 1, 0x16d9, "f9420ec7af17eccf")]
+        [InlineData(CompressionAlgorithm.Lz4, 4, 0xee8, "4f6879fdc7e5a63e")]
+        [InlineData(CompressionAlgorithm.Lz4, 12, 0xead, "2dec3fb739b2a8bf")]
         [InlineData(CompressionAlgorithm.Lzma, 1, 0x62e, "3da20be52c61534e")]
         [InlineData(CompressionAlgorithm.Lzma, 5, 0x5fe, "c784746694318d8a")]
         [InlineData(CompressionAlgorithm.Lzma, 9, 0x640, "b39f25c858e03706")]
@@ -204,6 +210,8 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.FastLzma2, 6, 0x6, "d8018fa1b17508d8")]
         [InlineData(CompressionAlgorithm.FastLzma2, 10, 0x6, "d8018fa1b17508d8")]
         [InlineData(CompressionAlgorithm.Lz4, 1, 0x1, "e934a84adb052768")]
+        [InlineData(CompressionAlgorithm.Lz4, 4, 0x1, "e934a84adb052768")]
+        [InlineData(CompressionAlgorithm.Lz4, 12, 0x1, "e934a84adb052768")]
         [InlineData(CompressionAlgorithm.Lzma, 1, 0x5, "00f4f72fb7a8c648")]
         [InlineData(CompressionAlgorithm.Lzma, 5, 0x5, "00f4f72fb7a8c648")]
         [InlineData(CompressionAlgorithm.Lzma, 9, 0x5, "00f4f72fb7a8c648")]
@@ -408,26 +416,17 @@ namespace GrindCore.Tests
         public void Data_ByteArray64KiB_Zlib_Compress3(int level, int strategy, bool header, int size, string expected)
         {
             CompressionVersion version = CompressionVersion.ZLib(ZLibVersion.Latest); //latest regular zlib
-            int off = 0;
-            if (!header)
-                off = 2;
+            int windowBits = header ? Interop.ZLib.ZLib_DefaultWindowBits : Interop.ZLib.Deflate_DefaultWindowBits;
             byte[] compressed = new byte[_data64KiB.Length * 2];
-            int sz = ZLib.Compress3(compressed, off, compressed.Length - off, _data64KiB, 0, _data64KiB.Length, level, strategy, header, version);
-            string result = XXHash64.Compute(compressed, off, sz).ToHexString();
+            int sz = ZLib.Compress3(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, windowBits, strategy, version);
+            string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
             Assert.Equal(size, sz);
             Assert.Equal(expected, result);
 
             Trace.WriteLine($"[InlineData({level}, {strategy}, {header.ToString().ToLower()}, 0x{sz:x}, \"{result}\")] //{(new string[] { "Normal", "Filtered", "Huffman", "RLE" }[strategy])}");
 
-            if (!header) //insert the header
-            {
-                compressed[0] = 0x78;
-                compressed[1] = 0x9C;
-                sz += 2;
-            }
-
             byte[] decompressed = new byte[_data64KiB.Length * 2];
-            sz = ZLib.Uncompress3(decompressed, 0, decompressed.Length, compressed, 0, sz, version);
+            sz = ZLib.Uncompress3(decompressed, 0, decompressed.Length, compressed, 0, sz, windowBits, version);
 
             Assert.Equal(_data64KiB.Length, sz);
             Assert.Equal(XXHash64.Compute(_data64KiB).ToHexString(), XXHash64.Compute(decompressed, 0, sz).ToHexString());
@@ -529,26 +528,17 @@ namespace GrindCore.Tests
         {
             CompressionVersion version = CompressionVersion.ZLibNgLatest(); //latest zlib-ng
 
-            int off = 0;
-            if (!header)
-                off = 2;
+            int windowBits = header ? Interop.ZLib.ZLib_DefaultWindowBits : Interop.ZLib.Deflate_DefaultWindowBits;
             byte[] compressed = new byte[_data64KiB.Length * 2];
-            int sz = ZLib.Compress3(compressed, off, compressed.Length - off, _data64KiB, 0, _data64KiB.Length, level, strategy, header, version);
-            string result = XXHash64.Compute(compressed, off, sz).ToHexString();
+            int sz = ZLib.Compress3(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, windowBits, strategy, version);
+            string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
 
             Trace.WriteLine($"[InlineData({level}, {strategy}, {header.ToString().ToLower()}, 0x{sz:x}, \"{result}\")] //{(new string[] { "Normal", "Filtered", "Huffman", "RLE" }[strategy])}");
             Assert.Equal(size, sz);
             Assert.Equal(expected, result);
 
-            if (!header) //insert the header
-            {
-                compressed[0] = 0x78;
-                compressed[1] = 0x9C;
-                sz += 2;
-            }
-
             byte[] decompressed = new byte[_data64KiB.Length * 2];
-            sz = ZLib.Uncompress3(decompressed, 0, decompressed.Length, compressed, 0, sz, version);
+            sz = ZLib.Uncompress3(decompressed, 0, decompressed.Length, compressed, 0, sz, windowBits, version);
 
             Assert.Equal(_data64KiB.Length, sz);
             Assert.Equal(XXHash64.Compute(_data64KiB).ToHexString(), XXHash64.Compute(decompressed, 0, sz).ToHexString());

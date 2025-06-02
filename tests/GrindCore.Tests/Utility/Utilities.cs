@@ -50,6 +50,8 @@ namespace GrindCore.Tests.Utility
 
             try
             {
+                //File.WriteAllBytes(@"d:\temp\zstd-non-good.bin", TestNonCompressibleDataStream.Create(6 * 1024 * 1024));
+
                 using (var inXxhash = XXHash64.Create())
                 using (var compXxhash = XXHash64.Create())
                 using (var outXxhash = XXHash64.Create())
@@ -90,6 +92,9 @@ namespace GrindCore.Tests.Utility
                             int fixTotal = total == 0 ? 1 : total;
                             while (totalOutProcessedBytes < fixTotal && (bytesRead = compressionStream.Read(buffer, 0, Math.Min(buffer.Length, (int)(fixTotal - totalOutProcessedBytes)))) > 0)
                             {
+#if NET9_0
+                                //File.AppendAllBytes(@"d:\temp\zstd.bin", buffer.Take(bytesRead).ToArray());
+#endif
                                 outXxhash.TransformBlock(buffer, 0, bytesRead, null, 0);
                                 totalOutProcessedBytes += bytesRead;
                                 fixTotal = total; //reset
@@ -217,6 +222,7 @@ namespace GrindCore.Tests.Utility
             long totalInProcessedBytes = 0;
             long totalOutProcessedBytes = 0;
 
+            byte[] by = new byte[1];
             int? threadCount = 0;
 
             CompressionOptions compOptions = new CompressionOptions()
@@ -279,9 +285,10 @@ namespace GrindCore.Tests.Utility
                     using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, decompOptions))
                     {
                         int b;
-                        while (totalOutProcessedBytes < total && (b = compressionStream.ReadByte()) != -1)
+                        while ((b = compressionStream.ReadByte()) != -1 || totalOutProcessedBytes < total) //OR due to allow extra stream bytes to be read
                         {
-                            outXxhash.TransformBlock(new[] { (byte)b }, 0, 1, null, 0);
+                            by[0] = (byte)b;
+                            outXxhash.TransformBlock(by, 0, 1, null, 0);
                             totalOutProcessedBytes++;
                         }
                         outXxhash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);

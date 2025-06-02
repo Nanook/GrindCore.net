@@ -18,7 +18,7 @@ namespace Nanook.GrindCore.ZStd
         private bool _wroteData;
 
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.ZStd;
-        internal override int BufferSizeInput => 2 * 0x400 * 0x400;
+        internal override int BufferSizeInput => 0x20000; // * 0x400 * 0x400;
         internal override int BufferSizeOutput { get; }
         CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
         CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level3;

@@ -63,7 +63,7 @@ namespace Nanook.GrindCore
         MaxZLib = Level9,
         MaxLzma = Level9,
         MaxLzma2 = Level9,
-        MaxLz4 = Level9,
+        MaxLz4 = Level12,
         MaxFastLzma2 = Level10,
         MaxBrotli = Level11,
         MaxZStd = Level22,

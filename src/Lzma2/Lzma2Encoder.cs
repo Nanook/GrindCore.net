@@ -35,7 +35,7 @@ namespace Nanook.GrindCore.Lzma
             if (threads <= 0)
                 threads = 1;
 
-            _encoder = S7_Lzma2_v24_07_Enc_Create();
+            _encoder = SZ_Lzma2_v24_07_Enc_Create();
             if (_encoder == IntPtr.Zero)
                 throw new Exception("Failed to create LZMA2 encoder.");
 
@@ -73,7 +73,7 @@ namespace Nanook.GrindCore.Lzma
             this.BlockSize = _solid && blockSize == 0 ? -1 : blockSize; //auto(0) is solid
 
             // Use a fixed statement to pass the struct to the function
-            int res = S7_Lzma2_v24_07_Enc_SetProps(_encoder, ref props);
+            int res = SZ_Lzma2_v24_07_Enc_SetProps(_encoder, ref props);
 
 #if NET6_0_OR_GREATER
             //CLzma2Enc myStruct = Marshal.PtrToStructure<CLzma2Enc>(_encoder);
@@ -81,7 +81,7 @@ namespace Nanook.GrindCore.Lzma
             if (res != 0)
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
-            this.Properties = S7_Lzma2_v24_07_Enc_WriteProperties(_encoder);
+            this.Properties = SZ_Lzma2_v24_07_Enc_WriteProperties(_encoder);
             //_limitedInStream = new CLimitedSeqInStream();
 
             long bufferSize = (_solid || this.BlockSize > int.MaxValue ? 0x400000L : this.BlockSize) + 0x8; // only needs 1 extra byte to ensure the end is not reached. Just allign to 8
@@ -92,7 +92,7 @@ namespace Nanook.GrindCore.Lzma
             _inStream = new CBufferInStream() { buffer = _inBufferPinned.AddrOfPinnedObject(), size = (ulong)bufferSize };
             _blkTotal = 0;
 
-            S7_Lzma2_v24_07_Enc_EncodeMultiCallPrepare(_encoder);
+            SZ_Lzma2_v24_07_Enc_EncodeMultiCallPrepare(_encoder);
         }
 
         public int EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
@@ -117,8 +117,8 @@ namespace Nanook.GrindCore.Lzma
             {
                 *&outPtr += outData.Size;
                 *&inPtr += inData.Pos;
-                // setting indata forces S7_Lzma2_v24_07_Enc_Encode2 mode with multithreading support
-                int res = S7_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)inData.AvailableRead, IntPtr.Zero);
+                // setting indata forces SZ_Lzma2_v24_07_Enc_Encode2 mode with multithreading support
+                int res = SZ_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)inData.AvailableRead, IntPtr.Zero);
 
                 outSz--; //remove the null
                 outData.Write((int)outSz);
@@ -178,14 +178,14 @@ namespace Nanook.GrindCore.Lzma
                         outSz = (ulong)outData.AvailableWrite;
                         byte* outPtr2 = *&outPtr + outData.Size; //writePos is Size
                         _blockComplete = finalfinal || blkFinal;
-                        res = S7_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u, _blockComplete ? 1u : 0u);
+                        res = SZ_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u, _blockComplete ? 1u : 0u);
                         outTotal += (int)outSz;
                         outData.Write((int)outSz);
                     } while (outSz != 0 && (finalfinal || blkFinal));
 
                     if (blkFinal && !finalfinal)
                     {
-                        S7_Lzma2_v24_07_Enc_EncodeMultiCallPrepare(_encoder);
+                        SZ_Lzma2_v24_07_Enc_EncodeMultiCallPrepare(_encoder);
                         _blkTotal = 0;
                     }
                 }
@@ -207,11 +207,11 @@ namespace Nanook.GrindCore.Lzma
                 byte[] dummy = new byte[0];
                 ulong zero = 0;
                 fixed (byte* d = dummy) //close things
-                    S7_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, d, &zero, ref _inStream, 0u, 1u);
+                    SZ_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, d, &zero, ref _inStream, 0u, 1u);
             }
             if (_encoder != IntPtr.Zero)
             {
-                S7_Lzma2_v24_07_Enc_Destroy(_encoder);
+                SZ_Lzma2_v24_07_Enc_Destroy(_encoder);
                 _encoder = IntPtr.Zero;
             }
             if (_inBufferPinned.IsAllocated)

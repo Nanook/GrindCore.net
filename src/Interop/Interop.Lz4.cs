@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using static Nanook.GrindCore.Interop;
 
 namespace Nanook.GrindCore
 {
@@ -176,13 +177,21 @@ namespace Nanook.GrindCore
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lz4_v1_9_4_Flush(ref SZ_Lz4_v1_9_4_Stream stream);
 
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lz4_v1_9_4_CompressHC(byte* src, IntPtr dst, int srcSize,  int dstCapacity, int compressionLevel);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lz4_v1_9_4_CompressHC_ExtState(IntPtr stateHC, byte* src, IntPtr dst, int srcSize, int maxDstSize, int compressionLevel);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lz4_v1_9_4_CompressHC_DestSize( IntPtr stateHC, byte* src, IntPtr dst, ref int srcSizePtr, int targetDstSize, int compressionLevel);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern ulong SZ_Lz4F_v1_9_4_CompressFrameBound(ulong srcSize, IntPtr prefsPtr);
-            
+
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern ulong SZ_Lz4F_v1_9_4_CompressBound(ulong srcSize, IntPtr prefsPtr);
-            
+
             /* Compression Context Management */
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lz4F_v1_9_4_CreateCompressionContext(SZ_Lz4F_v1_9_4_CompressionContext* ctx);
@@ -220,6 +229,8 @@ namespace Nanook.GrindCore
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern void SZ_Lz4F_v1_9_4_ResetDecompressionContext(SZ_Lz4F_v1_9_4_DecompressionContext* ctx);
 
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lz4F_v1_9_4_CompressHC_Stream(SZ_Lz4F_v1_9_4_CompressionContext* ctx, IntPtr dstBuffer, ulong dstCapacity, byte* srcBuffer, int srcSize, int compressionLevel, IntPtr cOptPtr);
         }
     }
 

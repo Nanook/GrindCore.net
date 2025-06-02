@@ -275,7 +275,8 @@ namespace Nanook.GrindCore
                 byte* dest,
                 ref uint destLen,
                 byte* source,
-                ref uint sourceLen);
+                ref uint sourceLen,
+                int windowBits);
 
 
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_DeflateInit2_")]
@@ -350,7 +351,8 @@ namespace Nanook.GrindCore
                 byte* dest,
                 ref uint destLen,
                 byte* source,
-                ref uint sourceLen);
+                ref uint sourceLen,
+                int windowBits);
         }
     }
 }

@@ -16,10 +16,10 @@ namespace Nanook.GrindCore.Lzma
         {
             int blockSize = (int)options.BlockSize!;
             _props = new CLzmaEncProps();
-            S7_Lzma_v24_07_EncProps_Init(ref _props);
+            SZ_Lzma_v24_07_EncProps_Init(ref _props);
             _props.level = (int)options.Type;
             _props.dictSize = (uint)options.BlockSize!;
-            S7_Lzma_v24_07_EncProps_Normalize(ref _props);
+            SZ_Lzma_v24_07_EncProps_Normalize(ref _props);
 
             RequiredCompressOutputSize = blockSize + (blockSize >> 1) + 0x10; // Adjust for overhead
         }
@@ -32,23 +32,23 @@ namespace Nanook.GrindCore.Lzma
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                IntPtr encoder = S7_Lzma_v24_07_Enc_Create();
-                S7_Lzma_v24_07_Enc_SetProps(encoder, ref _props);
-                S7_Lzma_v24_07_Enc_SetDataSize(encoder, (ulong)srcData.Length);
+                IntPtr encoder = SZ_Lzma_v24_07_Enc_Create();
+                SZ_Lzma_v24_07_Enc_SetProps(encoder, ref _props);
+                SZ_Lzma_v24_07_Enc_SetDataSize(encoder, (ulong)srcData.Length);
 
                 // Retrieve encoded properties
                 _properties = new byte[5];
                 ulong propsSize = (ulong)_properties.Length;
                 fixed (byte* propPtr = _properties)
                 {
-                    S7_Lzma_v24_07_Enc_WriteProperties(encoder, propPtr, &propsSize);
+                    SZ_Lzma_v24_07_Enc_WriteProperties(encoder, propPtr, &propsSize);
                 }
 
                 ulong compressedSize = (ulong)dstData.Length;
-                int result = S7_Lzma_v24_07_Enc_MemEncode(
+                int result = SZ_Lzma_v24_07_Enc_MemEncode(
                     encoder, dstPtr, &compressedSize, srcPtr, (ulong)srcData.Length, 0, IntPtr.Zero);
 
-                S7_Lzma_v24_07_Enc_Destroy(encoder);
+                SZ_Lzma_v24_07_Enc_Destroy(encoder);
 
                 if (result != 0)
                     throw new InvalidOperationException("LZMA Block Compression failed.");
@@ -70,7 +70,7 @@ namespace Nanook.GrindCore.Lzma
                 ulong decompressedSize = (ulong)dstData.Length;
                 int status = 0;
 
-                int result = S7_Lzma_v24_07_Dec_LzmaDecode(
+                int result = SZ_Lzma_v24_07_Dec_LzmaDecode(
                     dstPtr, &decompressedSize, srcPtr, &srcSize, propPtr, (uint)_properties.Length, 1, &status);
 
                 if (result != 0)
