@@ -68,5 +68,9 @@ namespace Nanook.GrindCore.DeflateZLib
                 return (int)dstLen;
             }
         }
+
+        internal override void OnDispose()
+        {
+        }
     }
 }

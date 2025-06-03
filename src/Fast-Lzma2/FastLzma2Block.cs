@@ -77,7 +77,7 @@ namespace Nanook.GrindCore.FastLzma2
             }
         }
 
-        ~FastLzma2Block()
+        internal override void OnDispose()
         {
             FL2_freeCCtx(_compressCtx);
             FL2_freeDCtx(_decompressCtx);

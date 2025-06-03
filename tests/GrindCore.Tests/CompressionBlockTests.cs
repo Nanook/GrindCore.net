@@ -70,24 +70,26 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x195, "3545b23ad651d5d4")]
         public void Data_ByteArray64KiB_BlockCompress(CompressionAlgorithm algorithm, CompressionType type, int size, string expected)
         {
-            CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _data64KiB.Length, false, CompressionVersion.Create(algorithm));
-            byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
-            byte[] decompressed = BufferPool.Rent(_data64KiB.Length);
+            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _data64KiB.Length, false, CompressionVersion.Create(algorithm)))
+            {
+                byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
+                byte[] decompressed = BufferPool.Rent(_data64KiB.Length);
 
-            int sz = block.Compress(_data64KiB, 0, _data64KiB.Length, compressed, 0, compressed.Length);
-            int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, decompressed.Length);
+                int sz = block.Compress(_data64KiB, 0, _data64KiB.Length, compressed, 0, compressed.Length);
+                int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, decompressed.Length);
 
-            string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
-            string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
+                string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
+                string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
 
-            BufferPool.Return(compressed);
-            BufferPool.Return(decompressed);
+                BufferPool.Return(compressed);
+                BufferPool.Return(decompressed);
 
-            Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
-            Assert.Equal(size, sz);
-            Assert.Equal(expected, compHash);
-            Assert.Equal(_data64KiB.Length, dsz);
-            Assert.Equal(XXHash64.Compute(_data64KiB, 0, _data64KiB.Length).ToHexString(), decompHash);
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
+                Assert.Equal(size, sz);
+                Assert.Equal(expected, compHash);
+                Assert.Equal(_data64KiB.Length, dsz);
+                Assert.Equal(XXHash64.Compute(_data64KiB, 0, _data64KiB.Length).ToHexString(), decompHash);
+            }
         }
 
         [Theory]
@@ -120,14 +122,16 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x1000a, "4b9f7d6be30a4eca")]
         public void DataNonCompressible_ByteArray64KiB_BlockCompress(CompressionAlgorithm algorithm, CompressionType type, int size, string expected)
         {
-            CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _dataNC64KiB.Length, false, CompressionVersion.Create(algorithm));
-            byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
-            int sz = block.Compress(_dataNC64KiB, 0, _dataNC64KiB.Length, compressed, 0, compressed.Length);
+            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _dataNC64KiB.Length, false, CompressionVersion.Create(algorithm)))
+            {
+                byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
+                int sz = block.Compress(_dataNC64KiB, 0, _dataNC64KiB.Length, compressed, 0, compressed.Length);
 
-            string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
-            Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{result}\")]");
-            Assert.Equal(size, sz);
-            Assert.Equal(expected, result);
+                string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{result}\")]");
+                Assert.Equal(size, sz);
+                Assert.Equal(expected, result);
+            }
         }
 
         [Theory]
@@ -171,24 +175,26 @@ namespace GrindCore.Tests
 #endif
         public void Text_ByteArray64KiB(CompressionAlgorithm algorithm, CompressionType type, int size, string expected)
         {
-            CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _text64KiB.Length, false, CompressionVersion.Create(algorithm));
-            byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
-            byte[] decompressed = BufferPool.Rent(_text64KiB.Length);
+            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _text64KiB.Length, false, CompressionVersion.Create(algorithm)))
+            {
+                byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
+                byte[] decompressed = BufferPool.Rent(_text64KiB.Length);
 
-            int sz = block.Compress(_text64KiB, 0, _text64KiB.Length, compressed, 0, compressed.Length);
-            int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, decompressed.Length);
+                int sz = block.Compress(_text64KiB, 0, _text64KiB.Length, compressed, 0, compressed.Length);
+                int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, decompressed.Length);
 
-            string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
-            string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
+                string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
+                string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
 
-            BufferPool.Return(compressed);
-            BufferPool.Return(decompressed);
+                BufferPool.Return(compressed);
+                BufferPool.Return(decompressed);
 
-            Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
-            Assert.Equal(size, sz);
-            Assert.Equal(expected, compHash);
-            Assert.Equal(_text64KiB.Length, dsz);
-            Assert.Equal(XXHash64.Compute(_text64KiB, 0, _data64KiB.Length).ToHexString(), decompHash);
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
+                Assert.Equal(size, sz);
+                Assert.Equal(expected, compHash);
+                Assert.Equal(_text64KiB.Length, dsz);
+                Assert.Equal(XXHash64.Compute(_text64KiB, 0, _data64KiB.Length).ToHexString(), decompHash);
+            }
         }
 
         [Theory]
@@ -230,24 +236,26 @@ namespace GrindCore.Tests
 #endif
         public void Text_ByteArrayEmpty(CompressionAlgorithm algorithm, CompressionType type, int size, string expected)
         {
-            CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, 0, false, CompressionVersion.Create(algorithm));
-            byte[] compressed = BufferPool.Rent(0x100);
-            byte[] decompressed = BufferPool.Rent(0x100);
+            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, 0, false, CompressionVersion.Create(algorithm)))
+            {
+                byte[] compressed = BufferPool.Rent(0x100);
+                byte[] decompressed = BufferPool.Rent(0x100);
 
-            int sz = block.Compress(_text64KiB, 0, 0, compressed, 0, compressed.Length);
-            int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, 0);
+                int sz = block.Compress(_text64KiB, 0, 0, compressed, 0, compressed.Length);
+                int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, 0);
 
-            string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
-            string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
+                string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
+                string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
 
-            BufferPool.Return(compressed);
-            BufferPool.Return(decompressed);
+                BufferPool.Return(compressed);
+                BufferPool.Return(decompressed);
 
-            Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
-            Assert.Equal(size, sz);
-            Assert.Equal(expected, compHash);
-            Assert.Equal(0, dsz);
-            Assert.Equal(XXHash64.Compute(new byte[0]).ToHexString(), decompHash);
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
+                Assert.Equal(size, sz);
+                Assert.Equal(expected, compHash);
+                Assert.Equal(0, dsz);
+                Assert.Equal(XXHash64.Compute(new byte[0]).ToHexString(), decompHash);
+            }
         }
 
 

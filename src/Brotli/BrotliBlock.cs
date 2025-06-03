@@ -77,7 +77,7 @@ namespace Nanook.GrindCore.Brotli
             }
         }
 
-        ~BrotliBlock()
+        internal override void OnDispose()
         {
             _encoderState.Dispose();
         }

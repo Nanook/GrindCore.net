@@ -5,7 +5,6 @@ namespace Nanook.GrindCore.Copy
 {
     public class CopyBlock : CompressionBlock
     {
-
         public override int RequiredCompressOutputSize { get; }
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Copy;
 
@@ -27,5 +26,8 @@ namespace Nanook.GrindCore.Copy
             return srcData.Length;
         }
 
+        internal override void OnDispose()
+        {
+        }
     }
 }

@@ -11,8 +11,9 @@ using static Nanook.GrindCore.Interop;
 
 namespace Nanook.GrindCore
 {
-    public abstract class CompressionBlock
+    public abstract class CompressionBlock : IDisposable
     {
+        private bool _disposed;
         protected readonly CompressionOptions Options;
 
         internal abstract CompressionAlgorithm Algorithm { get; }
@@ -43,6 +44,7 @@ namespace Nanook.GrindCore
 
         internal abstract int OnCompress(DataBlock srcData, DataBlock dstData);
         internal abstract int OnDecompress(DataBlock srcData, DataBlock dstData);
+        internal abstract void OnDispose();
 
         public virtual int Decompress(byte[] srcBuffer, int srcOffset, int srcCount, byte[] dstBuffer, int dstOffset, int dstCount)
         {
@@ -59,6 +61,23 @@ namespace Nanook.GrindCore
             DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount); // Use DataBlock for internal logic
             DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount); // Use DataBlock for internal logic
             return OnCompress(srcDataBlock, dstDataBlock); // Use framework independent data container
+        }
+
+        public void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                    OnDispose(); // Custom cleanup for managed resources
+
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
 #if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
@@ -93,6 +112,19 @@ namespace Nanook.GrindCore
                 DataBlock srcDataBlock = new DataBlock(src.Span, 0, src.Length); // Use DataBlock for internal logic
                 DataBlock dstDataBlock = new DataBlock(dst.Span, 0, src.Length); // Use DataBlock for internal logic
                 return OnCompress(srcDataBlock, dstDataBlock); // Use framework independent data container
+            }).ConfigureAwait(false);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (SynchronizationContext.Current == null)
+            {
+                Dispose(true);
+                return;
+            }
+            await Task.Run(() =>
+            {
+                Dispose(true);
             }).ConfigureAwait(false);
         }
 #endif
@@ -134,7 +166,7 @@ namespace Nanook.GrindCore
                 return OnCompress(srcDataBlock, dstDataBlock); // Use framework independent data container
             }).ConfigureAwait(false);
         }
-#endif
 
+#endif
     }
 }

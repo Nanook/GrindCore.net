@@ -80,5 +80,9 @@ namespace Nanook.GrindCore.Lzma
                 return (int)decompressedSize;
             }
         }
+
+        internal override void OnDispose()
+        {
+        }
     }
 }

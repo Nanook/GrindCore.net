@@ -64,5 +64,9 @@ namespace Nanook.GrindCore.ZStd
                 return (int)decompressedSize;
             }
         }
+
+        internal override void OnDispose()
+        {
+        }
     }
 }
