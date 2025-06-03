@@ -6,7 +6,7 @@ using System;
 namespace Nanook.GrindCore.Brotli
 {
     /// <summary>Provides methods and properties used to compress and decompress streams by using the Brotli data format specification.</summary>
-    public sealed class BrotliStream : CompressionStream, ICompressionDefaults
+    public sealed class BrotliStream : CompressionStream
     {
         private BrotliEncoder _encoder;
         private BrotliDecoder _decoder;
@@ -16,10 +16,6 @@ namespace Nanook.GrindCore.Brotli
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Brotli;
         internal override int BufferSizeInput => (1 << 16) - 16; //65520;
         internal override int BufferSizeOutput => (1 << 16) - 16; //65520
-
-        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level4;
-        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxBrotli;
 
         /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>

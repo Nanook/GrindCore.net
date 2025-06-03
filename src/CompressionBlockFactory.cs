@@ -16,21 +16,21 @@ namespace Nanook.GrindCore
 
     public class CompressionBlockFactory
     {
-        private static readonly Dictionary<CompressionAlgorithm, Func<CompressionAlgorithm, CompressionOptions, CompressionBlock>> blockCreators = new Dictionary<CompressionAlgorithm, Func<CompressionAlgorithm, CompressionOptions, CompressionBlock>>()
+        private static readonly Dictionary<CompressionAlgorithm, Func<CompressionOptions, CompressionBlock>> blockCreators = new Dictionary<CompressionAlgorithm, Func<CompressionOptions, CompressionBlock>>()
         {
-            { CompressionAlgorithm.Copy, (algorithm, options) => new CopyBlock(algorithm, options) },
-            //{ CompressionAlgorithm.GZip, (stream, options) => new GZipBlock(algorithm, options) },
-            { CompressionAlgorithm.ZLib, (algorithm, options) => new ZLibBlock(algorithm, options) },
-            { CompressionAlgorithm.Deflate, (algorithm, options) => new DeflateBlock(algorithm, options) },
-            //{ CompressionAlgorithm.GZipNg, (algorithm, options) => new GZipBlock(algorithm, options) },
-            { CompressionAlgorithm.ZLibNg, (algorithm, options) => new ZLibBlock(algorithm, options) },
-            { CompressionAlgorithm.DeflateNg, (algorithm, options) => new DeflateBlock(algorithm, options) },
-            { CompressionAlgorithm.Brotli, (algorithm, options) => new BrotliBlock(algorithm, options) },
-            { CompressionAlgorithm.Lzma, (algorithm, options) => new LzmaBlock(algorithm, options) },
-            { CompressionAlgorithm.Lzma2, (algorithm, options) => new Lzma2Block(algorithm, options) },
-            { CompressionAlgorithm.FastLzma2, (algorithm, options) => new FastLzma2Block(algorithm, options) },
-            { CompressionAlgorithm.Lz4, (algorithm, options) => new Lz4Block(algorithm, options) },
-            { CompressionAlgorithm.ZStd, (algorithm, options) => new ZStdBlock(algorithm, options) }
+            { CompressionAlgorithm.Copy, (options) => new CopyBlock(options) },
+            //{ CompressionAlgorithm.GZip, (options) => new GZipBlock(options) },
+            { CompressionAlgorithm.ZLib, (options) => new ZLibBlock(options) },
+            { CompressionAlgorithm.Deflate, (options) => new DeflateBlock(options) },
+            //{ CompressionAlgorithm.GZipNg, (options) => new GZipBlock(options) },
+            { CompressionAlgorithm.ZLibNg, (options) => new ZLibBlock(options) },
+            { CompressionAlgorithm.DeflateNg, (options) => new DeflateBlock(options) },
+            { CompressionAlgorithm.Brotli, (options) => new BrotliBlock(options) },
+            { CompressionAlgorithm.Lzma, (options) => new LzmaBlock(options) },
+            { CompressionAlgorithm.Lzma2, (options) => new Lzma2Block(options) },
+            { CompressionAlgorithm.FastLzma2, (options) => new FastLzma2Block(options) },
+            { CompressionAlgorithm.Lz4, (options) => new Lz4Block(options) },
+            { CompressionAlgorithm.ZStd, (options) => new ZStdBlock(options) }
         };
 
         public static CompressionBlock Create(CompressionAlgorithm algorithm, CompressionOptions options)
@@ -48,7 +48,7 @@ namespace Nanook.GrindCore
         private static CompressionBlock create(CompressionAlgorithm algorithm, CompressionOptions options)
         {
             if (blockCreators.TryGetValue(algorithm, out var creator))
-                return creator(algorithm, options);
+                return creator(options);
 
             throw new ArgumentException("Unsupported stream algorithm", nameof(algorithm));
         }

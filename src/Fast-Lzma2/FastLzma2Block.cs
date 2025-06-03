@@ -13,10 +13,12 @@ namespace Nanook.GrindCore.FastLzma2
 
         public override int RequiredCompressOutputSize { get; }
 
-        public FastLzma2Block(CompressionAlgorithm algorithm, CompressionOptions options) : base(algorithm, options)
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.FastLzma2;
+
+        public FastLzma2Block(CompressionOptions options) : base(options)
         {
             int blockSize = (int)options.BlockSize!;
-            int level = (int)options.Type;
+            int level = (int)this.CompressionType;
             int threads = options.ThreadCount ?? 1;
 
             _compressCtx = FL2_createCCtxMt((uint)threads);
@@ -42,7 +44,7 @@ namespace Nanook.GrindCore.FastLzma2
 
                 nuint compressedSize = (nuint)dstData.Length;
                 nuint result = FL2_compressCCtx(
-                    _compressCtx, dstPtr, compressedSize, srcPtr, (nuint)srcData.Length, (int)this.Options.Type);
+                    _compressCtx, dstPtr, compressedSize, srcPtr, (nuint)srcData.Length, (int)this.CompressionType);
 
                 if (result == 0)
                     throw new InvalidOperationException("Fast-LZMA2 Block Compression failed.");

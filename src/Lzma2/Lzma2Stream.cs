@@ -10,7 +10,7 @@ namespace Nanook.GrindCore.Lzma
     /// <summary>
     /// Streaming Fast LZMA2 compress
     /// </summary>
-    public class Lzma2Stream : CompressionStream, ICompressionDefaults
+    public class Lzma2Stream : CompressionStream
     {
         private Lzma2Decoder _decoder;
         private Lzma2Encoder _encoder;
@@ -19,9 +19,6 @@ namespace Nanook.GrindCore.Lzma
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma2;
         internal override int BufferSizeInput => 2 * 0x400 * 0x400;
         internal override int BufferSizeOutput { get; }
-        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level5;
-        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxLzma2;
 
         public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0) : base(true, stream, options)
         {

@@ -14,13 +14,11 @@ namespace Nanook.GrindCore.Lz4
 {
     public class Lz4Block : CompressionBlock
     {
-        private int _acceleration;
-
         public override int RequiredCompressOutputSize { get; }
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lz4;
 
-        public Lz4Block(CompressionAlgorithm algorithm, CompressionOptions options) : base(algorithm, options)
+        public Lz4Block(CompressionOptions options) : base(options)
         {
-            _acceleration = 1;
             int isize = (int)options.BlockSize!;
             RequiredCompressOutputSize = isize + (isize / 255) + 16;
         }
@@ -35,12 +33,12 @@ namespace Nanook.GrindCore.Lz4
 
                 int compressedSize;
 
-                if ((int)this.Options.Type >= 3) // Use HC compression for level 3 or higher
+                if ((int)this.CompressionType >= 3) // Use HC compression for level 3 or higher
                 {
                     compressedSize = Interop.Lz4.SZ_Lz4_v1_9_4_CompressHC(
                         srcPtr, (IntPtr)dstPtr,
                         srcData.Length, dstData.Length,
-                        (int)this.Options.Type); // Pass HC compression level
+                        (int)this.CompressionType); // Pass HC compression level
                 }
                 else
                 {
@@ -48,7 +46,7 @@ namespace Nanook.GrindCore.Lz4
                     SZ_Lz4_v1_9_4_Init(ref stream);
 
                     compressedSize = SZ_Lz4_v1_9_4_CompressFastContinue(
-                        ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstData.Length, this.Options.Type == CompressionType.Level1 ? 1 : 0);
+                        ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstData.Length, this.CompressionType == CompressionType.Level1 ? 1 : 0);
 
                     SZ_Lz4_v1_9_4_End(ref stream);
                 }

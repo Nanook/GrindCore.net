@@ -7,14 +7,11 @@ namespace Nanook.GrindCore.Lzma
     /// <summary>
     /// A non compression stream that does a stream copy. To allow a Stream copy to work seamlessly with this library and CompressionStream base.
     /// </summary>
-    public class CopyStream : CompressionStream, ICompressionDefaults
+    public class CopyStream : CompressionStream
     {
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Copy;
         internal override int BufferSizeInput => 1 * 0x400 * 0x400;
         internal override int BufferSizeOutput { get; }
-        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level0;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level0;
-        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.Level0;
 
         /// <summary>
         /// Initializes a new instance of CopyStream.

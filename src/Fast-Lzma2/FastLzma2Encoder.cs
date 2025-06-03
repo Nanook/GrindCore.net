@@ -16,11 +16,6 @@ namespace Nanook.GrindCore.FastLzma2
         private readonly int _bufferSize;
         private bool _flushed;
 
-        public byte[] Properties { get; }
-        public int BlockSize { get; }
-        public uint KeepBlockSize { get; }
-        public long BytesFullSize { get; private set; }
-
         public FastLzma2Encoder(int bufferSize, int level = 6, CompressionParameters? compressParams = null)
         {
             if (compressParams == null)

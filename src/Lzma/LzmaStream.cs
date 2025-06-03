@@ -9,7 +9,7 @@ namespace Nanook.GrindCore.Lzma
     /// Inherits common Stream functionality from the CompressionStream class.
     /// Uses a customised LZMA to allow Stream.Write() pattern for compression.
     /// </summary>
-    public class LzmaStream : CompressionStream, ICompressionDefaults
+    public class LzmaStream : CompressionStream
     {
         private readonly LzmaDecoder _decoder;
         private readonly LzmaEncoder _encoder;
@@ -18,9 +18,6 @@ namespace Nanook.GrindCore.Lzma
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma;
         internal override int BufferSizeInput => 2 * 0x400 * 0x400;
         internal override int BufferSizeOutput { get; }
-        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level5;
-        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxLzma2;
 
         private LzmaStream(Stream stream, CompressionOptions options, int dictionarySize = 0) : base(true, stream, options)
         {

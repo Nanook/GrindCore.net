@@ -10,7 +10,7 @@ namespace Nanook.GrindCore.Lz4
     /// Inherits common Stream functionality from the CompressionStream class.
     /// Uses a customized LZ4 to allow Stream.Write() pattern for compression.
     /// </summary>
-    public class Lz4Stream : CompressionStream, ICompressionDefaults
+    public class Lz4Stream : CompressionStream
     {
         private readonly Lz4Decoder _decoder;
         private readonly Lz4Encoder _encoder;
@@ -19,9 +19,6 @@ namespace Nanook.GrindCore.Lz4
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lz4;
         internal override int BufferSizeInput => 2 * 0x400 * 0x400;
         internal override int BufferSizeOutput { get; }
-        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level9;
-        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxLz4;
 
         public Lz4Stream(Stream stream, CompressionOptions options) : base(true, stream, options)
         {

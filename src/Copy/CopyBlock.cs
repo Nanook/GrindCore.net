@@ -7,8 +7,9 @@ namespace Nanook.GrindCore.Copy
     {
 
         public override int RequiredCompressOutputSize { get; }
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Copy;
 
-        public CopyBlock(CompressionAlgorithm algorithm, CompressionOptions options) : base(algorithm, options)
+        public CopyBlock(CompressionOptions options) : base(options)
         {
             int blockSize = (int)options.BlockSize!;
             RequiredCompressOutputSize = blockSize; // Adjust for overhead

@@ -10,10 +10,11 @@ namespace Nanook.GrindCore.ZStd
         private int _compressionLevel;
 
         public override int RequiredCompressOutputSize { get; }
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.ZStd;
 
-        public ZStdBlock(CompressionAlgorithm algorithm, CompressionOptions options) : base(algorithm, options)
+        public ZStdBlock(CompressionOptions options) : base(options)
         {
-            _compressionLevel = (int)options.Type;
+            _compressionLevel = (int)this.CompressionType;
             int isize = (int)options.BlockSize!;
             RequiredCompressOutputSize = isize + (isize >> 7) + 128;
         }

@@ -13,11 +13,12 @@ namespace Nanook.GrindCore.Lzma
         private byte _properties; // Store LZMA2 encoded property byte
 
         public override int RequiredCompressOutputSize { get; }
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma2;
 
-        public Lzma2Block(CompressionAlgorithm algorithm, CompressionOptions options) : base(algorithm, options)
+        public Lzma2Block(CompressionOptions options) : base(options)
         {
             int blockSize = (int)options.BlockSize!;
-            int level = (int)options.Type;
+            int level = (int)this.CompressionType;
             int threads = options.ThreadCount ?? 1;
             CLzma2EncProps props = new CLzma2EncProps();
             SZ_Lzma2_v24_07_Enc_Construct(ref _props);

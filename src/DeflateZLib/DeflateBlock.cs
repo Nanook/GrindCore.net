@@ -15,12 +15,13 @@ namespace Nanook.GrindCore.DeflateZLib
         private readonly int _windowBits;
 
         public override int RequiredCompressOutputSize { get; }
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Deflate;
 
-        public DeflateBlock(CompressionAlgorithm algorithm, CompressionOptions options) : this(algorithm, options, Interop.ZLib.Deflate_DefaultWindowBits)
+        public DeflateBlock(CompressionOptions options) : this(options, Interop.ZLib.Deflate_DefaultWindowBits)
         {
         }
 
-        internal DeflateBlock(CompressionAlgorithm algorithm, CompressionOptions options, int windowBits) : base(algorithm, options)
+        internal DeflateBlock(CompressionOptions options, int windowBits) : base(options)
         {
             _windowBits = windowBits;
             int sourceLen = (int)options.BlockSize!;
@@ -38,9 +39,9 @@ namespace Nanook.GrindCore.DeflateZLib
                 uint dstLen = (uint)dstData.Length;
                 int ret;
                 if (base.Options.Version == null || base.Options.Version.Index == 0)
-                    ret = Interop.ZLib.DN9_ZLibNg_v2_2_1_Compress3(d, ref dstLen, s, (uint)srcData.Length, (int)Options.Type, _windowBits, 9, 0);
+                    ret = Interop.ZLib.DN9_ZLibNg_v2_2_1_Compress3(d, ref dstLen, s, (uint)srcData.Length, (int)this.CompressionType, _windowBits, 9, 0);
                 else if (base.Options.Version.Index == 1)
-                    ret = Interop.ZLib.DN8_ZLib_v1_3_1_Compress3(d, ref dstLen, s, (uint)srcData.Length, (int)Options.Type, _windowBits, 9, 0);
+                    ret = Interop.ZLib.DN8_ZLib_v1_3_1_Compress3(d, ref dstLen, s, (uint)srcData.Length, (int)this.CompressionType, _windowBits, 9, 0);
                 else
                     throw new Exception($"{base.Options.Version.Algorithm} version {base.Options.Version.Version} is not supported");
                 return (int)dstLen;

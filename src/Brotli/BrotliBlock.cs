@@ -13,17 +13,19 @@ namespace Nanook.GrindCore.Brotli
 
         private SafeBrotliEncoderHandle _encoderState;
 
+        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Brotli;
+
         public override int RequiredCompressOutputSize { get; }
 
-        public BrotliBlock(CompressionAlgorithm algorithm, CompressionOptions options) : base(algorithm, options)
+        public BrotliBlock(CompressionOptions options) : base(options)
         {
             int blockSize = (int)options.BlockSize!;
 
             _encoderState = DN9_BRT_v1_1_0_EncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            _encoderState.Version = this.Options.Version ?? CompressionVersion.BrotliLatest();
+            _encoderState.Version = this.Options.Version ?? this.Defaults.Version;
 
             // Set compression parameters
-            DN9_BRT_v1_1_0_EncoderSetParameter(_encoderState, BrotliEncoderParameter.Quality, (uint)this.Options.Type);
+            DN9_BRT_v1_1_0_EncoderSetParameter(_encoderState, BrotliEncoderParameter.Quality, (uint)this.CompressionType);
             DN9_BRT_v1_1_0_EncoderSetParameter(_encoderState, BrotliEncoderParameter.LGWin, (uint)this.Options.BlockSize!);
 
             RequiredCompressOutputSize = blockSize + (blockSize >> 1) + 0x10; // Adjust for overhead
@@ -39,7 +41,7 @@ namespace Nanook.GrindCore.Brotli
 
                 UIntPtr compressedSize = (UIntPtr)dstData.Length;
                 BOOL success = DN9_BRT_v1_1_0_EncoderCompress(
-                    (int)this.Options.Type, //level
+                    (int)this.CompressionType, //level
                     WindowBits_Default,
                     0,
                     (UIntPtr)srcData.Length,

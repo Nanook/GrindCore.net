@@ -13,15 +13,32 @@ namespace Nanook.GrindCore
 {
     public abstract class CompressionBlock
     {
-        protected readonly CompressionAlgorithm Algorithm;
         protected readonly CompressionOptions Options;
+
+        internal abstract CompressionAlgorithm Algorithm { get; }
+        internal CompressionType CompressionType;
+
 
         public abstract int RequiredCompressOutputSize { get; }
 
-        public CompressionBlock(CompressionAlgorithm algorithm, CompressionOptions options)
+        internal virtual CompressionDefaults Defaults { get; }
+
+        public CompressionBlock(CompressionOptions options)
         {
-            Algorithm = algorithm;
             Options = options;
+
+            this.Defaults = new CompressionDefaults(this.Algorithm, options.Version);
+            this.CompressionType = options.Type;
+
+            if (CompressionType == CompressionType.Optimal)
+                CompressionType = this.Defaults.LevelOptimal;
+            else if (CompressionType == CompressionType.SmallestSize)
+                CompressionType = this.Defaults.LevelSmallestSize;
+            else if (CompressionType == CompressionType.Fastest)
+                CompressionType = this.Defaults.LevelFastest;
+
+            if (CompressionType < 0 || CompressionType > this.Defaults.LevelSmallestSize)
+                throw new ArgumentException("Invalid Option, CompressionType / Level");
         }
 
         internal abstract int OnCompress(DataBlock srcData, DataBlock dstData);

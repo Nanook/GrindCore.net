@@ -25,6 +25,8 @@ namespace Nanook.GrindCore
         protected readonly int CacheThreshold;
         private CompressionBuffer _cache;
 
+        internal virtual CompressionDefaults Defaults { get; }
+
         public override bool CanSeek => false;
         public override bool CanRead => BaseStream != null && !IsCompress && BaseStream.CanRead;
         public override bool CanWrite => BaseStream != null && IsCompress && BaseStream.CanWrite;
@@ -49,6 +51,8 @@ namespace Nanook.GrindCore
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
+            this.Defaults = new CompressionDefaults(this.Algorithm, options.Version);
+
             _complete = false;
             _position = positionSupport ? 0 : -1;
             CompressionType = options.Type;
@@ -57,7 +61,7 @@ namespace Nanook.GrindCore
 
             LeaveOpen = options.LeaveOpen;
             BaseStream = stream;
-            Version = options.Version ?? CompressionVersion.Create(this.Algorithm, ""); // latest
+            Version = options.Version ?? this.Defaults.Version; // latest
 
             CacheThreshold = options.BufferSize ?? this.BufferSizeInput;
             _cache = new CompressionBuffer(options.BufferSize ?? this.BufferSizeInput);
@@ -70,13 +74,13 @@ namespace Nanook.GrindCore
             else //Process
             {
                 if (CompressionType == CompressionType.Optimal)
-                    CompressionType = ((ICompressionDefaults)this).LevelOptimal;
+                    CompressionType = this.Defaults.LevelOptimal;
                 else if (CompressionType == CompressionType.SmallestSize)
-                    CompressionType = ((ICompressionDefaults)this).LevelSmallestSize;
+                    CompressionType = this.Defaults.LevelSmallestSize;
                 else if (CompressionType == CompressionType.Fastest)
-                    CompressionType = ((ICompressionDefaults)this).LevelFastest;
+                    CompressionType = this.Defaults.LevelFastest;
 
-                if (CompressionType < 0 || CompressionType > ((ICompressionDefaults)this).LevelSmallestSize)
+                if (CompressionType < 0 || CompressionType > this.Defaults.LevelSmallestSize)
                     throw new ArgumentException("Invalid Option, CompressionType / Level");
 
                 if (!stream.CanWrite)

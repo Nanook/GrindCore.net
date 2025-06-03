@@ -10,7 +10,7 @@ namespace Nanook.GrindCore.ZStd
     /// Inherits common Stream functionality from the CompressionStream class.
     /// Uses a customized LZ4 to allow Stream.Write() pattern for compression.
     /// </summary>
-    public class ZStdStream : CompressionStream, ICompressionDefaults
+    public class ZStdStream : CompressionStream
     {
         private readonly ZStdDecoder _decoder;
         private readonly ZStdEncoder _encoder;
@@ -20,9 +20,6 @@ namespace Nanook.GrindCore.ZStd
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.ZStd;
         internal override int BufferSizeInput => 0x20000; // * 0x400 * 0x400;
         internal override int BufferSizeOutput { get; }
-        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level3;
-        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxZStd;
 
         public ZStdStream(Stream stream, CompressionOptions options) : base(true, stream, options)
         {

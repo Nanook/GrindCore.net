@@ -9,7 +9,7 @@ using System;
 
 namespace Nanook.GrindCore.DeflateZLib
 {
-    public class DeflateStream : CompressionStream, ICompressionDefaults
+    public class DeflateStream : CompressionStream
     {
         private DeflateDecoder? _inflater;
         private DeflateEncoder? _deflater;
@@ -19,9 +19,6 @@ namespace Nanook.GrindCore.DeflateZLib
         internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.DeflateNg;
         internal override int BufferSizeInput => 0x200000;
         internal override int BufferSizeOutput { get; }
-        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level6;
-        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxZLib;
 
         public DeflateStream(Stream stream, CompressionOptions options) : this(stream, options, Interop.ZLib.Deflate_DefaultWindowBits)
         {
