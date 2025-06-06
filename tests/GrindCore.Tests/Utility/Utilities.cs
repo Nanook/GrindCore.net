@@ -100,7 +100,7 @@ namespace GrindCore.Tests.Utility
 
                             Assert.Equal(compMemoryStream.Position, compressionStream.Position);
                             Assert.Equal(data.Position, compressionStream.PositionFullSize); //compression position is correct
-                            compMemoryStream.SetLength(0);
+                            //compMemoryStream.SetLength(0);
                         }
                     }
 
