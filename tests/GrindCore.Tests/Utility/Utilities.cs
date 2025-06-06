@@ -84,7 +84,7 @@ namespace GrindCore.Tests.Utility
                         using (var cryptoStream = new CryptoStream(Stream.Null, compXxhash, CryptoStreamMode.Write, true))
                             compMemoryStream.CopyTo(cryptoStream);
 
-                        // Deompress and hash 
+                        // Deompress and hash
                         compMemoryStream.Position = 0; //reset for reading
                         using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, decompOptions))
                         {
@@ -92,9 +92,6 @@ namespace GrindCore.Tests.Utility
                             int fixTotal = total == 0 ? 1 : total;
                             while (totalOutProcessedBytes < fixTotal && (bytesRead = compressionStream.Read(buffer, 0, Math.Min(buffer.Length, (int)(fixTotal - totalOutProcessedBytes)))) > 0)
                             {
-#if NET9_0
-                                //File.AppendAllBytes(@"d:\temp\zstd.bin", buffer.Take(bytesRead).ToArray());
-#endif
                                 outXxhash.TransformBlock(buffer, 0, bytesRead, null, 0);
                                 totalOutProcessedBytes += bytesRead;
                                 fixTotal = total; //reset
@@ -103,8 +100,8 @@ namespace GrindCore.Tests.Utility
 
                             Assert.Equal(compMemoryStream.Position, compressionStream.Position);
                             Assert.Equal(data.Position, compressionStream.PositionFullSize); //compression position is correct
+                            compMemoryStream.SetLength(0);
                         }
-                        compMemoryStream.SetLength(0);
                     }
 
                     return new TestResults
