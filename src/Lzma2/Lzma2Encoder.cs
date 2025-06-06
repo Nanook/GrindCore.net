@@ -9,27 +9,40 @@ using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.Lzma
 {
-    // This lzma2 encoder does not support true SOLID mode. The C code requires a blocks or streams to perform its encoding.
-    // Internally, LZMA2 Stream mode starts encoding a block in SOLID mode and loops reading the stream and encoding until the block is complete.
-    // In C# we want to supply inData in a Stream.Write() style, so LZMA buffers must be used. A pseudo solid mode is to sacrifice memory for larger buffers.
-
+    /// <summary>
+    /// Provides an encoder for LZMA2-compressed data, supporting block-based and pseudo-solid compression.
+    /// </summary>
     internal unsafe class Lzma2Encoder : IDisposable
     {
         private const int LZMA2_BLOCK_SIZE = 1 << 21; // size of unpacked blocks - important for multicall solid encoding
         private IntPtr _encoder;
-
         private CBufferInStream _inStream;
-
         private byte[] _inBuffer;
         private GCHandle _inBufferPinned;
-
         private bool _solid;
         private long _blkTotal;
         private bool _blockComplete;
 
+        /// <summary>
+        /// Gets the LZMA2 property byte used for encoding.
+        /// </summary>
         public byte Properties { get; }
+
+        /// <summary>
+        /// Gets the block size used for compression.
+        /// </summary>
         public long BlockSize { get; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lzma2Encoder"/> class with the specified compression parameters.
+        /// </summary>
+        /// <param name="level">The compression level to use (default is 5).</param>
+        /// <param name="threads">The number of threads to use (default is 1).</param>
+        /// <param name="blockSize">The block size to use for compression (-1 for solid mode, 0 for auto, default is -1).</param>
+        /// <param name="dictSize">The dictionary size to use (default is 0).</param>
+        /// <param name="wordSize">The word size to use (default is 0).</param>
+        /// <param name="minBufferSize">The minimum buffer size to use (default is 0).</param>
+        /// <exception cref="Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
         public Lzma2Encoder(int level = 5, int threads = 1, long blockSize = -1, int dictSize = 0, int wordSize = 0, int minBufferSize = 0)
         {
             if (threads <= 0)
@@ -44,49 +57,43 @@ namespace Nanook.GrindCore.Lzma
             //init
             props.lzmaProps.level = 5;
             props.lzmaProps.dictSize = props.lzmaProps.mc = 0;
-            props.lzmaProps.reduceSize = ulong.MaxValue; //this is the full filesize - -1 means set to blocksize if blocksize not -1(solid)|0(auto) && blocksize<filesize
+            props.lzmaProps.reduceSize = ulong.MaxValue;
             props.lzmaProps.lc = props.lzmaProps.lp = props.lzmaProps.pb = props.lzmaProps.algo = props.lzmaProps.fb = props.lzmaProps.btMode = props.lzmaProps.numHashBytes = props.lzmaProps.numThreads = -1;
             props.lzmaProps.numHashBytes = 0;
-            props.lzmaProps.writeEndMark = 0; // BytesFullSize == 0 ? 0u : 1u;
+            props.lzmaProps.writeEndMark = 0;
             props.lzmaProps.affinity = 0;
-            props.blockSize = 0; //-1=solid 0=auto
+            props.blockSize = 0;
             props.numBlockThreads_Max = -1;
-            props.numBlockThreads_Reduced = -1; //force > 1 to allow Code with multi block
+            props.numBlockThreads_Reduced = -1;
             props.numTotalThreads = -1;
 
             //config
             props.lzmaProps.level = level;
             props.lzmaProps.numThreads = -1;
             props.numBlockThreads_Max = threads;
-            props.numBlockThreads_Reduced = -1; //force > 1 to allow Code with multi block
+            props.numBlockThreads_Reduced = -1;
             props.numTotalThreads = threads;
             if (threads == 1 || blockSize == -1)
                 props.blockSize = ulong.MaxValue;
             else if (blockSize == 0 && minBufferSize > 0)
                 props.blockSize = (ulong)minBufferSize / (ulong)threads;
             else
-                props.blockSize = (ulong)blockSize / (ulong)threads; // -1=solid 0=auto - auto switches to solid if props.lzmaProps.numThreads <= 1 - else 
-            //props.lzmaProps.reduceSize = -1; //this is the full filesize - -1 means set to blocksize if blocksize not -1(solid)|0(auto) && blocksize<filesize
-            //props.lzmaProps.fb = wordSize; //default is 32 in ui
+                props.blockSize = (ulong)blockSize / (ulong)threads;
 
-            _solid = props.blockSize == ulong.MaxValue; // -1
-            this.BlockSize = _solid && blockSize == 0 ? -1 : blockSize; //auto(0) is solid
+            _solid = props.blockSize == ulong.MaxValue;
+            this.BlockSize = _solid && blockSize == 0 ? -1 : blockSize;
 
             // Use a fixed statement to pass the struct to the function
             int res = SZ_Lzma2_v24_07_Enc_SetProps(_encoder, ref props);
 
-#if NET6_0_OR_GREATER
-            //CLzma2Enc myStruct = Marshal.PtrToStructure<CLzma2Enc>(_encoder);
-#endif
             if (res != 0)
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
             this.Properties = SZ_Lzma2_v24_07_Enc_WriteProperties(_encoder);
-            //_limitedInStream = new CLimitedSeqInStream();
 
-            long bufferSize = (_solid || this.BlockSize > int.MaxValue ? 0x400000L : this.BlockSize) + 0x8; // only needs 1 extra byte to ensure the end is not reached. Just allign to 8
+            long bufferSize = (_solid || this.BlockSize > int.MaxValue ? 0x400000L : this.BlockSize) + 0x8;
 
-            _inBuffer = BufferPool.Rent(bufferSize); //plus a bit to make sure we don't reach the end
+            _inBuffer = BufferPool.Rent(bufferSize);
             _inBufferPinned = GCHandle.Alloc(_inBuffer, GCHandleType.Pinned);
 
             _inStream = new CBufferInStream() { buffer = _inBufferPinned.AddrOfPinnedObject(), size = (ulong)bufferSize };
@@ -95,6 +102,16 @@ namespace Nanook.GrindCore.Lzma
             SZ_Lzma2_v24_07_Enc_EncodeMultiCallPrepare(_encoder);
         }
 
+        /// <summary>
+        /// Encodes data from the input buffer into the output buffer using LZMA2 compression.
+        /// </summary>
+        /// <param name="inData">The input buffer containing data to compress.</param>
+        /// <param name="outData">The output buffer to write compressed data to.</param>
+        /// <param name="final">Indicates if this is the final block of data.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <returns>The total number of bytes written to the output buffer.</returns>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
+        /// <exception cref="Exception">Thrown if compression fails.</exception>
         public int EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             if (inData.Pos != 0)
@@ -108,6 +125,9 @@ namespace Nanook.GrindCore.Lzma
                 return encodeDataMt(inData, outData, final, cancel);
         }
 
+        /// <summary>
+        /// Encodes data using multi-threaded block mode.
+        /// </summary>
         private int encodeDataMt(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             ulong outSz = (ulong)outData.AvailableWrite;
@@ -117,7 +137,6 @@ namespace Nanook.GrindCore.Lzma
             {
                 *&outPtr += outData.Size;
                 *&inPtr += inData.Pos;
-                // setting indata forces SZ_Lzma2_v24_07_Enc_Encode2 mode with multithreading support
                 int res = SZ_Lzma2_v24_07_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)inData.AvailableRead, IntPtr.Zero);
 
                 outSz--; //remove the null
@@ -132,6 +151,9 @@ namespace Nanook.GrindCore.Lzma
             return (int)outSz;
         }
 
+        /// <summary>
+        /// Encodes data using pseudo-solid mode.
+        /// </summary>
         private int encodeDataSolid(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             long inTotal = 0;
@@ -143,14 +165,14 @@ namespace Nanook.GrindCore.Lzma
 
             while (inData.AvailableRead != 0 || final)
             {
-                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+                cancel.ThrowIfCancellationRequested();
 
                 if (_inStream.pos == _inStream.size)
-                    _inStream.pos = 0; // wrap around
+                    _inStream.pos = 0;
 
                 int p = (int)((_inStream.pos + _inStream.remaining) % _inStream.size);
 
-                int sz = (int)Math.Min(inData.AvailableRead, (long)Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize - (ulong)_blkTotal)); //-1 is max value here
+                int sz = (int)Math.Min(inData.AvailableRead, (long)Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize - (ulong)_blkTotal));
 
                 int endSz = (int)(_inStream.size - (ulong)p);
                 inData.Read(_inBuffer, (int)p, (int)Math.Min(sz, endSz));
@@ -166,7 +188,7 @@ namespace Nanook.GrindCore.Lzma
                 finalfinal = final && inData.AvailableRead == 0 && _inStream.remaining == 0;
                 blkFinal = this.BlockSize == _blkTotal;
 
-                if (!final && !blkFinal && _inStream.remaining < _inStream.size) //need more inData 
+                if (!final && !blkFinal && _inStream.remaining < _inStream.size)
                     break;
 
                 long inSz = (long)_inStream.remaining;
@@ -176,7 +198,7 @@ namespace Nanook.GrindCore.Lzma
                     do
                     {
                         outSz = (ulong)outData.AvailableWrite;
-                        byte* outPtr2 = *&outPtr + outData.Size; //writePos is Size
+                        byte* outPtr2 = *&outPtr + outData.Size;
                         _blockComplete = finalfinal || blkFinal;
                         res = SZ_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u, _blockComplete ? 1u : 0u);
                         outTotal += (int)outSz;
@@ -190,7 +212,7 @@ namespace Nanook.GrindCore.Lzma
                     }
                 }
 
-                if (inSz == 0 && outSz == 0) //nothing left
+                if (inSz == 0 && outSz == 0)
                     break;
 
                 if (res != 0)
@@ -200,13 +222,16 @@ namespace Nanook.GrindCore.Lzma
             return outTotal;
         }
 
+        /// <summary>
+        /// Releases all resources used by the <see cref="Lzma2Encoder"/>.
+        /// </summary>
         public void Dispose()
         {
             if (!_blockComplete)
             {
                 byte[] dummy = new byte[0];
                 ulong zero = 0;
-                fixed (byte* d = dummy) //close things
+                fixed (byte* d = dummy)
                     SZ_Lzma2_v24_07_Enc_EncodeMultiCall(_encoder, d, &zero, ref _inStream, 0u, 1u);
             }
             if (_encoder != IntPtr.Zero)
@@ -217,8 +242,6 @@ namespace Nanook.GrindCore.Lzma
             if (_inBufferPinned.IsAllocated)
                 _inBufferPinned.Free();
             BufferPool.Return(_inBuffer);
-
         }
-
     }
 }

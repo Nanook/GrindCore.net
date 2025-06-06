@@ -5,7 +5,9 @@ using System;
 
 namespace Nanook.GrindCore.Brotli
 {
-    /// <summary>Provides methods and properties used to compress and decompress streams by using the Brotli data format specification.</summary>
+    /// <summary>
+    /// Provides methods and properties used to compress and decompress streams by using the Brotli data format specification.
+    /// </summary>
     public sealed class BrotliStream : CompressionStream
     {
         private BrotliEncoder _encoder;
@@ -13,15 +15,23 @@ namespace Nanook.GrindCore.Brotli
         private CompressionBuffer _buffer;
         private bool _nonEmptyInput;
 
-        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Brotli;
-        internal override int BufferSizeInput => (1 << 16) - 16; //65520;
-        internal override int BufferSizeOutput => (1 << 16) - 16; //65520
+        /// <summary>
+        /// Gets the input buffer size for Brotli operations.
+        /// </summary>
+        internal override int BufferSizeInput => (1 << 16) - 16; // 65520
 
-        /// <summary>Initializes a new instance of the <see cref="Nanook.GrindCore.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
+        /// <summary>
+        /// Gets the output buffer size for Brotli operations.
+        /// </summary>
+        internal override int BufferSizeOutput => (1 << 16) - 16; // 65520
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BrotliStream"/> class by using the specified stream and compression options.
+        /// </summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="Nanook.GrindCore.BrotliStream" /> object is _disposed; otherwise, <see langword="false" />.</param>
-        public BrotliStream(Stream stream, CompressionOptions options) : base(true, stream, options)
+        /// <param name="options">The compression options to use.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
+        public BrotliStream(Stream stream, CompressionOptions options) : base(true, stream, CompressionAlgorithm.Brotli, options)
         {
             if (IsCompress)
             {
@@ -29,9 +39,17 @@ namespace Nanook.GrindCore.Brotli
                 _encoder.SetWindow();
             }
 
-            _buffer = new CompressionBuffer(this.BufferSizeOutput); 
+            _buffer = new CompressionBuffer(this.BufferSizeOutput);
         }
 
+        /// <summary>
+        /// Attempts to decompress data from the internal buffer into the output buffer.
+        /// </summary>
+        /// <param name="outData">The output buffer to write decompressed data to.</param>
+        /// <param name="allBytesConsumed">The total number of bytes consumed from the input buffer.</param>
+        /// <param name="bytesWritten">The number of bytes written to the output buffer.</param>
+        /// <returns>True if decompression produced output or completed; otherwise, false if more data is needed.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the decompressed data is invalid.</exception>
         private bool tryDecompress(CompressionBuffer outData, out int allBytesConsumed, out int bytesWritten)
         {
             allBytesConsumed = 0;
@@ -78,6 +96,16 @@ namespace Nanook.GrindCore.Brotli
             return false;
         }
 
+        /// <summary>
+        /// Reads and decompresses data from the underlying stream into the provided buffer.
+        /// </summary>
+        /// <param name="data">The buffer to read decompressed data into.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <returns>The number of bytes written to the output buffer.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the stream is in compression mode.</exception>
+        /// <exception cref="InvalidDataException">Thrown if the stream is truncated or invalid.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the stream is disposed.</exception>
         internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             if (IsCompress)
@@ -89,7 +117,7 @@ namespace Nanook.GrindCore.Brotli
             while (!tryDecompress(data, out bytesConsumed, out bytesWritten))
             {
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
-                bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distiction)
+                bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distinction)
 
                 int bytesRead = BaseStream.Read(_buffer.Data, _buffer.Size, _buffer.AvailableWrite);
                 if (bytesRead <= 0)
@@ -106,19 +134,36 @@ namespace Nanook.GrindCore.Brotli
                 if (bytesRead > _buffer.AvailableWrite)
                     throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
 
-
                 _buffer.Write(bytesRead); //update bytes written to _buffer
             }
 
-            bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distiction)
+            bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distinction)
 
             return bytesWritten;
         }
 
+        /// <summary>
+        /// Writes compressed data from the provided buffer to the underlying stream.
+        /// </summary>
+        /// <param name="data">The buffer containing data to write.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the stream is in decompression mode.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the stream is disposed.</exception>
         internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
         {
             OnWrite(data, cancel, out bytesWrittenToStream, false);
         }
+
+        /// <summary>
+        /// Writes compressed data from the provided buffer to the underlying stream, with an option to indicate the final block.
+        /// </summary>
+        /// <param name="data">The buffer containing data to write.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <param name="isFinalBlock">Indicates whether this is the final block of data.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the stream is in decompression mode.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the stream is disposed.</exception>
         internal void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool isFinalBlock)
         {
             if (!IsCompress)
@@ -148,9 +193,16 @@ namespace Nanook.GrindCore.Brotli
             }
         }
 
-        /// <summary>If the stream is not _disposed, and the compression mode is set to compress, writes all the remaining encoder's data into this stream.</summary>
+        /// <summary>
+        /// Flushes the compression buffers and finalizes stream writes and positions.
+        /// </summary>
+        /// <param name="data">The buffer containing data to flush.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
         /// <exception cref="InvalidDataException">The encoder ran into invalid data.</exception>
-        /// <exception cref="ObjectDisposedException">The stream is _disposed.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         internal override void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete)
         {
             EnsureNotDisposed();
@@ -186,14 +238,19 @@ namespace Nanook.GrindCore.Brotli
             }
         }
 
+        /// <summary>
+        /// Ensures the stream has not been disposed.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException">Thrown if the stream is disposed.</exception>
         private void EnsureNotDisposed()
         {
             if (BaseStream == null)
                 throw new ObjectDisposedException(nameof(BrotliStream));
         }
 
-        /// <summary>Releases the unmanaged resources used by the <see cref="Nanook.GrindCore.BrotliStream" /> and optionally releases the managed resources.</summary>
-        /// <param name="disposing"><see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
+        /// <summary>
+        /// Releases the unmanaged resources used by the <see cref="BrotliStream"/> and optionally releases the managed resources.
+        /// </summary>
         protected override void OnDispose()
         {
             if (IsCompress)

@@ -1,6 +1,3 @@
-
-
-
 using System.Runtime.InteropServices;
 using System.Security;
 using System;
@@ -10,37 +7,32 @@ using System.Reflection.Emit;
 namespace Nanook.GrindCore.DeflateZLib
 {
     /// <summary>
-    /// This class provides declaration for constants and PInvokes as well as some basic tools for exposing the
-    /// native Nanook.GrindCore.Native.dll (effectively, ZLib) library to managed code.
-    ///
-    /// See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.
+    /// Provides declarations for constants, P/Invokes, and basic tools for exposing the native Nanook.GrindCore.Native.dll (effectively, ZLib) library to managed code.
     /// </summary>
     internal static partial class ZLibNative
     {
-
-
         /// <summary>
-        /// The <code>ZLibStreamHandle</code> could be a <code>CriticalFinalizerObject</code> rather than a
-        /// <code>SafeHandleMinusOneIsInvalid</code>. This would save an <code>IntPtr</code> field since
-        /// <code>ZLibStreamHandle</code> does not actually use its <code>handle</code> field.
-        /// Instead it uses a <code>private ZStream zStream</code> field which is the actual handle data
-        /// structure requiring critical finalization.
-        /// However, we would like to take advantage if the better debugability offered by the fact that a
-        /// <em>releaseHandleFailed MDA</em> is raised if the <code>ReleaseHandle</code> method returns
-        /// <code>false</code>, which can for instance happen if the underlying ZLib <code>XxxxEnd</code>
-        /// routines return an failure error code.
+        /// Represents a safe handle for a native ZLib stream, managing the lifetime and state of the underlying z_stream structure.
         /// </summary>
         public sealed class ZLibStreamHandle : SafeHandle
         {
+            /// <summary>
+            /// Represents the initialization state of the ZLib stream.
+            /// </summary>
             public enum State { NotInitialized, InitializedForDeflate, InitializedForInflate, Disposed }
 
             private Interop.ZStream _zStream;
-
             private volatile State _initializationState;
 
+            /// <summary>
+            /// Gets the compression version used by this stream.
+            /// </summary>
             public CompressionVersion Version { get; }
 
-
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ZLibStreamHandle"/> class for the specified compression version.
+            /// </summary>
+            /// <param name="version">The compression version to use.</param>
             public ZLibStreamHandle(CompressionVersion version)
                 : base(new IntPtr(-1), true)
             {
@@ -49,16 +41,18 @@ namespace Nanook.GrindCore.DeflateZLib
                 SetHandle(IntPtr.Zero);
             }
 
-            public override bool IsInvalid
-            {
-                get { return handle == new IntPtr(-1); }
-            }
+            /// <inheritdoc/>
+            public override bool IsInvalid => handle == new IntPtr(-1);
 
-            public State InitializationState
-            {
-                get { return _initializationState; }
-            }
+            /// <summary>
+            /// Gets the current initialization state of the stream.
+            /// </summary>
+            public State InitializationState => _initializationState;
 
+            /// <inheritdoc/>
+            /// <remarks>
+            /// Releases the native z_stream and updates the state accordingly.
+            /// </remarks>
             protected override bool ReleaseHandle() =>
                 InitializationState switch
                 {
@@ -66,46 +60,75 @@ namespace Nanook.GrindCore.DeflateZLib
                     State.InitializedForDeflate => (DeflateEnd() == ErrorCode.Ok),
                     State.InitializedForInflate => (InflateEnd() == ErrorCode.Ok),
                     State.Disposed => true,
-                    _ => false,  // This should never happen. Did we forget one of the State enum values in the switch?
+                    _ => false,
                 };
 
+            /// <summary>
+            /// Gets or sets the pointer to the next input byte.
+            /// </summary>
             public IntPtr NextIn
             {
-                get { return _zStream.nextIn; }
-                set { _zStream.nextIn = value; }
+                get => _zStream.nextIn;
+                set => _zStream.nextIn = value;
             }
 
+            /// <summary>
+            /// Gets or sets the number of bytes available at <see cref="NextIn"/>.
+            /// </summary>
             public uint AvailIn
             {
-                get { return _zStream.availIn; }
-                set { _zStream.availIn = value; }
+                get => _zStream.availIn;
+                set => _zStream.availIn = value;
             }
 
+            /// <summary>
+            /// Gets or sets the pointer to the next output byte.
+            /// </summary>
             public IntPtr NextOut
             {
-                get { return _zStream.nextOut; }
-                set { _zStream.nextOut = value; }
+                get => _zStream.nextOut;
+                set => _zStream.nextOut = value;
             }
 
+            /// <summary>
+            /// Gets or sets the number of bytes available at <see cref="NextOut"/>.
+            /// </summary>
             public uint AvailOut
             {
-                get { return _zStream.availOut; }
-                set { _zStream.availOut = value; }
+                get => _zStream.availOut;
+                set => _zStream.availOut = value;
             }
 
+            /// <summary>
+            /// Throws if the stream has been disposed.
+            /// </summary>
+            /// <exception cref="ObjectDisposedException">Thrown if the stream is disposed.</exception>
             private void EnsureNotDisposed()
             {
                 if (InitializationState == State.Disposed)
                     throw new ObjectDisposedException(nameof(ZLibStreamHandle));
             }
 
+            /// <summary>
+            /// Throws if the stream is not in the required state.
+            /// </summary>
+            /// <param name="requiredState">The required state.</param>
+            /// <exception cref="InvalidOperationException">Thrown if the stream is not in the required state.</exception>
             private void EnsureState(State requiredState)
             {
                 if (InitializationState != requiredState)
                     throw new InvalidOperationException("InitializationState != " + requiredState.ToString());
             }
 
-
+            /// <summary>
+            /// Initializes the stream for deflate (compression) with the specified parameters.
+            /// </summary>
+            /// <param name="level">The compression level.</param>
+            /// <param name="windowBits">The window bits parameter.</param>
+            /// <param name="memLevel">The memory level parameter.</param>
+            /// <param name="strategy">The compression strategy.</param>
+            /// <returns>The error code returned by the native call.</returns>
+            /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode DeflateInit2_(Interop.ZLib.CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
             {
                 EnsureNotDisposed();
@@ -122,12 +145,16 @@ namespace Nanook.GrindCore.DeflateZLib
                         throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
 
                     _initializationState = State.InitializedForDeflate;
-
                     return errC;
                 }
             }
 
-
+            /// <summary>
+            /// Performs a deflate (compression) operation.
+            /// </summary>
+            /// <param name="flush">The flush code to use.</param>
+            /// <returns>The error code returned by the native call.</returns>
+            /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode Deflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -144,7 +171,11 @@ namespace Nanook.GrindCore.DeflateZLib
                 }
             }
 
-
+            /// <summary>
+            /// Ends the deflate (compression) operation and releases resources.
+            /// </summary>
+            /// <returns>The error code returned by the native call.</returns>
+            /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode DeflateEnd()
             {
                 EnsureNotDisposed();
@@ -160,12 +191,16 @@ namespace Nanook.GrindCore.DeflateZLib
                     else
                         throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
                     _initializationState = State.Disposed;
-
                     return errC;
                 }
             }
 
-
+            /// <summary>
+            /// Initializes the stream for inflate (decompression) with the specified window bits.
+            /// </summary>
+            /// <param name="windowBits">The window bits parameter.</param>
+            /// <returns>The error code returned by the native call.</returns>
+            /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode InflateInit2_(int windowBits)
             {
                 EnsureNotDisposed();
@@ -181,12 +216,16 @@ namespace Nanook.GrindCore.DeflateZLib
                     else
                         throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
                     _initializationState = State.InitializedForInflate;
-
                     return errC;
                 }
             }
 
-
+            /// <summary>
+            /// Performs an inflate (decompression) operation.
+            /// </summary>
+            /// <param name="flush">The flush code to use.</param>
+            /// <returns>The error code returned by the native call.</returns>
+            /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -203,7 +242,11 @@ namespace Nanook.GrindCore.DeflateZLib
                 }
             }
 
-
+            /// <summary>
+            /// Ends the inflate (decompression) operation and releases resources.
+            /// </summary>
+            /// <returns>The error code returned by the native call.</returns>
+            /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode InflateEnd()
             {
                 EnsureNotDisposed();
@@ -219,12 +262,14 @@ namespace Nanook.GrindCore.DeflateZLib
                     else
                         throw new Exception($"{Version.Algorithm} version {Version.Version} is not supported");
                     _initializationState = State.Disposed;
-
                     return errC;
                 }
             }
 
-            // This can work even after XxflateEnd().
+            /// <summary>
+            /// Gets the last error message from the native z_stream, if available.
+            /// </summary>
+            /// <returns>The error message string, or an empty string if none is available.</returns>
             public string GetErrorMessage() => _zStream.msg != ZNullPtr ?
 #if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
                 Marshal.PtrToStringUTF8(_zStream.msg)!
@@ -234,6 +279,16 @@ namespace Nanook.GrindCore.DeflateZLib
                 : string.Empty;
         }
 
+        /// <summary>
+        /// Creates a new ZLib stream for deflate (compression) with the specified parameters.
+        /// </summary>
+        /// <param name="zLibStreamHandle">The resulting ZLib stream handle.</param>
+        /// <param name="level">The compression level.</param>
+        /// <param name="windowBits">The window bits parameter.</param>
+        /// <param name="memLevel">The memory level parameter.</param>
+        /// <param name="strategy">The compression strategy.</param>
+        /// <param name="version">The compression version to use.</param>
+        /// <returns>The error code returned by the native call.</returns>
         public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, Interop.ZLib.CompressionLevel level,
             int windowBits, int memLevel, CompressionStrategy strategy, CompressionVersion version)
         {
@@ -241,12 +296,17 @@ namespace Nanook.GrindCore.DeflateZLib
             return zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
         }
 
-
+        /// <summary>
+        /// Creates a new ZLib stream for inflate (decompression) with the specified parameters.
+        /// </summary>
+        /// <param name="zLibStreamHandle">The resulting ZLib stream handle.</param>
+        /// <param name="windowBits">The window bits parameter.</param>
+        /// <param name="version">The compression version to use.</param>
+        /// <returns>The error code returned by the native call.</returns>
         public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits, CompressionVersion version)
         {
             zLibStreamHandle = new ZLibStreamHandle(version);
             return zLibStreamHandle.InflateInit2_(windowBits);
         }
-
     }
 }

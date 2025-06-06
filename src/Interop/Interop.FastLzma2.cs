@@ -172,7 +172,6 @@ namespace Nanook.GrindCore
             /// <summary>
             /// maximum compression level available
             /// </summary>
-            /// <param name=""></param>
             /// <returns></returns>
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "FL2_maxCLevel", CallingConvention = CallingConvention.Cdecl)]
             internal static extern int FL2_maxCLevel();
@@ -180,7 +179,6 @@ namespace Nanook.GrindCore
             /// <summary>
             /// maximum compression level available in high mode
             /// </summary>
-            /// <param name=""></param>
             /// <returns></returns>
             [DllImport(Libraries.GrindCoreLib, EntryPoint = "FL2_maxHighCLevel", CallingConvention = CallingConvention.Cdecl)]
             internal static extern int FL2_maxHighCLevel();

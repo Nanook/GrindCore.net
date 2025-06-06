@@ -4,12 +4,23 @@ using static Nanook.GrindCore.Interop;
 
 namespace Nanook.GrindCore.Lzma
 {
+    /// <summary>
+    /// Provides a decoder for LZMA-compressed data, supporting block-based decompression.
+    /// </summary>
     internal unsafe class LzmaDecoder : IDisposable
     {
         private CLzmaDec _decCtx;
 
+        /// <summary>
+        /// Gets the LZMA properties used for decoding.
+        /// </summary>
         public byte[] Properties { get; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LzmaDecoder"/> class with the specified LZMA properties.
+        /// </summary>
+        /// <param name="properties">The LZMA properties required for decoding.</param>
+        /// <exception cref="Exception">Thrown if the decoder context cannot be allocated.</exception>
         public LzmaDecoder(byte[] properties)
         {
             Properties = properties;
@@ -26,6 +37,15 @@ namespace Nanook.GrindCore.Lzma
                 throw new Exception($"Allocate Error {res}");
         }
 
+        /// <summary>
+        /// Decodes LZMA-compressed data from the input buffer into the output buffer.
+        /// </summary>
+        /// <param name="inData">The input buffer containing compressed data.</param>
+        /// <param name="readSz">Outputs the number of bytes read from the input buffer.</param>
+        /// <param name="outData">The output buffer to write decompressed data to.</param>
+        /// <param name="status">Outputs the status of the decompression operation.</param>
+        /// <returns>The number of bytes written to the output buffer.</returns>
+        /// <exception cref="Exception">Thrown if decompression fails.</exception>
         public int DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData, out int status)
         {
             // Get properties from DataBlock
@@ -50,10 +70,13 @@ namespace Nanook.GrindCore.Lzma
             }
         }
 
+        /// <summary>
+        /// Releases all resources used by the <see cref="LzmaDecoder"/>.
+        /// </summary>
         public void Dispose()
         {
             SZ_Lzma_v24_07_Dec_Free(ref _decCtx);
         }
-
     }
 }
+

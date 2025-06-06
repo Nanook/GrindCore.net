@@ -1,63 +1,75 @@
 ﻿namespace Nanook.GrindCore.FastLzma2
 {
+    /// <summary>
+    /// Represents an input buffer for Fast-LZMA2 operations.
+    /// </summary>
     internal struct FL2InBuffer
     {
         /// <summary>
-        /// start of input _outBuffer
+        /// Pointer to the start of the input buffer.
         /// </summary>
         public nint src;
 
         /// <summary>
-        /// size of input _outBuffer
+        /// Size of the input buffer in bytes.
         /// </summary>
         public nuint size;
 
         /// <summary>
-        /// position where reading stopped. Will be updated. Necessarily 0 <= pos <= size
+        /// Position where reading stopped. Will be updated. Necessarily 0 &lt;= pos &lt;= size.
         /// </summary>
         public nuint pos;
     }
 
+    /// <summary>
+    /// Represents an output buffer for Fast-LZMA2 operations.
+    /// </summary>
     internal struct FL2OutBuffer
     {
         /// <summary>
-        /// start of output _outBuffer
+        /// Pointer to the start of the output buffer.
         /// </summary>
         public nint dst;
 
         /// <summary>
-        /// size of output _outBuffer
+        /// Size of the output buffer in bytes.
         /// </summary>
         public nuint size;
 
         /// <summary>
-        /// position where writing stopped. Will be updated. Necessarily 0 <= pos <= size
+        /// Position where writing stopped. Will be updated. Necessarily 0 &lt;= pos &lt;= size.
         /// </summary>
         public nuint pos;
     }
 
+    /// <summary>
+    /// Represents a dictionary buffer for Fast-LZMA2 operations.
+    /// </summary>
     internal struct FL2DictBuffer
     {
         /// <summary>
-        /// start of available dict _outBuffer
+        /// Pointer to the start of the available dictionary buffer.
         /// </summary>
         public nint dst;
 
         /// <summary>
-        /// size of dict remaining
+        /// Size of the remaining dictionary in bytes.
         /// </summary>
         public nuint size;
     }
 
+    /// <summary>
+    /// Represents a compressed data buffer for Fast-LZMA2 operations.
+    /// </summary>
     internal struct FL2cBuffer
     {
         /// <summary>
-        /// start of compressed data
+        /// Pointer to the start of the compressed data.
         /// </summary>
         public nint src;
 
         /// <summary>
-        /// size of compressed data
+        /// Size of the compressed data in bytes.
         /// </summary>
         public nuint size;
     }

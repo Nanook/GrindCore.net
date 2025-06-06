@@ -8,7 +8,9 @@ using System.Threading;
 namespace Nanook.GrindCore.Lzma
 {
     /// <summary>
-    /// Streaming Fast LZMA2 compress
+    /// Provides a stream implementation for LZMA2 compression and decompression.
+    /// Inherits common <see cref="Stream"/> functionality from <see cref="CompressionStream"/>.
+    /// Uses a customized LZMA2 implementation to allow the Stream.Write pattern for compression.
     /// </summary>
     public class Lzma2Stream : CompressionStream
     {
@@ -16,13 +18,26 @@ namespace Nanook.GrindCore.Lzma
         private Lzma2Encoder _encoder;
         private CompressionBuffer _buffer;
 
-        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.Lzma2;
+        /// <summary>
+        /// Gets the input buffer size for LZMA2 operations.
+        /// </summary>
         internal override int BufferSizeInput => 2 * 0x400 * 0x400;
+
+        /// <summary>
+        /// Gets the output buffer size for LZMA2 operations.
+        /// </summary>
         internal override int BufferSizeOutput { get; }
 
-        public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0) : base(true, stream, options)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lzma2Stream"/> class with the specified stream, options, and optional dictionary size.
+        /// </summary>
+        /// <param name="stream">The underlying stream to read from or write to.</param>
+        /// <param name="options">The compression options to use.</param>
+        /// <param name="dictSize">The dictionary size to use for compression (default is 0).</param>
+        /// <exception cref="Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
+        public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0)
+            : base(true, stream, CompressionAlgorithm.Lzma2, options)
         {
-
             if (IsCompress)
             {
                 this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 1) + 0x20;
@@ -40,45 +55,43 @@ namespace Nanook.GrindCore.Lzma
 
                 this.Properties = options.InitProperties;
                 _decoder = new Lzma2Decoder(options.InitProperties[0]);
-
                 this.BufferSizeOutput = CacheThreshold;
-
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
 
         /// <summary>
-        /// Initialize streaming compress context
+        /// Initializes a new instance of the <see cref="Lzma2Stream"/> class for compression or decompression.
         /// </summary>
-        /// <param name="stream">output data stream storee</param>
-        /// <param name="type">compressed level / mode</param>
-        /// <param name="nbThreads">thread use, auto = 0</param>
-        /// <param name="bufferSize">Native interop _outBuffer size, default = 64M</param>
-        /// <exception cref="FL2Exception"></exception>
-        public Lzma2Stream(Stream stream, CompressionOptions options) : this(stream, options, 0)
+        /// <param name="stream">The underlying stream to read from or write to.</param>
+        /// <param name="options">The compression options to use.</param>
+        public Lzma2Stream(Stream stream, CompressionOptions options)
+            : this(stream, options, 0)
         {
         }
 
         /// <summary>
-        /// Read decompressed data
+        /// Reads data from the stream and decompresses it using LZMA2.
+        /// Updates the position with the running total of bytes processed from the source stream.
         /// </summary>
+        /// <param name="data">The buffer to read decompressed data into.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <returns>The number of bytes written to the buffer.</returns>
+        /// <exception cref="NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
         internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             if (!this.CanRead)
                 throw new NotSupportedException("Not for Compression mode");
 
-            //This line can be used in a loop to skip through blocks/chunks - leaving it here as a reference
-            //Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffComp, 0);
-
             bytesReadFromStream = 0;
-
             int total = 0;
-            //while (data.AvailableWrite > total)
             while (data.AvailableWrite > 0)
             {
-                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+                cancel.ThrowIfCancellationRequested();
 
-                if (_buffer.Pos == 0) //will auto tidy and reset Pos to 0
+                if (_buffer.Pos == 0)
                     _buffer.Write(BaseStream.Read(_buffer.Data, _buffer.Size, _buffer.AvailableWrite));
 
                 if (_buffer.AvailableRead == 0)
@@ -86,11 +99,11 @@ namespace Nanook.GrindCore.Lzma
 
                 int inSz = _buffer.AvailableRead;
                 int decoded = _decoder.DecodeData(_buffer, ref inSz, data, data.AvailableWrite, out _);
-                bytesReadFromStream += inSz; // returned as amount read
+                bytesReadFromStream += inSz;
                 total += decoded;
             }
 
-            //EXPERIMENTAL: lzma doesn't read the null terminator. Accomodate it to keep read positions correct
+            // Accommodate for LZMA2 null terminator to keep read positions correct
             if (_buffer.AvailableRead > 0 && _buffer.Data[_buffer.Pos] == 0)
             {
                 _buffer.Read(1);
@@ -99,40 +112,49 @@ namespace Nanook.GrindCore.Lzma
             return total;
         }
 
+        /// <summary>
+        /// Compresses data using LZMA2 and writes it to the stream.
+        /// Updates the position with the running total of bytes processed from the source stream.
+        /// </summary>
+        /// <param name="data">The buffer containing data to compress and write.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <exception cref="NotSupportedException">Thrown if the stream is not in compression mode.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
         internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
         {
             if (!this.CanWrite)
                 throw new NotSupportedException("Not for Decompression mode");
 
             bytesWrittenToStream = 0;
-            cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+            cancel.ThrowIfCancellationRequested();
 
-            // Use the DataBlock's properties for encoding
             int avRead = data.AvailableRead;
             long size = _encoder.EncodeData(data, _buffer, false, cancel);
 
             if (size > 0)
             {
-                // Write the encoded data to the base stream
                 BaseStream.Write(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
                 _buffer.Read(_buffer.AvailableRead);
-
-                // Update the position
                 bytesWrittenToStream += (int)size;
             }
         }
 
         /// <summary>
-        /// Write Checksum in the end. finish compress progress.
+        /// Flushes any remaining compressed data to the stream and finalizes the compression if requested.
         /// </summary>
-        /// <exception cref="FL2Exception"></exception>
-
+        /// <param name="data">The buffer containing data to flush.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
         internal override void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete)
         {
             bytesWrittenToStream = 0;
             if (IsCompress)
             {
-                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+                cancel.ThrowIfCancellationRequested();
                 long size = _encoder.EncodeData(data, _buffer, true, cancel);
                 if (size > 0)
                 {
@@ -148,6 +170,9 @@ namespace Nanook.GrindCore.Lzma
             }
         }
 
+        /// <summary>
+        /// Disposes the <see cref="Lzma2Stream"/> and its resources.
+        /// </summary>
         protected override void OnDispose()
         {
             if (IsCompress)
@@ -155,8 +180,6 @@ namespace Nanook.GrindCore.Lzma
             else
                 try { _decoder.Dispose(); } catch { }
             try { _buffer.Dispose(); } catch { }
-            //try { BufferPool.Return(_buffComp); } catch { }
         }
-
     }
 }

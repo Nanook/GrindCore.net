@@ -4,11 +4,8 @@
 namespace Nanook.GrindCore
 {
     /// <summary>
-    /// Specifies values that indicate whether a compression operation emphasizes speed or compression size.
+    /// Specifies values that indicate decompression or compression level.
     /// </summary>
-
-    // An enum to encapsulate compression levels and decompression
-    // There may or may not be any correspondence with the a possible implementation-specific level-parameter of the deflater.
     public enum CompressionType
     {
         /// <summary>
@@ -32,7 +29,7 @@ namespace Nanook.GrindCore
         Decompress = -1,
 
         /// <summary>
-        /// No compression should be performed on the file.
+        /// No compression should be performed on the data, some algorithms seemingly still compress the data.
         /// </summary>
         NoCompression = 0,
 

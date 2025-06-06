@@ -3,10 +3,21 @@ using static Nanook.GrindCore.Interop;
 
 namespace Nanook.GrindCore.FastLzma2
 {
+    /// <summary>
+    /// Represents a set of parameters for configuring Fast-LZMA2 compression.
+    /// </summary>
     public class CompressionParameters
     {
+        /// <summary>
+        /// Gets the dictionary of parameter values for Fast-LZMA2 compression.
+        /// </summary>
         internal readonly Dictionary<FL2Parameter, int?> Values = new Dictionary<FL2Parameter, int?>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CompressionParameters"/> class with the specified thread count and optional dictionary size.
+        /// </summary>
+        /// <param name="threads">The number of threads to use for compression.</param>
+        /// <param name="dictionarySize">The dictionary size in bytes. If zero, the default is used.</param>
         public CompressionParameters(int threads, int dictionarySize = 0)
         {
             this.Threads = threads;
@@ -28,14 +39,13 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Thread Count, auto = 0
+        /// Gets or sets the thread count. Use 0 for auto.
         /// </summary>
         public int Threads { get; set; }
 
         /// <summary>
-        /// Update all compression parameters according to pre-defined cLevel table
-        /// Process Level [1..10], Default level is FL2_CLEVEL_DEFAULT==6.
-        /// Setting FL2_p_highCompression to 1 switches to an alternate cLevel table.
+        /// Gets or sets the compression level [1..10]. Default is 6.
+        /// Setting <see cref="HighCompression"/> to 1 switches to an alternate cLevel table.
         /// </summary>
         public int? CompressionLevel
         {
@@ -44,8 +54,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Maximize compression ratio for a given dictionary size.Levels 1..10 = dictionaryLog 20..29 (1 Mb..512 Mb).
-        /// Typically provides a poor speed/ratio tradeoff.
+        /// Gets or sets the high compression mode. Levels 1..10. Typically provides a poor speed/ratio tradeoff.
         /// </summary>
         public int? HighCompression
         {
@@ -54,9 +63,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Maximum allowed back-reference distance, expressed as power of 2.
-        /// Must be clamped between FL2_DICTLOG_MIN and FL2_DICTLOG_MAX.
-        /// Default = 24
+        /// Gets or sets the maximum allowed back-reference distance, as a power of 2. Default is 24.
         /// </summary>
         public int? DictionaryLog
         {
@@ -65,9 +72,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Same as above but expressed as an absolute value.
-        /// Must be clamped between FL2_DICTSIZE_MIN and FL2_DICTSIZE_MAX.
-        /// Default = 16 Mb
+        /// Gets or sets the dictionary size in bytes. Default is 64 MiB.
         /// </summary>
         public int DictionarySize
         {
@@ -76,11 +81,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// The radix match finder is block-based, so some overlap is retained from each block to improve compression of the next.
-        /// This value is expressed as n / 16 of the block size (dictionary size). Larger values are slower.
-        /// Values above 2 mostly yield only a small improvement in compression.
-        /// A large value for a small dictionary may worsen multithreaded compression.
-        /// Default = 2
+        /// Gets or sets the overlap fraction (n/16 of the block size). Default is 2.
         /// </summary>
         public int? OverlapFraction
         {
@@ -89,9 +90,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// For multithreaded decompression. A dictionary reset will occur
-        /// after each dictionarySize * resetInterval bytes of input.
-        /// Default = 4
+        /// Gets or sets the reset interval for multithreaded decompression. Default is 4.
         /// </summary>
         public int? ResetInterval
         {
@@ -100,12 +99,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Buffering speeds up the matchfinder. Buffer resize determines the percentage of
-        /// the normal _outBuffer size used, which depends on dictionary size.
-        /// 0=50, 1=75, 2=100, 3=150, 4=200. Higher number = slower, better
-        /// compression, higher memory usage. A CPU with a large memory cache
-        /// may make effective use of a larger _outBuffer.
-        /// Default = 2
+        /// Gets or sets the buffer resize factor. 0=50%, 1=75%, 2=100%, 3=150%, 4=200%. Default is 2.
         /// </summary>
         public int? BufferResize
         {
@@ -114,11 +108,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Size of the hybrid mode HC3 hash chain, as a power of 2.
-        /// Resulting table size is (1 << (chainLog+2)) bytes.
-        /// Larger tables result in better and slower compression.
-        /// This parameter is only used by the hybrid "ultra" strategy.
-        /// Default = 9
+        /// Gets or sets the hybrid mode HC3 hash chain log2 size. Used only by the hybrid "ultra" strategy. Default is 9.
         /// </summary>
         public int? HybridChainLog
         {
@@ -127,10 +117,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Number of search attempts made by the HC3 match finder.
-        /// Used only by the hybrid "ultra" strategy.
-        /// More attempts result in slightly better and slower compression.
-        /// Default = 1
+        /// Gets or sets the number of search attempts for the HC3 match finder. Used only by the hybrid "ultra" strategy. Default is 1.
         /// </summary>
         public int? HybridCycles
         {
@@ -139,9 +126,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Match finder will resolve string matches up to this length.
-        /// If a longer match exists further back in the input, it will not be found.
-        /// Default = 42
+        /// Gets or sets the maximum match finder search depth. Default is 42.
         /// </summary>
         public int? SearchDepth
         {
@@ -150,10 +135,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Only useful for strategies >= opt.
-        /// Length of match considered "good enough" to stop search.
-        /// Larger values make compression stronger and slower.
-        /// Default = 48
+        /// Gets or sets the "good enough" match length for search. Default is 48.
         /// </summary>
         public int? FastLength
         {
@@ -162,10 +144,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Split long chains of 2-byte matches into shorter chains with a small overlap for further processing.
-        /// Allows buffering of all chains at length 2.
-        /// Faster, less compression. Generally a good tradeoff.
-        /// Default = enabled
+        /// Gets or sets whether to split long chains of 2-byte matches. Default is enabled.
         /// </summary>
         public int? DivideAndConquer
         {
@@ -174,10 +153,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// 1 = fast; 2 = optimized, 3 = ultra (hybrid mode).
-        /// The higher the value of the selected strategy, the more complex it is,
-        /// resulting in stronger and slower compression.
-        /// Default = ultra
+        /// Gets or sets the compression strategy: 1=fast, 2=optimized, 3=ultra (hybrid mode). Default is ultra.
         /// </summary>
         public int? Strategy
         {
@@ -186,8 +162,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// lc value for LZMA2 encoder
-        /// Default = 3
+        /// Gets or sets the lc value for LZMA2 encoder. Default is 3.
         /// </summary>
         public int? LiteralCtxBits
         {
@@ -196,8 +171,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// lp value for LZMA2 encoder
-        /// Default = 0
+        /// Gets or sets the lp value for LZMA2 encoder. Default is 0.
         /// </summary>
         public int? LiteralPosBits
         {
@@ -206,8 +180,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// pb value for LZMA2 encoder
-        /// Default = 2
+        /// Gets or sets the pb value for LZMA2 encoder. Default is 2.
         /// </summary>
         public int? PosBits
         {
@@ -216,9 +189,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Omit the property byte at the start of the stream. For use within 7-zip
-        /// or other containers which store the property byte elsewhere.
-        /// A stream compressed under this setting cannot be decoded by this library.
+        /// Gets or sets whether to omit the property byte at the start of the stream.
         /// </summary>
         public int? Properties
         {
@@ -227,9 +198,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Calculate a 32-bit xxhash value from the input data and store it
-        /// after the stream terminator. The value will be checked on decompression.
-        /// 0 = do not calculate; 1 = calculate (default)
+        /// Gets or sets whether to calculate a 32-bit xxhash value from the input data and store it after the stream terminator. Default is 1.
         /// </summary>
         public int? DoXXHash
         {
@@ -238,7 +207,7 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// Use the reference matchfinder for development purposes. SLOW.
+        /// Gets or sets whether to use the reference matchfinder for development purposes. SLOW.
         /// </summary>
         public int? UseReferenceMF
         {
@@ -247,9 +216,9 @@ namespace Nanook.GrindCore.FastLzma2
         }
 
         /// <summary>
-        /// 
+        /// Converts the current <see cref="CompressionParameters"/> to a native <see cref="FL2CompressionParameters"/> struct.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A <see cref="FL2CompressionParameters"/> struct with the current settings.</returns>
         internal FL2CompressionParameters ToParams()
         {
             return new FL2CompressionParameters
@@ -266,12 +235,22 @@ namespace Nanook.GrindCore.FastLzma2
         }
     }
 
-
+    /// <summary>
+    /// Specifies the encoder strategy for Fast-LZMA2.
+    /// </summary>
     internal enum FL2Strategy
     {
+        /// <summary>
+        /// Fast strategy.
+        /// </summary>
         Fast,
+        /// <summary>
+        /// Optimized strategy.
+        /// </summary>
         Opt,
+        /// <summary>
+        /// Ultra (hybrid) strategy.
+        /// </summary>
         Ultra
     }
-
 }

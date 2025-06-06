@@ -5,12 +5,20 @@ using System;
 
 namespace Nanook.GrindCore.Brotli
 {
-    /// <summary>Provides non-allocating, performant Brotli decompression methods. The methods decompress in a single pass without using a <see cref="Nanook.GrindCore.BrotliStream" /> instance.</summary>
+    /// <summary>
+    /// Provides non-allocating, performant Brotli decompression methods. The methods decompress in a single pass without using a BrotliStream /> instance.
+    /// </summary>
     internal struct BrotliDecoder : IDisposable
     {
         private SafeBrotliDecoderHandle? _state;
         private bool _disposed;
 
+        /// <summary>
+        /// Initializes the Brotli decoder with the specified version, or the latest Brotli version if not specified.
+        /// </summary>
+        /// <param name="version">The Brotli version to use, or <c>null</c> for the latest.</param>
+        /// <exception cref="IOException">Thrown if the decoder could not be created.</exception>
+        /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
         internal void InitializeDecoder(CompressionVersion? version = null)
         {
             if (version == null)
@@ -24,6 +32,10 @@ namespace Nanook.GrindCore.Brotli
                 throw new IOException(SR.BrotliDecoder_Create);
         }
 
+        /// <summary>
+        /// Ensures the decoder is initialized, initializing it if necessary.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException">Thrown if the decoder has been disposed.</exception>
         internal void EnsureInitialized()
         {
             EnsureNotDisposed();
@@ -31,30 +43,43 @@ namespace Nanook.GrindCore.Brotli
                 InitializeDecoder();
         }
 
-        /// <summary>Releases all resources used by the current Brotli decoder instance.</summary>
+        /// <summary>
+        /// Releases all resources used by the current Brotli decoder instance.
+        /// </summary>
         public void Dispose()
         {
             _disposed = true;
             _state?.Dispose();
         }
 
+        /// <summary>
+        /// Throws an <see cref="ObjectDisposedException"/> if the decoder has been disposed.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException">Thrown if the decoder has been disposed.</exception>
         private void EnsureNotDisposed()
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(BrotliDecoder), SR.BrotliDecoder_Disposed);
         }
 
-        /// <summary>Decompresses data that was compressed using the Brotli algorithm.</summary>
-        /// <param name="inData">A _outBuffer containing the compressed data.</param>
-        /// <param name="outData">When this method returns, a byte span containing the decompressed data.</param>
+        /// <summary>
+        /// Decompresses data that was compressed using the Brotli algorithm.
+        /// </summary>
+        /// <param name="inData">A buffer containing the compressed data.</param>
+        /// <param name="outData">When this method returns, a buffer containing the decompressed data.</param>
         /// <param name="bytesConsumed">The total number of bytes that were read from <paramref name="inData" />.</param>
         /// <param name="bytesWritten">The total number of bytes that were written in the <paramref name="outData" />.</param>
-        /// <returns>One of the enumeration values that indicates the status of the decompression operation.</returns>
-        /// <remarks>The return value can be as follows:
-        /// - <see cref="OperationStatus.Done" />: <paramref name="inData" /> was successfully and completely decompressed into <paramref name="outData" />.
-        /// - <see cref="OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="outData" /> to decompress <paramref name="inData" />.
-        /// - <see cref="OperationStatus.NeedMoreData" />: The decompression action is partially done at least one more byte is required to complete the decompression task. This method should be called again with more input to decompress.
-        /// - <see cref="OperationStatus.InvalidData" />: The data in <paramref name="inData" /> is invalid and could not be decompressed.</remarks>
+        /// <returns>OperationStatus</returns>
+        /// <remarks>
+        /// The return value can be as follows:
+        /// - <see cref="OperationStatus.Done"/>: <paramref name="inData"/> was successfully and completely decompressed into <paramref name="outData"/>.
+        /// - <see cref="OperationStatus.DestinationTooSmall"/>: There is not enough space in <paramref name="outData"/> to decompress <paramref name="inData"/>.
+        /// - <see cref="OperationStatus.NeedMoreData"/>: The decompression action is partially done; at least one more byte is required to complete the decompression task. This method should be called again with more input to decompress.
+        /// - <see cref="OperationStatus.InvalidData"/>: The data in <paramref name="inData"/> is invalid and could not be decompressed.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">Thrown if the decoder has been disposed.</exception>
+        /// <exception cref="IOException">Thrown if the decoder could not be created.</exception>
+        /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
         public OperationStatus Decompress(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten)
         {
             EnsureInitialized();
@@ -108,7 +133,7 @@ namespace Nanook.GrindCore.Brotli
                                 return OperationStatus.DestinationTooSmall;
                             case 2: // NeedsMoreInput
                             default:
-                                //inData = new DataBlock(inData.Data, inData.AvailableRead, (int)availableInput);
+                                // If more input is needed and no input is available, signal NeedMoreData.
                                 if (brotliResult == 2 && inData.AvailableRead == 0)
                                     return OperationStatus.NeedMoreData;
                                 break;
@@ -118,6 +143,5 @@ namespace Nanook.GrindCore.Brotli
                 return OperationStatus.DestinationTooSmall;
             }
         }
-
     }
 }

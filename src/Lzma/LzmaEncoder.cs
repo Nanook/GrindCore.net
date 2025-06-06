@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace Nanook.GrindCore.Lzma
 {
+    /// <summary>
+    /// Provides an encoder for LZMA-compressed data, supporting block-based compression.
+    /// </summary>
     internal unsafe class LzmaEncoder : IDisposable
     {
         private IntPtr _encoder;
@@ -14,9 +17,23 @@ namespace Nanook.GrindCore.Lzma
         private GCHandle _inBufferPinned;
         private long _toFlush;
 
+        /// <summary>
+        /// Gets the LZMA properties used for encoding.
+        /// </summary>
         public byte[] Properties { get; }
+
+        /// <summary>
+        /// Gets the block size used for compression.
+        /// </summary>
         public int BlockSize { get; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LzmaEncoder"/> class with the specified compression parameters.
+        /// </summary>
+        /// <param name="level">The compression level to use (default is 5).</param>
+        /// <param name="dictSize">The dictionary size to use (default is 0).</param>
+        /// <param name="wordSize">The word size to use (default is 0).</param>
+        /// <exception cref="Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
         public LzmaEncoder(int level = 5, uint dictSize = 0, int wordSize = 0)
         {
             CLzmaEncProps props = new CLzmaEncProps();
@@ -31,13 +48,13 @@ namespace Nanook.GrindCore.Lzma
             props.affinity = 0;
             props.numThreads = 1;
 
-            props.fb = wordSize; //default is 32 in ui
+            props.fb = wordSize; // default is 32 in UI
 
-            props.reduceSize = ulong.MaxValue; //this is the full filesize - -1 means set to blocksize if blocksize not -1(solid)|0(auto) && blocksize<filesize
+            props.reduceSize = ulong.MaxValue; // -1 means set to blocksize if blocksize not -1(solid)|0(auto) && blocksize<filesize
 
             _encoder = SZ_Lzma_v24_07_Enc_Create();
 
-            int res = SZ_Lzma_v24_07_Enc_SetProps(_encoder, ref props); //normalises properties
+            int res = SZ_Lzma_v24_07_Enc_SetProps(_encoder, ref props); // normalizes properties
             if (res != 0)
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
@@ -57,15 +74,23 @@ namespace Nanook.GrindCore.Lzma
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
             this.BlockSize = (int)bufferSize;
-            bufferSize += 0x8; // only needs 1 extra byte to ensure the end is not reached. Just allign to 8
+            bufferSize += 0x8; // only needs 1 extra byte to ensure the end is not reached. Just align to 8
 
             _inBuffer = BufferPool.Rent((int)bufferSize);
             _inBufferPinned = GCHandle.Alloc(_inBuffer, GCHandleType.Pinned);
             _inStream = new CBufferInStream() { buffer = _inBufferPinned.AddrOfPinnedObject(), size = bufferSize };
-
-            //var s = getState();
         }
 
+        /// <summary>
+        /// Encodes data from the input buffer into the output buffer using LZMA compression.
+        /// </summary>
+        /// <param name="inData">The input buffer containing data to compress.</param>
+        /// <param name="outData">The output buffer to write compressed data to.</param>
+        /// <param name="final">Indicates if this is the final block of data.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <returns>The total number of bytes written to the output buffer.</returns>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
+        /// <exception cref="Exception">Thrown if compression fails.</exception>
         public long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             if (inData.Pos != 0)
@@ -83,7 +108,7 @@ namespace Nanook.GrindCore.Lzma
 
             while (inData.AvailableRead != 0 || (final && !finalfinal))
             {
-                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+                cancel.ThrowIfCancellationRequested();
 
                 if (_inStream.pos == _inStream.size)
                     _inStream.pos = 0; // wrap around
@@ -95,7 +120,7 @@ namespace Nanook.GrindCore.Lzma
                 int endSz = (int)(_inStream.size - (ulong)p);
                 inData.Read(_inBuffer, (int)p, (int)Math.Min(sz, endSz));
 
-                // copy data at start of circular _outBuffer
+                // copy data at start of circular buffer
                 if (sz > endSz)
                     inData.Read(_inBuffer, 0, (int)(sz - endSz));
 
@@ -110,7 +135,7 @@ namespace Nanook.GrindCore.Lzma
 
                 fixed (byte* outPtr = outData.Data)
                 {
-                    *&outPtr += outData.Size; //writePos is Size
+                    *&outPtr += outData.Size; // writePos is Size
                     res = SZ_Lzma_v24_07_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
                     outTotal += (int)outSz;
                 }
@@ -124,6 +149,9 @@ namespace Nanook.GrindCore.Lzma
             return outTotal;
         }
 
+        /// <summary>
+        /// Releases all resources used by the <see cref="LzmaEncoder"/>.
+        /// </summary>
         public void Dispose()
         {
             if (_encoder != IntPtr.Zero)
@@ -135,6 +163,6 @@ namespace Nanook.GrindCore.Lzma
                 _inBufferPinned.Free();
             BufferPool.Return(_inBuffer);
         }
-
     }
 }
+

@@ -6,9 +6,9 @@ using System.Threading;
 namespace Nanook.GrindCore.ZStd
 {
     /// <summary>
-    /// A stream implementation for LZ4 compression and decompression.
-    /// Inherits common Stream functionality from the CompressionStream class.
-    /// Uses a customized LZ4 to allow Stream.Write() pattern for compression.
+    /// Provides a stream implementation for Zstandard (ZStd) compression and decompression.
+    /// Inherits common <see cref="Stream"/> functionality from <see cref="CompressionStream"/>.
+    /// Uses a customized ZStd implementation to allow the Stream.Write pattern for compression.
     /// </summary>
     public class ZStdStream : CompressionStream
     {
@@ -17,11 +17,23 @@ namespace Nanook.GrindCore.ZStd
         private readonly CompressionBuffer _buffer;
         private bool _wroteData;
 
-        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.ZStd;
-        internal override int BufferSizeInput => 0x20000; // * 0x400 * 0x400;
+        /// <summary>
+        /// Gets the input buffer size for ZStd operations.
+        /// </summary>
+        internal override int BufferSizeInput => 0x20000;
+
+        /// <summary>
+        /// Gets the output buffer size for ZStd operations.
+        /// </summary>
         internal override int BufferSizeOutput { get; }
 
-        public ZStdStream(Stream stream, CompressionOptions options) : base(true, stream, options)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ZStdStream"/> class with the specified stream and options.
+        /// </summary>
+        /// <param name="stream">The underlying stream to read from or write to.</param>
+        /// <param name="options">The compression options to use.</param>
+        public ZStdStream(Stream stream, CompressionOptions options)
+            : base(true, stream, CompressionAlgorithm.ZStd, options)
         {
             _wroteData = false;
 
@@ -40,9 +52,15 @@ namespace Nanook.GrindCore.ZStd
         }
 
         /// <summary>
-        /// Reads data from the stream and decompresses it using LZ4.
-        /// Position is updated with running total of bytes processed from source stream.
+        /// Reads data from the stream and decompresses it using ZStd.
+        /// Updates the position with the running total of bytes processed from the source stream.
         /// </summary>
+        /// <param name="data">The buffer to read decompressed data into.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <returns>The number of bytes written to the buffer.</returns>
+        /// <exception cref="NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
         internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
         {
             if (!this.CanRead)
@@ -70,9 +88,14 @@ namespace Nanook.GrindCore.ZStd
         }
 
         /// <summary>
-        /// Compresses data using LZ4 and writes it to the stream.
-        /// Position is updated with running total of bytes processed from source stream.
+        /// Compresses data using ZStd and writes it to the stream.
+        /// Updates the position with the running total of bytes processed from the source stream.
         /// </summary>
+        /// <param name="data">The buffer containing data to compress and write.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <exception cref="NotSupportedException">Thrown if the stream is not in compression mode.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
         internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
         {
             if (!this.CanWrite)
@@ -94,18 +117,24 @@ namespace Nanook.GrindCore.ZStd
         }
 
         /// <summary>
-        /// Flushes any remaining compressed data to the stream.
+        /// Flushes any remaining compressed data to the stream and finalizes the compression if requested.
         /// </summary>
+        /// <param name="data">The buffer containing data to flush.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
         internal override void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete)
         {
             bytesWrittenToStream = 0;
 
             if (IsCompress)
             {
-                cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
+                cancel.ThrowIfCancellationRequested();
                 long size = data.AvailableRead == 0 && _wroteData ? 0 : _encoder.EncodeData(data, _buffer, true, cancel);
-                //if (flush || !_wroteData)
-                    size += _encoder.Flush(_buffer);
+                // Always flush at the end of compression
+                size += _encoder.Flush(_buffer);
                 if (size > 0)
                 {
                     BaseStream.Write(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
@@ -116,7 +145,7 @@ namespace Nanook.GrindCore.ZStd
         }
 
         /// <summary>
-        /// Disposes the Lz4Stream and its resources.
+        /// Disposes the <see cref="ZStdStream"/> and its resources.
         /// </summary>
         protected override void OnDispose()
         {

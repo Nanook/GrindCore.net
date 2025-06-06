@@ -93,6 +93,9 @@ namespace GrindCore.Tests
         }
 
         [Theory]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x10004, "edc3f0815cf95397")]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x10004, "edc3f0815cf95397")]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x10004, "edc3f0815cf95397")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x1000a, "f4a2740735a848e5")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x1000a, "602832ca2a11542c")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0x1000a, "602832ca2a11542c")]
@@ -128,7 +131,7 @@ namespace GrindCore.Tests
                 int sz = block.Compress(_dataNC64KiB, 0, _dataNC64KiB.Length, compressed, 0, compressed.Length);
 
                 string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{result}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{sz:x}, \"{result}\")]");
                 Assert.Equal(size, sz);
                 Assert.Equal(expected, result);
             }
@@ -137,6 +140,8 @@ namespace GrindCore.Tests
         [Theory]
 #if IS_32BIT
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x2006, "d0acb11d8edcb72b")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x264b, "1a218597f77b77b5")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "bc53adaf025e726e")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x16d9, "f9420ec7af17eccf")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x62e, "3da20be52c61534e")]
@@ -149,6 +154,12 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x5d1, "2b444156a4305ae3")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x4fa, "bd7a15fc895f1b65")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x2006, "d0acb11d8edcb72b")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0xcc2, "88b181dc28558433")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0xb9b, "080ef351410b77ac")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x264b, "1a218597f77b77b5")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0xbe1, "8fbdcf11b9e9fcb4")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0xb9b, "080ef351410b77ac")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "bc53adaf025e726e")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x733, "b3c5d10c6777b8b2")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x733, "b3c5d10c6777b8b2")]
@@ -189,7 +200,7 @@ namespace GrindCore.Tests
                 BufferPool.Return(compressed);
                 BufferPool.Return(decompressed);
 
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{sz:x}, \"{compHash}\")]");
                 Assert.Equal(size, sz);
                 Assert.Equal(expected, compHash);
                 Assert.Equal(_text64KiB.Length, dsz);
@@ -200,6 +211,8 @@ namespace GrindCore.Tests
         [Theory]
 #if IS_32BIT
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x1, "5896bb9a27ab7ba5")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x2, "fae4a10ff02fd326")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x2, "fae4a10ff02fd326")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x6, "d8018fa1b17508d8")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x1, "e934a84adb052768")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x5, "00f4f72fb7a8c648")]
@@ -212,6 +225,12 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x1, "5896bb9a27ab7ba5")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x1, "5896bb9a27ab7ba5")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x1, "5896bb9a27ab7ba5")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x2, "fae4a10ff02fd326")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x2, "fae4a10ff02fd326")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0x2, "fae4a10ff02fd326")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x2, "fae4a10ff02fd326")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x2, "fae4a10ff02fd326")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x2, "fae4a10ff02fd326")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x6, "d8018fa1b17508d8")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x6, "d8018fa1b17508d8")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x6, "d8018fa1b17508d8")]
@@ -250,7 +269,7 @@ namespace GrindCore.Tests
                 BufferPool.Return(compressed);
                 BufferPool.Return(decompressed);
 
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{sz:x}, \"{compHash}\")]");
                 Assert.Equal(size, sz);
                 Assert.Equal(expected, compHash);
                 Assert.Equal(0, dsz);

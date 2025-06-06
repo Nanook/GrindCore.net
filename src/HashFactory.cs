@@ -8,26 +8,9 @@ using System.Collections.Generic;
 
 namespace Nanook.GrindCore
 {
-    public enum HashType
-    {
-        Blake2sp,
-        Blake3,
-        XXHash32,
-        XXHash64,
-        MD2,
-        MD4,
-        MD5,
-        SHA1,
-        SHA2_256,
-        SHA2_384,
-        SHA2_512,
-        SHA3_224,
-        SHA3_256,
-        SHA3_384,
-        SHA3_512
-    }
-
-
+    /// <summary>
+    /// Provides factory methods for creating and computing hash values using various supported hash algorithms.
+    /// </summary>
     public class HashFactory
     {
         private static readonly Dictionary<HashType, Func<HashAlgorithm>> hashCreators = new Dictionary<HashType, Func<HashAlgorithm>>()
@@ -49,6 +32,12 @@ namespace Nanook.GrindCore
             { HashType.SHA3_512, () => SHA3.Create(512) }
         };
 
+        /// <summary>
+        /// Creates a new <see cref="HashAlgorithm"/> instance for the specified <see cref="HashType"/>.
+        /// </summary>
+        /// <param name="type">The hash algorithm type to create.</param>
+        /// <returns>A new <see cref="HashAlgorithm"/> instance.</returns>
+        /// <exception cref="ArgumentException">Thrown if the specified hash type is not supported.</exception>
         public static HashAlgorithm Create(HashType type)
         {
             if (hashCreators.TryGetValue(type, out var creator))
@@ -57,8 +46,22 @@ namespace Nanook.GrindCore
             throw new ArgumentException("Unsupported hash type", nameof(type));
         }
 
+        /// <summary>
+        /// Computes the hash value for the entire input data using the specified hash algorithm type.
+        /// </summary>
+        /// <param name="type">The hash algorithm type to use.</param>
+        /// <param name="data">The input data to hash.</param>
+        /// <returns>The computed hash value as a byte array.</returns>
         public static byte[] Compute(HashType type, byte[] data) => Compute(type, data, 0, data.Length);
 
+        /// <summary>
+        /// Computes the hash value for a segment of the input data using the specified hash algorithm type.
+        /// </summary>
+        /// <param name="type">The hash algorithm type to use.</param>
+        /// <param name="data">The input data to hash.</param>
+        /// <param name="offset">The offset in the input data at which to begin hashing.</param>
+        /// <param name="length">The number of bytes to hash.</param>
+        /// <returns>The computed hash value as a byte array.</returns>
         public static byte[] Compute(HashType type, byte[] data, int offset, int length)
         {
             using (var algorithm = Create(type))

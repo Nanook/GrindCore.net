@@ -5,12 +5,24 @@ using System.Text;
 
 namespace Nanook.GrindCore
 {
+    /// <summary>
+    /// Provides default compression levels and version information for a given <see cref="CompressionAlgorithm"/>.
+    /// </summary>
     internal class CompressionDefaults
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CompressionDefaults"/> class using the specified algorithm and the latest version.
+        /// </summary>
+        /// <param name="algorithm">The compression algorithm.</param>
         public CompressionDefaults(CompressionAlgorithm algorithm) : this(algorithm, null)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CompressionDefaults"/> class using the specified algorithm and version.
+        /// </summary>
+        /// <param name="algorithm">The compression algorithm.</param>
+        /// <param name="version">The compression version, or <c>null</c> to use the latest version.</param>
         public CompressionDefaults(CompressionAlgorithm algorithm, CompressionVersion? version)
         {
             this.LevelFastest = CompressionType.Level1;
@@ -70,9 +82,24 @@ namespace Nanook.GrindCore
             }
         }
 
+        /// <summary>
+        /// Gets the recommended fastest compression level for the algorithm.
+        /// </summary>
         public CompressionType LevelFastest { get; }
+
+        /// <summary>
+        /// Gets the recommended optimal compression level for the algorithm.
+        /// </summary>
         public CompressionType LevelOptimal { get; }
+
+        /// <summary>
+        /// Gets the recommended smallest size compression level for the algorithm.
+        /// </summary>
         public CompressionType LevelSmallestSize { get; }
+
+        /// <summary>
+        /// Gets the default or specified compression version for the algorithm.
+        /// </summary>
         public CompressionVersion Version { get; }
     }
 }

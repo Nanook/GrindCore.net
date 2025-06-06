@@ -14,7 +14,7 @@ public unsafe class MD2 : HashAlgorithm
     private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
     /// <summary>
-    /// Initializes a new instance of the MD2 class.
+    /// Initializes a new instance of the <see cref="MD2"/> class.
     /// </summary>
     public MD2()
     {
@@ -29,7 +29,13 @@ public unsafe class MD2 : HashAlgorithm
     /// </summary>
     /// <param name="data">The input data to compute the hash code for.</param>
     /// <returns>The computed hash code.</returns>
-    public static byte[] Compute(byte[] data) => Compute(data, 0, data.Length);
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="data"/> is null.</exception>
+    public static byte[] Compute(byte[] data)
+    {
+        if (data == null)
+            throw new ArgumentNullException(nameof(data));
+        return Compute(data, 0, data.Length);
+    }
 
     /// <summary>
     /// Computes the hash value for the specified region of the byte array.
@@ -38,8 +44,20 @@ public unsafe class MD2 : HashAlgorithm
     /// <param name="offset">The offset in the byte array to start at.</param>
     /// <param name="length">The number of bytes to process.</param>
     /// <returns>The computed hash code.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="data"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
+    /// <exception cref="ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="length"/> is greater than the buffer length.</exception>
     public static byte[] Compute(byte[] data, int offset, int length)
     {
+        if (data == null)
+            throw new ArgumentNullException(nameof(data));
+        if (offset < 0)
+            throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+        if (length < 0)
+            throw new ArgumentOutOfRangeException(nameof(length), "Length must be non-negative.");
+        if (data.Length - offset < length)
+            throw new ArgumentException("The sum of offset and length is greater than the buffer length.");
+
         Interop.MD2_CTX ctx = new Interop.MD2_CTX();
         HashBuffer buffer = new HashBuffer(_hashSizeBytes);
         byte[] result = new byte[_hashSizeBytes]; // MD2_DIGEST_LENGTH is 16
@@ -62,6 +80,11 @@ public unsafe class MD2 : HashAlgorithm
     /// <summary>
     /// Processes the specified region of the byte array in 256 MiB chunks.
     /// </summary>
+    /// <param name="data">The input data to process.</param>
+    /// <param name="offset">The offset in the data to start at.</param>
+    /// <param name="length">The number of bytes to process.</param>
+    /// <param name="ctx">Pointer to the hash context.</param>
+    /// <param name="buffer">The buffer used for block processing and padding.</param>
     private static void processData(byte[] data, int offset, int length, Interop.MD2_CTX* ctx, HashBuffer buffer)
     {
         int remainingSize = length;
@@ -79,9 +102,9 @@ public unsafe class MD2 : HashAlgorithm
     }
 
     /// <summary>
-    /// Creates a new instance of the MD2 class.
+    /// Creates a new instance of the <see cref="MD2"/> class.
     /// </summary>
-    /// <returns>A new instance of the MD2 class.</returns>
+    /// <returns>A new instance of the <see cref="MD2"/> class.</returns>
     public static new MD2 Create() => new MD2();
 
     /// <summary>
@@ -96,13 +119,17 @@ public unsafe class MD2 : HashAlgorithm
     }
 
     /// <summary>
-    /// Processes the _outBuffer with padding.
+    /// Processes the buffer with padding for MD2 block alignment.
     /// </summary>
+    /// <param name="ctx">Pointer to the hash context.</param>
+    /// <param name="data">The data buffer to pad and process.</param>
+    /// <param name="offset">The offset in the data buffer.</param>
+    /// <param name="size">The number of bytes to process.</param>
     private static void bufferPadProcess(Interop.MD2_CTX* ctx, byte[] data, int offset, int size)
     {
         byte paddingValue = (byte)(data.Length - size);
 
-        // Pad the _outBuffer with the padding value
+        // Pad the buffer with the padding value
         for (int i = size; i < data.Length; i++)
             data[i] = paddingValue;
 
@@ -112,6 +139,10 @@ public unsafe class MD2 : HashAlgorithm
     /// <summary>
     /// Processes the specified region of the byte array.
     /// </summary>
+    /// <param name="ctx">Pointer to the hash context.</param>
+    /// <param name="data">The data buffer to process.</param>
+    /// <param name="offset">The offset in the data buffer.</param>
+    /// <param name="size">The number of bytes to process.</param>
     private static void bufferProcess(Interop.MD2_CTX* ctx, byte[] data, int offset, int size)
     {
         int remainingSize = size;
@@ -152,7 +183,7 @@ public unsafe class MD2 : HashAlgorithm
     /// <returns>The computed hash code.</returns>
     protected override byte[] HashFinal()
     {
-        // Complete the _outBuffer and finalize the hash
+        // Complete the buffer and finalize the hash
         _buffer.Complete((d, o, s) =>
         {
             // Pin the hash context in memory to obtain a pointer
@@ -168,3 +199,4 @@ public unsafe class MD2 : HashAlgorithm
         return result;
     }
 }
+

@@ -6,6 +6,9 @@ using static Nanook.GrindCore.Interop.Lz4;
 
 namespace Nanook.GrindCore.Lz4
 {
+    /// <summary>
+    /// Provides a decoder for LZ4 frame-compressed data, supporting block-based decompression.
+    /// </summary>
     internal unsafe class Lz4Decoder : IDisposable
     {
         private SZ_Lz4F_v1_9_4_DecompressionContext _context;
@@ -14,6 +17,11 @@ namespace Nanook.GrindCore.Lz4
         private IntPtr _bufferPtr;
         private bool _headerRead;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lz4Decoder"/> class with the specified block size.
+        /// </summary>
+        /// <param name="blockSize">The size of the buffer to allocate for decompression.</param>
+        /// <exception cref="Exception">Thrown if the decompression context or buffer cannot be allocated.</exception>
         public Lz4Decoder(int blockSize)
         {
             _context = new SZ_Lz4F_v1_9_4_DecompressionContext();
@@ -34,6 +42,14 @@ namespace Nanook.GrindCore.Lz4
             _headerRead = false;
         }
 
+        /// <summary>
+        /// Decodes LZ4 frame-compressed data from the input buffer into the output buffer.
+        /// </summary>
+        /// <param name="inData">The input buffer containing compressed data.</param>
+        /// <param name="readSz">Outputs the number of bytes read from the input buffer.</param>
+        /// <param name="outData">The output buffer to write decompressed data to.</param>
+        /// <returns>The number of bytes written to the output buffer.</returns>
+        /// <exception cref="Exception">Thrown if frame info or decompression fails.</exception>
         public long DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData)
         {
             readSz = 0;
@@ -85,6 +101,9 @@ namespace Nanook.GrindCore.Lz4
             return outData.Size - initOutSz;
         }
 
+        /// <summary>
+        /// Releases all resources used by the <see cref="Lz4Decoder"/>.
+        /// </summary>
         public void Dispose()
         {
             fixed (SZ_Lz4F_v1_9_4_DecompressionContext* ctxPtr = &_context)

@@ -3,8 +3,6 @@ using System.Drawing;
 using System.IO;
 using System.Threading;
 
-
-
 #if !CLASSIC && (NET40_OR_GREATER || NETSTANDARD || NETCOREAPP)
 using System.Threading.Tasks;
 using static Nanook.GrindCore.Interop;
@@ -12,46 +10,90 @@ using static Nanook.GrindCore.Interop;
 
 namespace Nanook.GrindCore
 {
+    /// <summary>
+    /// Provides a base stream for compression and decompression operations.
+    /// </summary>
     public abstract class CompressionStream : Stream
     {
         private bool _disposed;
         private bool _complete;
+        /// <summary>
+        /// Gets a value indicating whether the base stream should be left open after the compression stream is disposed.
+        /// </summary>
         protected readonly bool LeaveOpen;
+        /// <summary>
+        /// Gets a value indicating whether this stream is in compression mode.
+        /// </summary>
         protected readonly bool IsCompress;
+        /// <summary>
+        /// Gets the compression type for this stream.
+        /// </summary>
         protected readonly CompressionType CompressionType;
 
+        /// <summary>
+        /// Gets the underlying base stream.
+        /// </summary>
         public Stream BaseStream { get; }
 
+        /// <summary>
+        /// Gets the threshold for the internal cache buffer.
+        /// </summary>
         protected readonly int CacheThreshold;
         private CompressionBuffer _cache;
 
+        /// <summary>
+        /// Gets the compression defaults for this stream.
+        /// </summary>
         internal virtual CompressionDefaults Defaults { get; }
 
+        /// <inheritdoc/>
         public override bool CanSeek => false;
+        /// <inheritdoc/>
         public override bool CanRead => BaseStream != null && !IsCompress && BaseStream.CanRead;
+        /// <inheritdoc/>
         public override bool CanWrite => BaseStream != null && IsCompress && BaseStream.CanWrite;
 
+        /// <inheritdoc/>
         public override long Length => throw new NotSupportedException("Seeking is not supported.");
 
         private long _position;
         private long _positionFullSize; //count of bytes read/written to decompressed byte arrays
 
+        /// <summary>
+        /// Gets the total number of bytes read or written to decompressed byte arrays. The Decompressed/FullSize position, Position holds the Compressed position.
+        /// </summary>
         public long PositionFullSize => _positionFullSize;
 
+        /// <summary>
+        /// Gets or sets the compression properties for this stream.
+        /// </summary>
         public byte[] Properties { get; protected set; }
 
+        /// <inheritdoc/>
         public override long Position
         {
             get => _position != -1 ? _position : throw new NotSupportedException("Seeking is not supported.");
             set => throw new NotSupportedException("Position is readonly. Seeking is not supported.");
         }
 
-        protected CompressionStream(bool positionSupport, Stream stream, CompressionOptions options)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CompressionStream"/> class.
+        /// </summary>
+        /// <param name="positionSupport">Indicates if position support is enabled.</param>
+        /// <param name="stream">The base stream to wrap.</param>
+        /// <param name="defaultAlgorithm">The default algorithm, used when options.Version is not set to override it.</param>
+        /// <param name="options">The compression options to use.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if the stream does not support required operations or if compression type is invalid.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the buffer size is not positive.</exception>
+        protected CompressionStream(bool positionSupport, Stream stream, CompressionAlgorithm defaultAlgorithm, CompressionOptions options)
         {
             if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
+            if (options is null)
+                throw new ArgumentNullException(nameof(options));
 
-            this.Defaults = new CompressionDefaults(this.Algorithm, options.Version);
+            this.Defaults = new CompressionDefaults(defaultAlgorithm, options.Version);
 
             _complete = false;
             _position = positionSupport ? 0 : -1;
@@ -64,6 +106,8 @@ namespace Nanook.GrindCore
             Version = options.Version ?? this.Defaults.Version; // latest
 
             CacheThreshold = options.BufferSize ?? this.BufferSizeInput;
+            if (CacheThreshold <= 0)
+                throw new ArgumentOutOfRangeException(nameof(options.BufferSize), "BufferSize must be positive.");
             _cache = new CompressionBuffer(options.BufferSize ?? this.BufferSizeInput);
 
             if (!IsCompress) //Decompress
@@ -88,13 +132,33 @@ namespace Nanook.GrindCore
             }
         }
 
-        internal abstract CompressionAlgorithm Algorithm { get; }
+        /// <summary>
+        /// Gets the compression version used by this stream.
+        /// </summary>
         internal CompressionVersion Version { get; }
+        /// <summary>
+        /// Gets the input buffer size for this stream.
+        /// </summary>
         internal abstract int BufferSizeInput { get; }
+        /// <summary>
+        /// Gets the output buffer size for this stream.
+        /// </summary>
         internal abstract int BufferSizeOutput { get; }
+        /// <summary>
+        /// Reads data from the underlying stream into the provided buffer.
+        /// </summary>
         internal abstract int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream);
+        /// <summary>
+        /// Writes data from the provided buffer to the underlying stream.
+        /// </summary>
         internal abstract void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream);
+        /// <summary>
+        /// Flushes the compression buffers and finalizes stream writes and positions.
+        /// </summary>
         internal abstract void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete);
+        /// <summary>
+        /// Performs custom cleanup for managed resources.
+        /// </summary>
         protected abstract void OnDispose();
 
         private int onRead(DataBlock dataBlock, CancellableTask cancel)
@@ -151,10 +215,13 @@ namespace Nanook.GrindCore
         }
 
         /// <summary>
-        /// Flush compression buffers and finalise stream writes and positions. If not called from Flush() then onDispose().
-        /// Best practice is to call flush if the object Positions are to be read as the object be be Garbage Collected.
+        /// Flushes compression buffers and finalizes stream writes and positions. 
+        /// If not called from <see cref="Flush"/>, then called from <see cref="onDispose"/>.
+        /// Best practice is to call flush if the object positions are to be read as the object may be garbage collected.
         /// </summary>
-        /// <param name="cancel"></param>
+        /// <param name="cancel">A cancellation task.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
         private void onFlush(CancellableTask cancel, bool flush, bool complete)
         {
             if (!_complete)
@@ -173,7 +240,7 @@ namespace Nanook.GrindCore
         }
 
         /// <summary>
-        /// Only called once from Dispose(), will flush if onFlush was not already called
+        /// Only called once from Dispose(), will flush if onFlush was not already called.
         /// </summary>
         private void onDispose()
         {
@@ -181,17 +248,19 @@ namespace Nanook.GrindCore
             OnDispose();
         }
 
-        // Abstract method for Seek, since it's required by Stream
+        /// <inheritdoc/>
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
         public override void SetLength(long value)
         {
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
         public override int ReadByte()
         {
             if (_cache.AvailableRead == 0)
@@ -208,6 +277,7 @@ namespace Nanook.GrindCore
             return result;
         }
 
+        /// <inheritdoc/>
         public override void WriteByte(byte value)
         {
             _cache.Data[_cache.Size] = value;
@@ -216,31 +286,78 @@ namespace Nanook.GrindCore
                 onWrite(new CancellableTask());
         }
 
+        /// <summary>
+        /// Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
+        /// </summary>
+        /// <param name="buffer">The buffer to read the data into.</param>
+        /// <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin storing the data read from the stream.</param>
+        /// <param name="count">The maximum number of bytes to be read from the stream.</param>
+        /// <returns>The total number of bytes read into the buffer.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative.</exception>
+        /// <exception cref="ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="count"/> is greater than the buffer length.</exception>
         public override int Read(byte[] buffer, int offset, int count)
         {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
+            if (buffer.Length - offset < count)
+                throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
+
             return onRead(new DataBlock(buffer, offset, count), new CancellableTask());
         }
 
+        /// <summary>
+        /// Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
+        /// </summary>
+        /// <param name="buffer">The buffer containing data to write to the stream.</param>
+        /// <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin copying bytes to the stream.</param>
+        /// <param name="count">The number of bytes to be written to the stream.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative.</exception>
+        /// <exception cref="ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="count"/> is greater than the buffer length.</exception>
         public override void Write(byte[] buffer, int offset, int count)
         {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
+            if (buffer.Length - offset < count)
+                throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
+
             onWrite(new DataBlock(buffer, offset, count), new CancellableTask());
         }
 
+        /// <summary>
+        /// Clears all buffers for this stream and causes any buffered data to be written to the underlying device.
+        /// </summary>
         public override void Flush()
         {
             onFlush(new CancellableTask(), true, false);
         }
 
+        /// <summary>
+        /// Completes the compression or decompression operation, flushing all buffers and finalizing the stream without disposing anything.
+        /// </summary>
         public virtual void Complete()
         {
             onFlush(new CancellableTask(), false, true);
         }
 
         /// <summary>
-        /// Close streaming progress
+        /// Closes the current stream and releases any resources associated with the current stream.
         /// </summary>
         public override void Close() => Dispose(true);
 
+        /// <summary>
+        /// Releases the unmanaged resources used by the <see cref="CompressionStream"/> and optionally releases the managed resources.
+        /// </summary>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -258,10 +375,17 @@ namespace Nanook.GrindCore
 
 #if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
         /// <summary>
-        /// Reads data asynchronously from the stream using a Memory<byte>. Converts to DataBlock internally.
+        /// Asynchronously reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
         /// </summary>
+        /// <param name="buffer">The region of memory to write the data into.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the result parameter contains the total number of bytes read into the buffer.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="buffer"/> length is negative.</exception>
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (buffer.Length < 0)
+                throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer length must be non-negative.");
+
             if (SynchronizationContext.Current == null)
             {
                 DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
@@ -276,10 +400,17 @@ namespace Nanook.GrindCore
         }
 
         /// <summary>
-        /// Writes data asynchronously to the stream using a ReadOnlyMemory<byte>. Converts to DataBlock internally.
+        /// Asynchronously writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
         /// </summary>
+        /// <param name="buffer">The region of memory to write data from.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="buffer"/> length is negative.</exception>
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (buffer.Length < 0)
+                throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer length must be non-negative.");
+
             if (SynchronizationContext.Current == null)
             {
                 DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
@@ -294,11 +425,17 @@ namespace Nanook.GrindCore
             }, cancellationToken).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Asynchronously completes the compression or decompression operation, flushing all buffers and finalizing the stream without disposing anything.
+        /// </summary>
         public virtual async ValueTask CompleteAsync()
         {
             await this.CompleteAsync(new CancellationToken());
         }
 
+        /// <summary>
+        /// Asynchronously releases the unmanaged resources used by the <see cref="CompressionStream"/> and optionally releases the managed resources.
+        /// </summary>
         public override async ValueTask DisposeAsync()
         {
             if (SynchronizationContext.Current == null)
@@ -314,10 +451,27 @@ namespace Nanook.GrindCore
 #endif
 #if CLASSIC || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP
         /// <summary>
-        /// Reads data asynchronously from the stream using byte[]. Converts to DataBlock internally.
+        /// Asynchronously reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
         /// </summary>
+        /// <param name="buffer">The buffer to read the data into.</param>
+        /// <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin storing the data read from the stream.</param>
+        /// <param name="count">The maximum number of bytes to be read from the stream.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the result parameter contains the total number of bytes read into the buffer.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative.</exception>
+        /// <exception cref="ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="count"/> is greater than the buffer length.</exception>
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
+            if (buffer.Length - offset < count)
+                throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
+
             if (SynchronizationContext.Current == null)
             {
                 DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
@@ -332,10 +486,27 @@ namespace Nanook.GrindCore
         }
 
         /// <summary>
-        /// Writes data asynchronously to the stream using byte[]. Converts to DataBlock internally.
+        /// Asynchronously writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
         /// </summary>
+        /// <param name="buffer">The buffer containing data to write to the stream.</param>
+        /// <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin copying bytes to the stream.</param>
+        /// <param name="count">The number of bytes to be written to the stream.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative.</exception>
+        /// <exception cref="ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="count"/> is greater than the buffer length.</exception>
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
+            if (buffer.Length - offset < count)
+                throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
+
             if (SynchronizationContext.Current == null)
             {
                 DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
@@ -350,6 +521,11 @@ namespace Nanook.GrindCore
             }, cancellationToken).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Asynchronously clears all buffers for this stream and causes any buffered data to be written to the underlying device.
+        /// </summary>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous flush operation.</returns>
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             if (SynchronizationContext.Current == null)
@@ -364,6 +540,11 @@ namespace Nanook.GrindCore
             }, cancellationToken).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Asynchronously completes the compression or decompression operation, flushing all buffers and finalizing the stream without disposing anything.
+        /// </summary>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous complete operation.</returns>
         public virtual async Task CompleteAsync(CancellationToken cancellationToken)
         {
             if (SynchronizationContext.Current == null)

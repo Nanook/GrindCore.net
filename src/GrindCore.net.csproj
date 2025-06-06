@@ -2,12 +2,12 @@
 	<PropertyGroup>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Nullable>enable</Nullable>
-		<NoWarn>CS8618,CS8602,CA2022,CA8618</NoWarn>
+		<NoWarn>CS8618,CS8602,CA2022,CA8618,CS1591</NoWarn>
 		<TargetFrameworks>net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35</TargetFrameworks>
 		<AssemblyName>Nanook.GrindCore</AssemblyName>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-		<Version>0.0.10-alpha</Version>
+		<Version>0.0.11-alpha</Version>
 		<RootNamespace>Nanook.GrindCore</RootNamespace>
 		<Configurations>Debug;Release;ReleaseTest</Configurations>
 		<RuntimeIdentifiers>win-x64;win-x86;win-arm64;linux-x64;linux-x86;linux-arm64;linux-arm;osx-x64;osx-arm64</RuntimeIdentifiers>
@@ -15,10 +15,14 @@
 		<PackageId>GrindCore</PackageId>
 		<Authors>Nanook</Authors>
 		<Description>Native Compression and Hashing library built the System.IO.Compression way.</Description>
-		<PackageTags>Native;Compression;Hashing;ZStd;ZStandard;LZ4;Lizard4;LZMA;LZMA2;Fast-LZMA2;ZLib;Deflate,Brotli,Blake3,Blake2sp,MD5,MD4,MD2,SHA1,SHA2,SHA256,SHA384,SHA512,SHA3,SHA3-224,SHA3-256,SHA3-384,SHA3-512,XXHash,XXH32,XXH64</PackageTags>
+		<PackageTags>AOT;Native;Compression;Hashing;Stream;Block;ZStd;ZStandard;LZ4;Lizard4;LZMA;LZMA2;Fast-LZMA2;GZip;ZLib;Deflate,Brotli,Blake3,Blake2sp,MD5,MD4,MD2,SHA1,SHA2,SHA256,SHA384,SHA512,SHA3,SHA3-224,SHA3-256,SHA3-384,SHA3-512,XXHash,XXH32,XXH64</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/Nanook/GrindCore.net</RepositoryUrl>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<DocumentationFile>Nanook.GrindCore.net.xml</DocumentationFile>
 	</PropertyGroup>
 
 	<!-- CLASSIC will switch to net framework StreamBase and DataBlock for debugging -->
@@ -30,18 +34,6 @@
 		<TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
 		<GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_Compression</GeneratePlatformNotSupportedAssemblyMessage>
 	</PropertyGroup>
-
-	<ItemGroup>
-	  <Compile Remove="DeflateZLib\Deflate64Managed\**" />
-	  <Compile Remove="SharpCompress\**" />
-	  <Compile Remove="Zip\**" />
-	  <EmbeddedResource Remove="DeflateZLib\Deflate64Managed\**" />
-	  <EmbeddedResource Remove="SharpCompress\**" />
-	  <EmbeddedResource Remove="Zip\**" />
-	  <None Remove="DeflateZLib\Deflate64Managed\**" />
-	  <None Remove="SharpCompress\**" />
-	  <None Remove="Zip\**" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="../README.md" Pack="true" PackagePath="\" />
@@ -92,16 +84,6 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x86/native/GrindCore.dll</PackagePath>
 		</Content>
-	</ItemGroup>
-
-
-
-	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.1'">
-		<PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.2" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<FunctionsPreservedDependencies Include="System.Text.Encoding.CodePages.dll" />
 	</ItemGroup>
 
 	<ItemGroup>
