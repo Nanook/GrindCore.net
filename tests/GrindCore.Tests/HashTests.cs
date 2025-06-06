@@ -19,12 +19,12 @@ namespace GrindCore.Tests
     {
         private static byte[] _dataEmpty;
         private static byte[] _data64KiB;
-        private static byte[]? _dataHalfGiB;
+        // private static byte[]? _dataHalfGiB;
         static HashTests()
         {
             _dataEmpty = new byte[0];
             _data64KiB = TestDataStream.Create(64 * 1024);
-            _dataHalfGiB = null;
+            // _dataHalfGiB = null;
         }
 
 #if WIN_X64

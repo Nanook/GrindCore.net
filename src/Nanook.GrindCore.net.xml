@@ -1525,7 +1525,7 @@
         </member>
         <member name="T:Nanook.GrindCore.Copy.CopyBlock">
             <summary>
-            Provides a block-based implementation of the Copy algorithm, which performs no compression and simply copies data.
+            Provides a block-based Copy with no compression.
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.Copy.CopyBlock.RequiredCompressOutputSize">

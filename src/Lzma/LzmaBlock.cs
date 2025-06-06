@@ -86,7 +86,7 @@ namespace Nanook.GrindCore.Lzma
         internal unsafe override int OnDecompress(DataBlock srcData, DataBlock dstData)
         {
             if (this.Properties == null || this.Properties.Length != 5)
-                throw new InvalidOperationException("LZMA2 Properties must be set and contain 5 bytes before decompression.");
+                throw new InvalidOperationException("LZMA Properties must be set and contain 5 bytes before decompression.");
 
             fixed (byte* srcPtr = srcData.Data)
             fixed (byte* dstPtr = dstData.Data)
