@@ -19,15 +19,16 @@ namespace GrindCore.Tests
     {
         private static byte[] _dataEmpty;
         private static byte[] _data64KiB;
-        // private static byte[]? _dataHalfGiB;
+
         static HashTests()
         {
             _dataEmpty = new byte[0];
             _data64KiB = TestDataStream.Create(64 * 1024);
-            // _dataHalfGiB = null;
         }
 
 #if WIN_X64
+        private static byte[]? _dataHalfGiB;
+
         /// <summary>
         /// Test and demonstrate an instance of a hashing algorithm, processing one 512GiB array of data.
         /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
