@@ -98,10 +98,13 @@ namespace GrindCore.Tests.Utility
                             }
                             outXxhash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
-                            Assert.Equal(compMemoryStream.Position, compressionStream.Position);
+                            long posA = compMemoryStream.Position;
+                            long posB = compressionStream.Position;
+
+                            Assert.Equal(posA, posB); //broken down to track issue with 32 bit version.
                             Assert.Equal(data.Position, compressionStream.PositionFullSize); //compression position is correct
-                            //compMemoryStream.SetLength(0);
                         }
+                        compMemoryStream.SetLength(0);
                     }
 
                     return new TestResults
