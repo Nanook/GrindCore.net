@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace GrindCore.Tests.Utility
 {
@@ -18,7 +19,7 @@ namespace GrindCore.Tests.Utility
     }
     internal partial class Utilities
     {
-        
+
         public static TestResults TestStreamBlocks(Stream data, CompressionAlgorithm algorithm, CompressionType type, int dataSize, int bufferSize, int compSize, int? threads = null)
         {
             // Process in 1MiB blocks
@@ -92,9 +93,6 @@ namespace GrindCore.Tests.Utility
                             int fixTotal = total == 0 ? 1 : total;
                             while (totalOutProcessedBytes < fixTotal && (bytesRead = compressionStream.Read(buffer, 0, Math.Min(buffer.Length, (int)(fixTotal - totalOutProcessedBytes)))) > 0)
                             {
-#if NET9_0
-                                //File.AppendAllBytes(@"d:\temp\zstd.bin", buffer.Take(bytesRead).ToArray());
-#endif
                                 outXxhash.TransformBlock(buffer, 0, bytesRead, null, 0);
                                 totalOutProcessedBytes += bytesRead;
                                 fixTotal = total; //reset

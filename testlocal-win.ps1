@@ -1,19 +1,6 @@
-$build = ".build"
+#dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 --self-contained false
+#./tests/GrindCore.Tests/bin/Debug/net9.0/win-x86/GrindCore.Tests.exe
 
-# Copy GrindCore.build files
-Remove-Item -Path "$build\*" -Recurse -Force
-foreach ($item in (Get-ChildItem -Path . -Exclude $build)) {
-    Copy-Item -Path $item.FullName -Destination $build -Recurse -Force
-}
-
-# Merge in GrindCore files
-foreach ($item in (Get-ChildItem -Path "..\GrindCore")) {
-    Copy-Item -Path $item.FullName -Destination "$build\src\native" -Recurse -Force
-}
-
-# Test Build
-pushd "$build"
-# docker build -f Dockerfile.win -t grindcore.build.win:latest -m 2GB .
-docker run --rm -v ${PWD}:c:/workspaces grindcore.build.win:latest c:/workspaces/src/native/libs/build-native.cmd rebuild x64 Release outconfig win-x64 -os windows -numproc 16
-# docker run --rm -v ${PWD}:c:/workspaces grindcore.build.win:latest c:/workspaces/src/native/libs/build-native.cmd rebuild x86 Release outconfig win-x86 -os windows -numproc 16
-popd
+dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/win-x86 --self-contained false
+Copy-Item -Path "./output/win-x86/runtimes/win-x86/native/*" -Destination "./output/win-x86/" -Force
+./output/win-x86/GrindCore.Tests.Runtime.exe

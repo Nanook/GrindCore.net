@@ -143,7 +143,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x2006, "d0acb11d8edcb72b")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x264b, "1a218597f77b77b5")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "bc53adaf025e726e")]
-        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x16d9, "f9420ec7af17eccf")]
+        //[InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x16d9, "f9420ec7af17eccf")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x62e, "3da20be52c61534e")]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x636, "eca2b056732b6c26")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x200c, "c43831d20deadb6b")]

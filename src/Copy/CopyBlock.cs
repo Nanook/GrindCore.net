@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace Nanook.GrindCore.Copy
 {
     /// <summary>
-    /// Provides a block-based implementation of the Copy algorithm, which performs no compression and simply copies data.
+    /// Provides a block-based Copy with no compression.
     /// </summary>
     public class CopyBlock : CompressionBlock
     {

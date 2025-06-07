@@ -47,6 +47,8 @@ To simplify instance creation, GrindCore provides:
 
 Additionally, **blocking and asynchronous methods** are implemented, allowing flexible compression workflows.
 
+Streams expose the `.Position` (compressed) and `.PositionFullSize` (uncompressed) properties, allowing consuming objects to track progress and status with accuracy.
+
 ### Hashing
 
 Hashes inherit from HashingAlgorithm allowing them to be use with CryptoStream for standard dotnet use.
@@ -103,9 +105,10 @@ GrindCore is designed to overcome several known complications in the dotnet ecos
 ## To Do
 
 Several enhancements and additional features could be introduced to further improve GrindCore. While these may be addressed over time, listing them here serves to communicate known gaps and encourage community contributions:
-- Multi-language support
-- Dictionary support
-- Expanded compression algorithm capabilities
+- Multi-language support.
+- Dictionary support.
+- Progress updates raised from C library.
+- Expanded compression algorithm capabilities.
   - If you identify missing features, feel free to raise issues or submit pull requests.
   - Any unimplemented methods from the C source can be exposed upon request.
 
