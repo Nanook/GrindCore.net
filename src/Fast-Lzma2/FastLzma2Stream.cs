@@ -4,73 +4,122 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore.FastLzma2
 {
     /// <summary>
-    /// Streaming Fast LZMA2 compress
+    /// Provides a streaming interface for Fast-LZMA2 compression and decompression.
     /// </summary>
-    public class FastLzma2Stream : CompressionStream, ICompressionDefaults
+    public class FastLzma2Stream : CompressionStream
     {
-        private FastLzma2Encoder _enc;
-        private FastLzma2Decoder _dec;
-        private bool _flushed;
+        private FastLzma2Encoder _encoder;
+        private FastLzma2Decoder _decoder;
 
-        internal override CompressionAlgorithm Algorithm => CompressionAlgorithm.FastLzma2;
-        internal override int DefaultProcessSizeMin => 2 * 0x400 * 0x400;
-        internal override int DefaultProcessSizeMax => 2 * 0x400 * 0x400;
-        CompressionType ICompressionDefaults.LevelFastest => CompressionType.Level1;
-        CompressionType ICompressionDefaults.LevelOptimal => CompressionType.Level6;
-        CompressionType ICompressionDefaults.LevelSmallestSize => CompressionType.MaxFastLzma2;
+        /// <summary>
+        /// Gets the input buffer size for Fast-LZMA2 operations.
+        /// </summary>
+        internal override int BufferSizeInput => 2 * 0x400 * 0x400;
 
+        /// <summary>
+        /// Gets the output buffer size for Fast-LZMA2 operations.
+        /// </summary>
+        internal override int BufferSizeOutput { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FastLzma2Stream"/> class with the specified stream and options.
+        /// </summary>
+        /// <param name="stream">The underlying stream to read from or write to.</param>
+        /// <param name="options">The compression options to use.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
         public FastLzma2Stream(Stream stream, CompressionOptions options) : this(stream, options, null)
         {
         }
 
-        public FastLzma2Stream(Stream stream, CompressionOptions options, CompressionParameters? compressParams = null) : base (true, stream, options)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FastLzma2Stream"/> class with the specified stream, options, and compression parameters.
+        /// </summary>
+        /// <param name="stream">The underlying stream to read from or write to.</param>
+        /// <param name="options">The compression options to use.</param>
+        /// <param name="compressParams">Optional compression parameters for fine-tuning Fast-LZMA2.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
+        public FastLzma2Stream(Stream stream, CompressionOptions options, CompressionParameters? compressParams = null)
+            : base(true, stream, CompressionAlgorithm.FastLzma2, options)
         {
-            _flushed = false;
+            if (IsCompress)
+                this.BufferSizeOutput = CacheThreshold * 4;
+            else
+                this.BufferSizeOutput = CacheThreshold;
 
             if (compressParams == null)
-                compressParams = new CompressionParameters(options.ThreadCount ?? 0, 128 * 1024 * 1024);
+                compressParams = new CompressionParameters(options.ThreadCount ?? 0, 0);
 
             if (IsCompress)
-                _enc = new FastLzma2Encoder((int)CompressionType, compressParams);
+                _encoder = new FastLzma2Encoder(this.BufferSizeOutput, (int)CompressionType, compressParams);
             else
-                _dec = new FastLzma2Decoder(BaseStream, BaseStream.Length, (int)CompressionType, compressParams);
-        }
-
-        internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
-        {
-            int avRead = data.AvailableRead;
-            _enc.EncodeData(data, true, BaseStream, cancel, out bytesWrittenToStream);
-            if (avRead != data.AvailableRead)
-                _flushed = false;
-        }
-
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, int limit, out int bytesReadFromStream)
-        {
-            return _dec.DecodeData(data, BaseStream, cancel, out bytesReadFromStream);
+                _decoder = new FastLzma2Decoder(BaseStream, this.BufferSizeOutput, BaseStream.Length, (int)CompressionType, compressParams);
         }
 
         /// <summary>
-        /// Write Checksum in the end. finish compress progress.
+        /// Writes data from the provided buffer to the underlying stream using Fast-LZMA2 compression.
         /// </summary>
-        /// <exception cref="FL2Exception"></exception>
-        internal override void OnFlush(CancellableTask cancel, out int bytesWrittenToStream)
+        /// <param name="data">The buffer containing data to compress and write.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
+        internal override void OnWrite(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream)
         {
             bytesWrittenToStream = 0;
-            if (IsCompress && !_flushed)
-                _enc.Flush(BaseStream, cancel, out bytesWrittenToStream);
+            int avRead = data.AvailableRead;
+            if (avRead == 0)
+                return;
+            _encoder.EncodeData(data, true, BaseStream, cancel, out bytesWrittenToStream);
         }
 
-        protected override void OnDispose(out int bytesWrittenToStream)
+        /// <summary>
+        /// Reads and decompresses data from the underlying stream into the provided buffer using Fast-LZMA2.
+        /// </summary>
+        /// <param name="data">The buffer to read decompressed data into.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <returns>The number of bytes written to the buffer.</returns>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
+        {
+            return _decoder.DecodeData(data, BaseStream, cancel, out bytesReadFromStream);
+        }
+
+        /// <summary>
+        /// Flushes the compression buffers and finalizes the stream, writing any remaining compressed data.
+        /// </summary>
+        /// <param name="data">The buffer containing data to flush.</param>
+        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
+        /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
+        /// <exception cref="FL2Exception">Thrown if a fatal compression error occurs.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
+        internal override void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete)
         {
             bytesWrittenToStream = 0;
-            OnFlush(new CancellableTask(), out bytesWrittenToStream);
+
             if (IsCompress)
-                try { _enc.Dispose(); } catch { }
+            {
+                cancel.ThrowIfCancellationRequested();
+                OnWrite(data, cancel, out bytesWrittenToStream);
+                // Always flush at the end of compression
+                _encoder.Flush(BaseStream, cancel, out int bytesWrittenToStream2);
+                bytesWrittenToStream += bytesWrittenToStream2;
+            }
+        }
+
+        /// <summary>
+        /// Releases all resources used by the <see cref="FastLzma2Stream"/>.
+        /// </summary>
+        protected override void OnDispose()
+        {
+            if (IsCompress)
+                try { _encoder.Dispose(); } catch { }
             else
-                try { _dec.Dispose(); } catch { }
+                try { _decoder.Dispose(); } catch { }
         }
     }
 }

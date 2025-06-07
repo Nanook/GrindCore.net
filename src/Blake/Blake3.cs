@@ -2,9 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-/// <summary>
-/// Provides implementation of the Blake3 hashing algorithm.
-/// </summary>
 namespace Nanook.GrindCore.Blake
 {
     /// <summary>
@@ -14,10 +11,10 @@ namespace Nanook.GrindCore.Blake
     {
         private const int _hashSizeBytes = 32;
         private Interop.Blake3Hasher _hasher;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
-        /// Initializes a new instance of the Blake3 class.
+        /// Initializes a new instance of the <see cref="Blake3"/> class.
         /// </summary>
         public Blake3()
         {
@@ -31,7 +28,13 @@ namespace Nanook.GrindCore.Blake
         /// </summary>
         /// <param name="data">The input data to compute the hash code for.</param>
         /// <returns>The computed hash code.</returns>
-        public static byte[] Compute(byte[] data) => Compute(data, 0, data.Length);
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="data"/> is null.</exception>
+        public static byte[] Compute(byte[] data)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            return Compute(data, 0, data.Length);
+        }
 
         /// <summary>
         /// Computes the hash value for the specified region of the byte array.
@@ -40,8 +43,20 @@ namespace Nanook.GrindCore.Blake
         /// <param name="offset">The offset in the byte array to start at.</param>
         /// <param name="length">The number of bytes to process.</param>
         /// <returns>The computed hash code.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="data"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
+        /// <exception cref="ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="length"/> is greater than the buffer length.</exception>
         public static byte[] Compute(byte[] data, int offset, int length)
         {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "Length must be non-negative.");
+            if (data.Length - offset < length)
+                throw new ArgumentException("The sum of offset and length is greater than the buffer length.");
+
             Interop.Blake3Hasher hasher = new Interop.Blake3Hasher();
             // Initialize hasher
             Interop.Blake.SZ_blake3_hasher_init(&hasher);
@@ -49,7 +64,7 @@ namespace Nanook.GrindCore.Blake
             fixed (byte* dataPtr = data)
                 processData(dataPtr, offset, length, &hasher);
             // Finalize hash
-            byte[] result = new byte[_hashSizeBytes]; // Adjust size according to your needs
+            byte[] result = new byte[_hashSizeBytes];
             fixed (byte* resultPtr = result)
                 Interop.Blake.SZ_blake3_hasher_finalize(&hasher, resultPtr, (UIntPtr)result.Length);
             return result;
@@ -58,6 +73,10 @@ namespace Nanook.GrindCore.Blake
         /// <summary>
         /// Processes the specified region of the byte array in 256 MiB chunks.
         /// </summary>
+        /// <param name="dataPtr">Pointer to the input data.</param>
+        /// <param name="offset">The offset in the data to start at.</param>
+        /// <param name="length">The number of bytes to process.</param>
+        /// <param name="hasher">Pointer to the hash state.</param>
         private static void processData(byte* dataPtr, int offset, int length, Interop.Blake3Hasher* hasher)
         {
             int remainingSize = length;
@@ -73,9 +92,9 @@ namespace Nanook.GrindCore.Blake
         }
 
         /// <summary>
-        /// Creates a new instance of the Blake3 class.
+        /// Creates a new instance of the <see cref="Blake3"/> class.
         /// </summary>
-        /// <returns>A new instance of the Blake3 class.</returns>
+        /// <returns>A new instance of the <see cref="Blake3"/> class.</returns>
         public static new Blake3 Create() => new Blake3();
 
         /// <summary>
@@ -110,7 +129,7 @@ namespace Nanook.GrindCore.Blake
         protected override byte[] HashFinal()
         {
             // Finalize hash
-            byte[] result = new byte[_hashSizeBytes]; // Adjust size according to your needs
+            byte[] result = new byte[_hashSizeBytes];
             fixed (byte* resultPtr = result)
             fixed (Interop.Blake3Hasher* hasherPtr = &_hasher)
                 Interop.Blake.SZ_blake3_hasher_finalize(hasherPtr, resultPtr, (UIntPtr)result.Length);
@@ -118,3 +137,4 @@ namespace Nanook.GrindCore.Blake
         }
     }
 }
+

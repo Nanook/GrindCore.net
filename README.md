@@ -1,10 +1,10 @@
-# GrindCore
+# GrindCore  
 
-A compression and hashing library built the System.IO.Compression way... A managed dotnet wrapper around a Native library ([GrindCore](https://github.com/Nanook/GrindCore) Native).
+An AOT-compatible compression and hashing library built in the **System.IO.Compression** style—providing a managed .NET wrapper around the native **[GrindCore](https://github.com/Nanook/GrindCore) Native** library.  
 
-Published to nuget as [GrindCore](https://www.nuget.org/packages/GrindCore) and supports multiple platforms.
+Published on **NuGet** as [GrindCore](https://www.nuget.org/packages/GrindCore) with support for multiple platforms.  
 
-This library is in the early stages of development. There may be many breaking changes over the following months. Error handling and bounds checking is minimal. 
+This library is in the early stages of development, meaning breaking changes may occur in the coming months.
 
 ## Overview
 
@@ -20,18 +20,34 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 
 `net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35`
 
-### Compression Streams
+### Compression  
 
-All compression streams inherit from a CompressionStream class that provides common features and behaviour. 
+GrindCore implements compression in two forms: **Stream-based** and **Block-based**.  
 
-- Brotli v1.1.0 (From DotNet 9.0)
-- Lzma v24.7.0 (From 7Zip-mcmilk)
-- Lzma2 v24.7.0 (From 7Zip-mcmilk)
-- Fast-Lzma2 v1.0.1 (From 7Zip-mcmilk)
-- ZLib v1.3.1 [GZip, ZLib, Deflate] (From DotNet 8.0)
-- ZLib-NG v2.2.1 [GZip, ZLib, Deflate] (From DotNet 9.0)
+- **Stream-based compression** follows the standard .NET approach, enabling seamless integration with existing workflows.  
+- **Block-based compression** is designed for one-shot buffer compression, providing efficient, high-performance processing for specific use cases.  
 
- *!! The Fast-Lzma2 dotnet interop requires more work, certain configs don't seem correct and streaming is not fully implemented*
+All **compression streams** inherit from the `CompressionStream` class, ensuring consistent behavior and shared functionality across implementations.  
+Similarly, all **block-based compression** implementations inherit from `CompressionBlock`, maintaining structured handling of compression operations.  
+
+To simplify instance creation, GrindCore provides:  
+- `CompressionStreamFactory`, allowing easy instantiation of stream-based compression classes.  
+- `CompressionBlockFactory`, offering a straightforward mechanism for initializing block-based compression instances.  
+
+#### Supported Compression Algorithms  
+
+- **Brotli** v1.1.0 _(From .NET 9.0)_  
+- **LZ4** v1.9.4 _(From 7Zip-mcmilk)_  
+- **LZMA** v24.7.0 _(From 7Zip-mcmilk)_  
+- **LZMA2** v24.7.0 _(From 7Zip-mcmilk)_  
+- **Fast-LZMA2** v1.0.1 _(From 7Zip-mcmilk)_  
+- **ZLib** v1.3.1 _(GZip, ZLib, Deflate - From .NET 8.0)_  
+- **ZLib-NG** v2.2.1 _(GZip, ZLib, Deflate - From .NET 9.0)_  
+- **ZStd** v1.5.6 _(From 7Zip-mcmilk)_  
+
+Additionally, **blocking and asynchronous methods** are implemented, allowing flexible compression workflows.
+
+Streams expose the `.Position` (compressed) and `.PositionFullSize` (uncompressed) properties, allowing consuming objects to track progress and status with accuracy.
 
 ### Hashing
 
@@ -85,6 +101,16 @@ GrindCore is designed to overcome several known complications in the dotnet ecos
   - By preserving exact compression algorithms, the library is ideal for projects requiring checksummed output, ensuring consistent data results and reliability.
 - **Addressing Missing Functionality:**
   - GrindCore aims to expose additional functionalities not available in other libraries, such as `compress2` from zlib/deflate, providing more options and flexibility for developers.
+
+## To Do
+
+Several enhancements and additional features could be introduced to further improve GrindCore. While these may be addressed over time, listing them here serves to communicate known gaps and encourage community contributions:
+- Multi-language support.
+- Dictionary support.
+- Progress updates raised from C library.
+- Expanded compression algorithm capabilities.
+  - If you identify missing features, feel free to raise issues or submit pull requests.
+  - Any unimplemented methods from the C source can be exposed upon request.
 
 ## Conclusion
 

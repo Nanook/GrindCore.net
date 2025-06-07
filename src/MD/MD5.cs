@@ -3,9 +3,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-/// <summary>
-/// Provides implementation of the MD5 hashing algorithm.
-/// </summary>
 namespace Nanook.GrindCore.MD
 {
     /// <summary>
@@ -15,10 +12,10 @@ namespace Nanook.GrindCore.MD
     {
         private const int _hashSizeBytes = 16;
         private Interop.MD5_CTX _ctx;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB buffer
+        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
-        /// Initializes a new instance of the MD5 class.
+        /// Initializes a new instance of the <see cref="MD5"/> class.
         /// </summary>
         public MD5()
         {
@@ -32,7 +29,13 @@ namespace Nanook.GrindCore.MD
         /// </summary>
         /// <param name="data">The input data to compute the hash code for.</param>
         /// <returns>The computed hash code.</returns>
-        public static byte[] Compute(byte[] data) => Compute(data, 0, data.Length);
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="data"/> is null.</exception>
+        public static byte[] Compute(byte[] data)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            return Compute(data, 0, data.Length);
+        }
 
         /// <summary>
         /// Computes the hash value for the specified region of the byte array.
@@ -41,8 +44,20 @@ namespace Nanook.GrindCore.MD
         /// <param name="offset">The offset in the byte array to start at.</param>
         /// <param name="length">The number of bytes to process.</param>
         /// <returns>The computed hash code.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="data"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
+        /// <exception cref="ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="length"/> is greater than the buffer length.</exception>
         public static byte[] Compute(byte[] data, int offset, int length)
         {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be non-negative.");
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "Length must be non-negative.");
+            if (data.Length - offset < length)
+                throw new ArgumentException("The sum of offset and length is greater than the buffer length.");
+
             Interop.MD5_CTX ctx = new Interop.MD5_CTX();
             byte[] result = new byte[_hashSizeBytes]; // MD5_DIGEST_LENGTH is 16
 
@@ -63,6 +78,10 @@ namespace Nanook.GrindCore.MD
         /// <summary>
         /// Processes the specified region of the byte array in 256 MiB chunks.
         /// </summary>
+        /// <param name="dataPtr">Pointer to the input data.</param>
+        /// <param name="offset">The offset in the data to start at.</param>
+        /// <param name="length">The number of bytes to process.</param>
+        /// <param name="ctx">Pointer to the hash context.</param>
         private static void processData(byte* dataPtr, int offset, int length, Interop.MD5_CTX* ctx)
         {
             int remainingSize = length;
@@ -78,9 +97,9 @@ namespace Nanook.GrindCore.MD
         }
 
         /// <summary>
-        /// Creates a new instance of the MD5 class.
+        /// Creates a new instance of the <see cref="MD5"/> class.
         /// </summary>
-        /// <returns>A new instance of the MD5 class.</returns>
+        /// <returns>A new instance of the <see cref="MD5"/> class.</returns>
         public static new MD5 Create() => new MD5();
 
         /// <summary>
@@ -123,3 +142,4 @@ namespace Nanook.GrindCore.MD
         }
     }
 }
+

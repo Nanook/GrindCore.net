@@ -3,11 +3,12 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System;
 
-
 namespace Nanook.GrindCore.Brotli
 {
-    /// <summary>Provides methods and static methods to encode and decode data in a streamless, non-allocating, and performant manner using the Brotli data format specification.</summary>
-    internal partial struct BrotliEncoder : IDisposable
+    /// <summary>
+    /// Provides methods and static methods to encode and decode data in a streamless, non-allocating, and performant manner using the Brotli data format specification.
+    /// </summary>
+    internal struct BrotliEncoder : IDisposable
     {
         private const int WindowBits_Min = 10;
         private const int WindowBits_Default = 22;
@@ -17,13 +18,15 @@ namespace Nanook.GrindCore.Brotli
         internal SafeBrotliEncoderHandle? _state;
         private bool _disposed;
 
-        /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliEncoder" /> structure using the specified quality and window.</summary>
-        /// <param name="quality">A number representing quality of the Brotli compression. 0 is the minimum (no compression), 11 is the maximum.</param>
-        /// <param name="window">A number representing the encoder window bits. The minimum value is 10, and the maximum value is 24.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality" /> is not between the minimum value of 0 and the maximum value of 11.
-        /// -or-
-        /// <paramref name="window" /> is not between the minimum value of 10 and the maximum value of 24.</exception>
-        /// <exception cref="IOException">Failed to create the <see cref="System.IO.Compression.BrotliEncoder" /> instance.</exception>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BrotliEncoder"/> structure using the specified quality and window.
+        /// </summary>
+        /// <param name="level">A value representing the Brotli compression level. 0 is the minimum (no compression), 11 is the maximum.</param>
+        /// <param name="window">A value representing the encoder window bits. The minimum value is 10, and the maximum value is 24.</param>
+        /// <param name="version">The Brotli version to use, or <c>null</c> for the latest.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="level"/> or <paramref name="window"/> is out of range.</exception>
+        /// <exception cref="IOException">Thrown if the encoder could not be created.</exception>
+        /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
         public BrotliEncoder(CompressionType level, int window, CompressionVersion? version = null)
         {
             _disposed = false;
@@ -42,10 +45,11 @@ namespace Nanook.GrindCore.Brotli
         }
 
         /// <summary>
-        /// Performs a lazy initialization of the native encoder using the default Quality and Window values:
-        /// BROTLI_DEFAULT_WINDOW 22
-        /// BROTLI_DEFAULT_QUALITY 11
+        /// Performs a lazy initialization of the native encoder using the default Quality and Window values.
         /// </summary>
+        /// <param name="version">The Brotli version to use, or <c>null</c> for the latest.</param>
+        /// <exception cref="IOException">Thrown if the encoder could not be created.</exception>
+        /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
         internal void InitializeEncoder(CompressionVersion? version = null)
         {
             EnsureNotDisposed();
@@ -60,6 +64,10 @@ namespace Nanook.GrindCore.Brotli
                 throw new IOException(SR.BrotliEncoder_Create);
         }
 
+        /// <summary>
+        /// Ensures the encoder is initialized, initializing it if necessary.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException">Thrown if the encoder has been disposed.</exception>
         internal void EnsureInitialized()
         {
             EnsureNotDisposed();
@@ -67,19 +75,31 @@ namespace Nanook.GrindCore.Brotli
                 InitializeEncoder();
         }
 
-        /// <summary>Frees and disposes unmanaged resources.</summary>
+        /// <summary>
+        /// Releases all resources used by the current Brotli encoder instance.
+        /// </summary>
         public void Dispose()
         {
             _disposed = true;
             _state?.Dispose();
         }
 
+        /// <summary>
+        /// Throws an <see cref="ObjectDisposedException"/> if the encoder has been disposed.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException">Thrown if the encoder has been disposed.</exception>
         private void EnsureNotDisposed()
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(BrotliEncoder), SR.BrotliEncoder_Disposed);
         }
 
+        /// <summary>
+        /// Sets the Brotli compression quality (level).
+        /// </summary>
+        /// <param name="level">The compression level to set.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the encoder is not valid or the parameter cannot be set.</exception>
+        /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
         internal void SetQuality(CompressionType level)
         {
             EnsureNotDisposed();
@@ -98,11 +118,21 @@ namespace Nanook.GrindCore.Brotli
                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
         }
 
+        /// <summary>
+        /// Sets the Brotli window size to the default value.
+        /// </summary>
         internal void SetWindow()
         {
             SetWindow(WindowBits_Default);
         }
 
+        /// <summary>
+        /// Sets the Brotli window size.
+        /// </summary>
+        /// <param name="window">The window size to set.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="window"/> is out of range.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the encoder is not valid or the parameter cannot be set.</exception>
+        /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
         internal void SetWindow(int window)
         {
             EnsureNotDisposed();
@@ -124,11 +154,13 @@ namespace Nanook.GrindCore.Brotli
                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
         }
 
-        /// <summary>Gets the maximum expected compressed length for the provided input size.</summary>
+        /// <summary>
+        /// Gets the maximum expected compressed length for the provided input size.
+        /// </summary>
         /// <param name="inputSize">The input size to get the maximum expected compressed length from. Must be greater or equal than 0 and less or equal than <see cref="int.MaxValue" /> - 515.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
         /// <remarks>Returns 1 if <paramref name="inputSize" /> is 0.</remarks>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputSize" /> is less than 0, the minimum allowed input size, or greater than <see cref="int.MaxValue" /> - 515, the maximum allowed input size.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="inputSize"/> is less than 0 or greater than the maximum allowed input size.</exception>
         public static int GetMaxCompressedLength(int inputSize)
         {
             if (inputSize < 0)
@@ -147,35 +179,52 @@ namespace Nanook.GrindCore.Brotli
             return result;
         }
 
-        //internal OperationStatus Flush(DataBlock destination, out int bytesWritten) => Flush(destination.Span, out bytesWritten);
-
-        /// <summary>Compresses an empty read-only span of bytes into its destination, which ensures that output is produced for all the processed input. An actual flush is performed when the source is depleted and there is enough space in the destination for the remaining data.</summary>
-        /// <param name="destination">When this method returns, a span of bytes where the compressed data will be stored.</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
+        /// <summary>
+        /// Compresses an empty buffer into <paramref name="outData"/>, ensuring that output is produced for all the processed input.
+        /// An actual flush is performed when the input is depleted and there is enough space in the output for the remaining data.
+        /// </summary>
+        /// <param name="outData">When this method returns, a buffer where the compressed data will be stored.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="outData"/>.</param>
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
-        public OperationStatus Flush(CompressionBuffer destination, out int bytesWritten) => Compress(new CompressionBuffer(0), destination, out _, out bytesWritten, BrotliEncoderOperation.Flush);
+        public OperationStatus Flush(CompressionBuffer outData, out int bytesWritten) => Compress(new CompressionBuffer(0), outData, out _, out bytesWritten, BrotliEncoderOperation.Flush);
 
-        //internal OperationStatus Process(DataBlock source, DataBlock destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Process(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
+        /// <summary>
+        /// Compresses a buffer into an output buffer.
+        /// </summary>
+        /// <param name="inData">A buffer containing the input data to compress.</param>
+        /// <param name="outData">When this method returns, a buffer where the compressed data is stored.</param>
+        /// <param name="bytesConsumed">When this method returns, the total number of bytes that were read from <paramref name="inData"/>.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="outData"/>.</param>
+        /// <param name="isFinalBlock"><see langword="true"/> to finalize the internal stream, which prevents adding more input data when this method returns; <see langword="false"/> to allow the encoder to postpone the production of output until it has processed enough input.</param>
+        /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
+        public OperationStatus Compress(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(inData, outData, out bytesConsumed, out bytesWritten, isFinalBlock ? BrotliEncoderOperation.Finish : BrotliEncoderOperation.Process);
 
-        /// <summary>Compresses a read-only byte span into a destination span.</summary>
-        /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
-        /// <param name="destination">When this method returns, a byte span where the compressed is stored.</param>
-        /// <param name="bytesConsumed">When this method returns, the total number of bytes that were read from <paramref name="source" />.</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
-        /// <param name="isFinalBlock"><see langword="true" /> to finalize the internal stream, which prevents adding more input data when this method returns; <see langword="false" /> to allow the encoder to postpone the production of output until it has processed enough input.</param>
-        /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
-        public OperationStatus Compress(CompressionBuffer source, CompressionBuffer destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock ? BrotliEncoderOperation.Finish : BrotliEncoderOperation.Process);
-
-        internal OperationStatus Compress(CompressionBuffer source, CompressionBuffer destination, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
+        /// <summary>
+        /// Compresses a buffer into an output buffer using the specified encoder operation.
+        /// </summary>
+        /// <param name="inData">A buffer containing the input data to compress.</param>
+        /// <param name="outData">When this method returns, a buffer where the compressed data is stored.</param>
+        /// <param name="bytesConsumed">When this method returns, the total number of bytes that were read from <paramref name="inData"/>.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="outData"/>.</param>
+        /// <param name="operation">The encoder operation to perform.</param>
+        /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
+        /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
+        internal OperationStatus Compress(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
         {
+            if (inData.Pos != 0)
+                throw new ArgumentException($"inData should have a Pos of 0");
+            if (outData.Size != 0)
+                throw new ArgumentException($"outData should have a Size of 0");
+
             EnsureInitialized();
             Debug.Assert(_state != null);
-            bool skipFirstFlush = operation == BrotliEncoderOperation.Flush && source.AvailableRead == 0;
+            bool skipFirstFlush = operation == BrotliEncoderOperation.Flush && inData.AvailableRead == 0;
 
             bytesWritten = 0;
             bytesConsumed = 0;
-            nuint availableOutput = (nuint)destination.AvailableWrite;
-            nuint availableInput = (nuint)source.AvailableRead;
+            nuint availableOutput = (nuint)outData.AvailableWrite;
+            nuint availableInput = (nuint)inData.AvailableRead;
 
             unsafe
             {
@@ -184,11 +233,11 @@ namespace Nanook.GrindCore.Brotli
                 // 2. Span's have a maximum length of the int boundary.
                 while ((int)availableOutput > 0)
                 {
-                    fixed (byte* inBytes = source.Data)
-                    fixed (byte* outBytes = destination.Data)
+                    fixed (byte* inBytes = inData.Data)
+                    fixed (byte* outBytes = outData.Data)
                     {
-                        *&inBytes += source.Pos;
-                        *&outBytes += destination.Size; //writePos is Size
+                        *&inBytes += inData.Pos;
+                        *&outBytes += outData.Size; //writePos is Size
 
                         if (!skipFirstFlush) //don't flush if there's no data as it can add 2 bytes (that check is after)
                         {
@@ -201,16 +250,16 @@ namespace Nanook.GrindCore.Brotli
                                 throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
                         }
 
-                        bytesConsumed += source.AvailableRead - (int)availableInput;
-                        bytesWritten += destination.AvailableWrite - (int)availableOutput;
+                        bytesConsumed += inData.AvailableRead - (int)availableInput;
+                        bytesWritten += outData.AvailableWrite - (int)availableOutput;
 
-                        source.Read(bytesConsumed); //update
-                        destination.Write(bytesWritten); //update
+                        inData.Read(bytesConsumed); //update
+                        outData.Write(bytesWritten); //update
 
                         if (_state.Version.Index == 0)
                         {
                             // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
-                            if ((int)availableOutput == destination.AvailableWrite && Interop.Brotli.DN9_BRT_v1_1_0_EncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
+                            if ((int)availableOutput == outData.AvailableWrite && Interop.Brotli.DN9_BRT_v1_1_0_EncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
                                 return OperationStatus.Done;
                             skipFirstFlush = false; //will loop if there's data to be flushed - prevent extra 2 bytes being written when there's extra data
                         }

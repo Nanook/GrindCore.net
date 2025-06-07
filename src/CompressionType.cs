@@ -4,11 +4,8 @@
 namespace Nanook.GrindCore
 {
     /// <summary>
-    /// Specifies values that indicate whether a compression operation emphasizes speed or compression size.
+    /// Specifies values that indicate decompression or compression level.
     /// </summary>
-
-    // An enum to encapsulate compression levels and decompression
-    // There may or may not be any correspondence with the a possible implementation-specific level-parameter of the deflater.
     public enum CompressionType
     {
         /// <summary>
@@ -32,7 +29,7 @@ namespace Nanook.GrindCore
         Decompress = -1,
 
         /// <summary>
-        /// No compression should be performed on the file.
+        /// No compression should be performed on the data, some algorithms seemingly still compress the data.
         /// </summary>
         NoCompression = 0,
 
@@ -49,23 +46,24 @@ namespace Nanook.GrindCore
         Level9 = 9,
         Level10 = 10,
         Level11 = 11,
-        //Level12 = 12,
-        //Level13 = 13,
-        //Level14 = 14,
-        //Level15 = 15,
-        //Level16 = 16,
-        //Level17 = 17,
-        //Level18 = 18,
-        //Level19 = 19,
-        //Level20 = 20,
-        //Level21 = 21,
-        //Level22 = 22,
+        Level12 = 12,
+        Level13 = 13,
+        Level14 = 14,
+        Level15 = 15,
+        Level16 = 16,
+        Level17 = 17,
+        Level18 = 18,
+        Level19 = 19,
+        Level20 = 20,
+        Level21 = 21,
+        Level22 = 22,
         MaxZLib = Level9,
         MaxLzma = Level9,
         MaxLzma2 = Level9,
+        MaxLz4 = Level12,
         MaxFastLzma2 = Level10,
         MaxBrotli = Level11,
-        //MaxZStd = Level22,
+        MaxZStd = Level22,
     }
 
 }
