@@ -6,6 +6,8 @@ Published on **NuGet** as [GrindCore](https://www.nuget.org/packages/GrindCore) 
 
 This library is in the early stages of development, meaning breaking changes may occur in the coming months.
 
+See [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Nanook/GrindCore.net) for more information.
+
 ## Overview
 
 GrindCore is an innovative library designed to streamline and enhance compression processes in dotnet applications. It aims to tackle prevalent issues such as performance degradation and outdated implementations when native code updates frequently. By unifying multiple C forks into a single, multiplatform library, GrindCore achieves a cohesive and efficient solution.
