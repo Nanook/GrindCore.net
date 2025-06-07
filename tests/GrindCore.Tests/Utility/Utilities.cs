@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace GrindCore.Tests.Utility
 {
@@ -18,7 +19,7 @@ namespace GrindCore.Tests.Utility
     }
     internal partial class Utilities
     {
-        
+
         public static TestResults TestStreamBlocks(Stream data, CompressionAlgorithm algorithm, CompressionType type, int dataSize, int bufferSize, int compSize, int? threads = null)
         {
             // Process in 1MiB blocks
@@ -84,7 +85,7 @@ namespace GrindCore.Tests.Utility
                         using (var cryptoStream = new CryptoStream(Stream.Null, compXxhash, CryptoStreamMode.Write, true))
                             compMemoryStream.CopyTo(cryptoStream);
 
-                        // Deompress and hash
+                        // Deompress and hash 
                         compMemoryStream.Position = 0; //reset for reading
                         using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, decompOptions))
                         {
@@ -98,10 +99,7 @@ namespace GrindCore.Tests.Utility
                             }
                             outXxhash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
-                            long posA = compMemoryStream.Position;
-                            long posB = compressionStream.Position;
-
-                            Assert.Equal(posA, posB); //broken down to track issue with 32 bit version.
+                            Assert.Equal(compMemoryStream.Position, compressionStream.Position);
                             Assert.Equal(data.Position, compressionStream.PositionFullSize); //compression position is correct
                         }
                         compMemoryStream.SetLength(0);
