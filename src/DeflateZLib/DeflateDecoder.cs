@@ -79,17 +79,21 @@ namespace Nanook.GrindCore.DeflateZLib
         /// Inflates data from the stream into the provided <see cref="CompressionBuffer"/>.
         /// </summary>
         /// <param name="outData">The buffer to write decompressed data to.</param>
+        /// <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
-        public unsafe int Inflate(CompressionBuffer outData)
+        public unsafe int Inflate(CompressionBuffer outData, int length)
         {
             if (outData.AvailableWrite == 0)
                 return 0;
 
+            if (length == 0 || length > outData.AvailableWrite)
+                length = outData.AvailableWrite;
+                
             int read;
             fixed (byte* bufPtr = outData.Data)
             {
                 *&bufPtr += outData.Size; // Size is writePos
-                read = inflateVerified(bufPtr, outData.AvailableWrite);
+                read = inflateVerified(bufPtr, length);
             }
             outData.Write(read); // update
             return read;

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 
-namespace Nanook.GrindCore.Lzma
+namespace Nanook.GrindCore.Copy
 {
     /// <summary>
     /// A non-compression stream that performs a direct stream copy. 
@@ -37,17 +37,18 @@ namespace Nanook.GrindCore.Lzma
         /// <param name="data">The buffer to read data into.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
         /// <exception cref="NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream, int length = 0)
         {
             if (!this.CanRead)
                 throw new NotSupportedException("Not for Compression mode");
 
             cancel.ThrowIfCancellationRequested();
 
-            bytesReadFromStream = BaseStream.Read(data.Data, data.Size, data.AvailableWrite);
+            bytesReadFromStream = BaseRead(data.Data, data.Size, data.AvailableWrite);
             data.Write(bytesReadFromStream);
             return bytesReadFromStream;
         }
@@ -68,7 +69,7 @@ namespace Nanook.GrindCore.Lzma
             bytesWrittenToStream = data.AvailableRead;
             cancel.ThrowIfCancellationRequested();
 
-            BaseStream.Write(data.Data, data.Pos, data.AvailableRead);
+            BaseWrite(data.Data, data.Pos, data.AvailableRead);
             data.Read(data.AvailableRead);
         }
 
@@ -88,7 +89,7 @@ namespace Nanook.GrindCore.Lzma
                 if (data.AvailableRead != 0)
                 {
                     cancel.ThrowIfCancellationRequested();
-                    BaseStream.Write(data.Data, data.Pos, data.AvailableRead);
+                    BaseWrite(data.Data, data.Pos, data.AvailableRead);
                     data.Read(data.AvailableRead);
                 }
             }

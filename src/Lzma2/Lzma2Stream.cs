@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -17,6 +18,7 @@ namespace Nanook.GrindCore.Lzma
         private Lzma2Decoder _decoder;
         private Lzma2Encoder _encoder;
         private CompressionBuffer _buffer;
+        private bool _ended;
 
         /// <summary>
         /// Gets the input buffer size for LZMA2 operations.
@@ -38,6 +40,8 @@ namespace Nanook.GrindCore.Lzma
         public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0)
             : base(true, stream, CompressionAlgorithm.Lzma2, options)
         {
+            _ended = false;
+
             if (IsCompress)
             {
                 this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 1) + 0x20;
@@ -77,38 +81,55 @@ namespace Nanook.GrindCore.Lzma
         /// <param name="data">The buffer to read decompressed data into.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
         /// <exception cref="NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream, int length = 0)
         {
-            if (!this.CanRead)
+            if (!CanRead)
                 throw new NotSupportedException("Not for Compression mode");
-
             bytesReadFromStream = 0;
             int total = 0;
-            while (data.AvailableWrite > 0)
+            int read = -1;
+            int decoded = -1;
+            if (length == 0 || length > data.AvailableWrite)
+                length = data.AvailableWrite;
+
+            //_ended = false; //hack - it doesn't seem right to go again after null byte
+
+            while (!_ended && decoded != 0 && total < length)
             {
+                read = 0;
                 cancel.ThrowIfCancellationRequested();
-
-                if (_buffer.Pos == 0)
-                    _buffer.Write(BaseStream.Read(_buffer.Data, _buffer.Size, _buffer.AvailableWrite));
-
+                if (_buffer.AvailableRead == 0)
+                {
+                    read = BaseRead(_buffer.Data, _buffer.Size, 1);
+                    if (read == 1)
+                    {
+                        if (_buffer.Data[_buffer.Size] != 0)
+                        {
+                            bool control = (_buffer.Data[_buffer.Size] & 0b10000000) != 0;
+                            read += BaseRead(_buffer.Data, _buffer.Size + read, (control ? 6 : 5) - read);
+                            Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)_buffer.Size);
+                            if (info.CompressedSize != 0)
+                                read += BaseRead(_buffer.Data, _buffer.Size + read, info.BlockSize - read);
+                        }
+                        else
+                            _ended = true;
+                    }
+                    _buffer.Write(read);
+                }
                 if (_buffer.AvailableRead == 0)
                     return total;
-
                 int inSz = _buffer.AvailableRead;
-                int decoded = _decoder.DecodeData(_buffer, ref inSz, data, data.AvailableWrite, out _);
+                decoded = _decoder.DecodeData(_buffer, ref inSz, data, length - total, out var _);
                 bytesReadFromStream += inSz;
                 total += decoded;
+                _ended = _ended && decoded == 0;
             }
 
-            // Accommodate for LZMA2 null terminator to keep read positions correct
-            if (_buffer.AvailableRead > 0 && _buffer.Data[_buffer.Pos] == 0)
-            {
-                _buffer.Read(1);
-                bytesReadFromStream++;
-            }
+            Trace.WriteLine($"!!{total} - {this.Position} {bytesReadFromStream}");
             return total;
         }
 
@@ -134,7 +155,7 @@ namespace Nanook.GrindCore.Lzma
 
             if (size > 0)
             {
-                BaseStream.Write(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
+                BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
                 _buffer.Read(_buffer.AvailableRead);
                 bytesWrittenToStream += (int)size;
             }
@@ -158,13 +179,13 @@ namespace Nanook.GrindCore.Lzma
                 long size = _encoder.EncodeData(data, _buffer, true, cancel);
                 if (size > 0)
                 {
-                    BaseStream.Write(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
+                    BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
                     _buffer.Read(_buffer.AvailableRead);
                     bytesWrittenToStream = (int)size;
                 }
                 if (complete)
                 {
-                    BaseStream.Write(new byte[1], 0, 1);
+                    BaseWrite(new byte[1], 0, 1);
                     bytesWrittenToStream += 1;
                 }
             }

@@ -38,6 +38,18 @@ namespace Nanook.GrindCore
         public long? BlockSize { get; set; }
 
         /// <summary>
+        /// Gets or sets the write limit during compression and the read limit during decompression. 
+        /// This corresponds to the Position property of CompressionStream.If null, no limit is applied.
+        /// </summary>
+        public long? PositionLimit { get; set; }
+
+        /// <summary>
+        /// Gets or sets the buffer read limit during compression and the buffer write limit during decompression. 
+        /// This corresponds to the PositionFullSize property of CompressionStream. If null, no limit is applied.
+        /// </summary>
+        public long? PositionFullSizeLimit { get; set; }
+
+        /// <summary>
         /// Gets or sets the properties required for processing (e.g., LZMA/2 requires these for decoding; they can be read from the encoder and stored).
         /// </summary>
         public byte[]? InitProperties { get; set; }

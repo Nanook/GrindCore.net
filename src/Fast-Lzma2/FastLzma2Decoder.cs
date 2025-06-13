@@ -43,13 +43,13 @@ namespace Nanook.GrindCore.FastLzma2
         /// <summary>
         /// Initializes a new instance of the <see cref="FastLzma2Decoder"/> class for the specified input stream and parameters.
         /// </summary>
-        /// <param name="input">The input stream containing compressed data.</param>
+        /// <param name="read">A delegate to provide input data.</param>
         /// <param name="bufferSize">The buffer size to use for decompression.</param>
         /// <param name="size">The expected size of the compressed data.</param>
         /// <param name="level">The compression level (default is 6).</param>
         /// <param name="compressParams">Optional compression parameters for multi-threaded decompression.</param>
         /// <exception cref="FL2Exception">Thrown if the decoder context cannot be initialized.</exception>
-        public FastLzma2Decoder(Stream input, int bufferSize, long size, int level = 6, CompressionParameters? compressParams = null)
+        public FastLzma2Decoder(Func<byte[], int, int, int> read, int bufferSize, long size, int level = 6, CompressionParameters? compressParams = null)
         {
             if (compressParams == null)
                 compressParams = new CompressionParameters(0);
@@ -66,7 +66,7 @@ namespace Nanook.GrindCore.FastLzma2
             // Compressed stream input buffer
             _bufferSize = bufferSize;
             _bufferArray = BufferPool.Rent((int)(size < _bufferSize ? size : _bufferSize));
-            int bytesRead = input.Read(_bufferArray, 0, _bufferArray.Length);
+            int bytesRead = read(_bufferArray, 0, _bufferArray.Length);
             _bufferHandle = GCHandle.Alloc(_bufferArray, GCHandleType.Pinned);
             _decompInBuffer = new FL2InBuffer()
             {
@@ -102,13 +102,13 @@ namespace Nanook.GrindCore.FastLzma2
         /// Decodes data from the input stream into the provided buffer.
         /// </summary>
         /// <param name="buffer">The buffer to write decompressed data to.</param>
-        /// <param name="input">The input stream containing compressed data.</param>
+        /// <param name="read">A delegate to provide input data.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesReadFromStream">The number of bytes read from the input stream.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
         /// <exception cref="FL2Exception">Thrown if a fatal decompression error occurs.</exception>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        public unsafe int DecodeData(CompressionBuffer buffer, Stream input, CancellableTask cancel, out int bytesReadFromStream)
+        public unsafe int DecodeData(CompressionBuffer buffer, Func<byte[], int, int, int> read, CancellableTask cancel, out int bytesReadFromStream)
         {
             bytesReadFromStream = 0;
 
@@ -150,7 +150,7 @@ namespace Nanook.GrindCore.FastLzma2
                         break;
                     if (code == 0 && _decompInBuffer.size == _decompInBuffer.pos)
                     {
-                        int bytesRead = input.Read(_bufferArray, 0, _bufferArray.Length);
+                        int bytesRead = read(_bufferArray, 0, _bufferArray.Length);
                         _decompInBuffer.size = (nuint)bytesRead;
                         _decompInBuffer.pos = 0;
                     }

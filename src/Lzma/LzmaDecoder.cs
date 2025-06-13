@@ -43,13 +43,14 @@ namespace Nanook.GrindCore.Lzma
         /// <param name="inData">The input buffer containing compressed data.</param>
         /// <param name="readSz">Outputs the number of bytes read from the input buffer.</param>
         /// <param name="outData">The output buffer to write decompressed data to.</param>
+        /// <param name="outSize">The number of bytes available to write to the output buffer.</param>
         /// <param name="status">Outputs the status of the decompression operation.</param>
         /// <returns>The number of bytes written to the output buffer.</returns>
         /// <exception cref="Exception">Thrown if decompression fails.</exception>
-        public int DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData, out int status)
+        public int DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData, int outSize, out int status)
         {
             // Get properties from DataBlock
-            ulong outSz = (ulong)outData.AvailableWrite;
+            ulong outSz = (ulong)outSize;
             ulong inSz = (ulong)inData.AvailableRead;
 
             fixed (byte* outPtr = outData.Data) // Pin memory for the output inData

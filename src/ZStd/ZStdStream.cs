@@ -58,10 +58,11 @@ namespace Nanook.GrindCore.ZStd
         /// <param name="data">The buffer to read decompressed data into.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
         /// <exception cref="NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream, int length = 0)
         {
             if (!this.CanRead)
                 throw new NotSupportedException("Not for Compression mode");
@@ -74,7 +75,7 @@ namespace Nanook.GrindCore.ZStd
                 cancel.ThrowIfCancellationRequested();
 
                 if (_buffer.Pos == 0)
-                    _buffer.Write(BaseStream.Read(_buffer.Data, _buffer.Size, _buffer.AvailableWrite));
+                    _buffer.Write(BaseRead(_buffer.Data, _buffer.Size, _buffer.AvailableWrite));
 
                 if (_buffer.AvailableRead == 0)
                     return total;
@@ -110,7 +111,7 @@ namespace Nanook.GrindCore.ZStd
 
             if (size > 0)
             {
-                BaseStream.Write(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
+                BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
                 _buffer.Read(_buffer.AvailableRead);
                 bytesWrittenToStream += (int)size;
             }
@@ -137,7 +138,7 @@ namespace Nanook.GrindCore.ZStd
                 size += _encoder.Flush(_buffer);
                 if (size > 0)
                 {
-                    BaseStream.Write(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
+                    BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
                     _buffer.Read(_buffer.AvailableRead);
                     bytesWrittenToStream = (int)size;
                 }

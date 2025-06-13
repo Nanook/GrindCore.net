@@ -1,4 +1,5 @@
 using Nanook.GrindCore.Brotli;
+using Nanook.GrindCore.Copy;
 using Nanook.GrindCore.DeflateZLib;
 using Nanook.GrindCore.FastLzma2;
 using Nanook.GrindCore.GZip;

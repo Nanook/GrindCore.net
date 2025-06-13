@@ -102,15 +102,15 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="data">The buffer to read decompressed data into.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
         /// <returns>The number of bytes written to the output buffer.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the stream is in compression mode.</exception>
         /// <exception cref="InvalidDataException">Thrown if the stream is truncated or invalid.</exception>
         /// <exception cref="ObjectDisposedException">Thrown if the stream is disposed.</exception>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream, int length = 0)
         {
             if (IsCompress)
                 throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
-            EnsureNotDisposed();
             bytesReadFromStream = 0;
             int bytesWritten;
             int bytesConsumed;
@@ -119,7 +119,7 @@ namespace Nanook.GrindCore.Brotli
                 cancel.ThrowIfCancellationRequested(); //will exception if cancelled on frameworks that support the CancellationToken
                 bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distinction)
 
-                int bytesRead = BaseStream.Read(_buffer.Data, _buffer.Size, _buffer.AvailableWrite);
+                int bytesRead = BaseRead(_buffer.Data, _buffer.Size, _buffer.AvailableWrite);
                 if (bytesRead <= 0)
                 {
                     if (/*s_useStrictValidation &&*/ _nonEmptyInput && data.AvailableWrite != 0)
@@ -168,7 +168,6 @@ namespace Nanook.GrindCore.Brotli
         {
             if (!IsCompress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
-            EnsureNotDisposed();
 
             bytesWrittenToStream = 0;
 
@@ -187,7 +186,7 @@ namespace Nanook.GrindCore.Brotli
 
                 if (bytesWritten > 0)
                 {
-                    BaseStream.Write(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
+                    BaseWrite(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
                     _buffer.Read(bytesWritten);
                 }
             }
@@ -205,8 +204,6 @@ namespace Nanook.GrindCore.Brotli
         /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         internal override void OnFlush(CompressionBuffer data, CancellableTask cancel, out int bytesWrittenToStream, bool flush, bool complete)
         {
-            EnsureNotDisposed();
-
             bytesWrittenToStream = 0;
 
             if (IsCompress)
@@ -231,21 +228,11 @@ namespace Nanook.GrindCore.Brotli
 
                     if (bytesWritten > 0)
                     {
-                        BaseStream.Write(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
+                        BaseWrite(_buffer.Data, 0, bytesWritten); //read the output bytes and write to BaseStream
                         _buffer.Read(bytesWritten);
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Ensures the stream has not been disposed.
-        /// </summary>
-        /// <exception cref="ObjectDisposedException">Thrown if the stream is disposed.</exception>
-        private void EnsureNotDisposed()
-        {
-            if (BaseStream == null)
-                throw new ObjectDisposedException(nameof(BrotliStream));
         }
 
         /// <summary>

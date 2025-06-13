@@ -68,10 +68,11 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <param name="data">The buffer to read decompressed data into.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
         /// <exception cref="InvalidDataException">Thrown if the input stream is truncated or contains invalid data.</exception>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream, int length = 0)
         {
             bytesReadFromStream = 0;
             int bytesRead;
@@ -81,14 +82,14 @@ namespace Nanook.GrindCore.DeflateZLib
 
                 // Try to decompress any data from the inflater into the caller's buffer.
                 // If we're able to decompress any bytes, or if decompression is completed, we're done.
-                bytesRead = _inflater!.Inflate(data);
+                bytesRead = _inflater!.Inflate(data, length);
                 if (bytesRead != 0 || inflatorIsFinished)
                     break;
 
                 // We were unable to decompress any data. If the inflater needs additional input data to proceed, read some to populate it.
                 if (_inflater.NeedsInput())
                 {
-                    int n = BaseStream.Read(_buffer.Data, 0, _buffer.AvailableWrite);
+                    int n = BaseRead(_buffer.Data, 0, _buffer.AvailableWrite);
                     if (n <= 0)
                     {
                         // - Inflater didn't return any data although a non-empty output buffer was passed by the caller.
@@ -203,7 +204,7 @@ namespace Nanook.GrindCore.DeflateZLib
                         flushSuccessful = _deflater!.Flush(_buffer!, out compressedBytes);
                         if (flushSuccessful)
                         {
-                            BaseStream.Write(_buffer.Data, 0, compressedBytes);
+                            BaseWrite(_buffer.Data, 0, compressedBytes);
                             _buffer.Read(compressedBytes);
                             bytesWrittenToStream += compressedBytes;
                         }
@@ -224,7 +225,7 @@ namespace Nanook.GrindCore.DeflateZLib
 
                             if (_wroteBytes && compressedBytes > 0)
                             {
-                                BaseStream.Write(_buffer.Data, _buffer.Pos, compressedBytes);
+                                BaseWrite(_buffer.Data, _buffer.Pos, compressedBytes);
                                 _buffer.Read(compressedBytes);
                                 bytesWrittenToStream += compressedBytes;
                             }
@@ -270,7 +271,7 @@ namespace Nanook.GrindCore.DeflateZLib
                 int compressedBytes = _deflater!.GetDeflateOutput(_buffer!);
                 if (compressedBytes > 0)
                 {
-                    BaseStream.Write(_buffer.Data, 0, compressedBytes);
+                    BaseWrite(_buffer.Data, 0, compressedBytes);
                     _buffer.Read(compressedBytes);
                     bytesWritten += compressedBytes;
                 }

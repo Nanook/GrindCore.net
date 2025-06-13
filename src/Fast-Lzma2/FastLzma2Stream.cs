@@ -55,7 +55,7 @@ namespace Nanook.GrindCore.FastLzma2
             if (IsCompress)
                 _encoder = new FastLzma2Encoder(this.BufferSizeOutput, (int)CompressionType, compressParams);
             else
-                _decoder = new FastLzma2Decoder(BaseStream, this.BufferSizeOutput, BaseStream.Length, (int)CompressionType, compressParams);
+                _decoder = new FastLzma2Decoder(base.BaseRead, BufferSizeOutput, base.BaseLength, (int)CompressionType, compressParams);
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Nanook.GrindCore.FastLzma2
             int avRead = data.AvailableRead;
             if (avRead == 0)
                 return;
-            _encoder.EncodeData(data, true, BaseStream, cancel, out bytesWrittenToStream);
+            _encoder.EncodeData(data, appending: true, base.BaseWrite, cancel, out bytesWrittenToStream);
         }
 
         /// <summary>
@@ -80,11 +80,12 @@ namespace Nanook.GrindCore.FastLzma2
         /// <param name="data">The buffer to read decompressed data into.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+        /// <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream)
+        internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream, int length = 0)
         {
-            return _decoder.DecodeData(data, BaseStream, cancel, out bytesReadFromStream);
+            return _decoder.DecodeData(data, base.BaseRead, cancel, out bytesReadFromStream);
         }
 
         /// <summary>
@@ -106,7 +107,7 @@ namespace Nanook.GrindCore.FastLzma2
                 cancel.ThrowIfCancellationRequested();
                 OnWrite(data, cancel, out bytesWrittenToStream);
                 // Always flush at the end of compression
-                _encoder.Flush(BaseStream, cancel, out int bytesWrittenToStream2);
+                _encoder.Flush(base.BaseWrite, cancel, out var bytesWrittenToStream2);
                 bytesWrittenToStream += bytesWrittenToStream2;
             }
         }

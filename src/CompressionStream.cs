@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading;
@@ -33,7 +34,9 @@ namespace Nanook.GrindCore
         /// <summary>
         /// Gets the underlying base stream.
         /// </summary>
-        public Stream BaseStream { get; }
+        private Stream _baseStream { get; }
+
+        public byte[] InternalBuffer => _cache.Data;
 
         /// <summary>
         /// Gets the threshold for the internal cache buffer.
@@ -49,20 +52,43 @@ namespace Nanook.GrindCore
         /// <inheritdoc/>
         public override bool CanSeek => false;
         /// <inheritdoc/>
-        public override bool CanRead => BaseStream != null && !IsCompress && BaseStream.CanRead;
+        public override bool CanRead => _baseStream != null && !IsCompress && _baseStream.CanRead;
         /// <inheritdoc/>
-        public override bool CanWrite => BaseStream != null && IsCompress && BaseStream.CanWrite;
+        public override bool CanWrite => _baseStream != null && IsCompress && _baseStream.CanWrite;
 
         /// <inheritdoc/>
         public override long Length => throw new NotSupportedException("Seeking is not supported.");
 
         private long _position;
+        private long _positionReadBase;
         private long _positionFullSize; //count of bytes read/written to decompressed byte arrays
 
         /// <summary>
         /// Gets the total number of bytes read or written to decompressed byte arrays. The Decompressed/FullSize position, Position holds the Compressed position.
         /// </summary>
         public long PositionFullSize => _positionFullSize;
+
+        protected long? PositionLimit { get; }
+
+        protected long? PositionFullSizeLimit { get; }
+
+        protected long BaseLength => _baseStream.Length;
+
+        protected int BaseRead(byte[] data, int offset, int length)
+        {
+            int limited = (int)Math.Min(length, (PositionLimit ?? long.MaxValue) - _positionReadBase);
+            int read = _baseStream.Read(data, offset, limited);
+            _positionReadBase += read;
+            return read;
+        }
+
+        protected int BaseWrite(byte[] data, int offset, int length)
+        {
+            int limited = (int)Math.Min(length, (PositionLimit ?? long.MaxValue) - _position);
+            _baseStream.Write(data, offset, limited);
+            _position += limited;
+            return limited;
+        }
 
         /// <summary>
         /// Gets or sets the compression properties for this stream.
@@ -102,8 +128,11 @@ namespace Nanook.GrindCore
             IsCompress = CompressionType != CompressionType.Decompress;
 
             LeaveOpen = options.LeaveOpen;
-            BaseStream = stream;
+            _baseStream = stream;
             Version = options.Version ?? this.Defaults.Version; // latest
+
+            PositionLimit = options.PositionLimit;
+            PositionFullSizeLimit = options.PositionFullSizeLimit;
 
             CacheThreshold = options.BufferSize ?? this.BufferSizeInput;
             if (CacheThreshold <= 0)
@@ -113,7 +142,7 @@ namespace Nanook.GrindCore
             if (!IsCompress) //Decompress
             {
                 if (!stream.CanRead)
-                    throw new ArgumentException(SR.Stream_FalseCanRead, nameof(BaseStream));
+                    throw new ArgumentException(SR.Stream_FalseCanRead, nameof(_baseStream));
             }
             else //Process
             {
@@ -128,7 +157,7 @@ namespace Nanook.GrindCore
                     throw new ArgumentException("Invalid Option, CompressionType / Level");
 
                 if (!stream.CanWrite)
-                    throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(BaseStream));
+                    throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(_baseStream));
             }
         }
 
@@ -147,7 +176,7 @@ namespace Nanook.GrindCore
         /// <summary>
         /// Reads data from the underlying stream into the provided buffer.
         /// </summary>
-        internal abstract int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream);
+        internal abstract int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream, int length = 0);
         /// <summary>
         /// Writes data from the provided buffer to the underlying stream.
         /// </summary>
@@ -165,20 +194,18 @@ namespace Nanook.GrindCore
         {
             int total = 0;
             int read = -1;
-
             while (read != 0 && total != dataBlock.Length)
             {
-                read = Math.Min(_cache.AvailableRead, dataBlock.Length - total);
+                read = (int)Math.Min(Math.Min(_cache.AvailableRead, dataBlock.Length - total), (PositionFullSizeLimit ?? long.MaxValue) - _positionFullSize);
                 if (read != 0)
                 {
                     dataBlock.Write(total, _cache, read);
+                    _positionFullSize += read;
                     total += read;
                 }
-
                 if (total < dataBlock.Length)
                 {
-                    read = OnRead(_cache, cancel, out int bytesReadFromStream);
-                    _positionFullSize += read;
+                    read = OnRead(_cache, cancel, out var bytesReadFromStream, dataBlock.Length);
                     _position += bytesReadFromStream;
                 }
             }
@@ -191,26 +218,23 @@ namespace Nanook.GrindCore
             int size = 0;
             while (total != dataBlock.Length)
             {
-                size = Math.Min(dataBlock.Length - total, _cache.AvailableWrite);
+                size = Math.Min(dataBlock.Length - total, (int)Math.Min(_cache.AvailableWrite, (PositionFullSizeLimit ?? long.MaxValue) - _positionFullSize));
                 if (size != 0)
                 {
-                    dataBlock.Read(total, _cache, size); //read from datablock / write to _cache
+                    dataBlock.Read(total, _cache, size);
                     total += size;
                 }
-
                 onWrite(cancel);
             }
         }
 
         private void onWrite(CancellableTask cancel)
         {
-            int size2;
-            if (_cache.AvailableRead >= CacheThreshold || _cache.AvailableWrite == 0) // safeguarded, should never be if (false || true)
+            if (_cache.AvailableRead >= CacheThreshold || _cache.AvailableWrite == 0)
             {
-                size2 = _cache.AvailableRead;
-                OnWrite(_cache, cancel, out int bytesWrittenToStream);
+                int size2 = _cache.AvailableRead;
+                OnWrite(_cache, cancel, out int _);
                 _positionFullSize += size2 - _cache.AvailableRead;
-                _position += bytesWrittenToStream;
             }
         }
 
@@ -226,15 +250,13 @@ namespace Nanook.GrindCore
         {
             if (!_complete)
             {
-                _complete = complete; //set straight away in case OnFlush causes a recall on the same thread
-
+                _complete = complete;
                 if (IsCompress)
                 {
                     int size = _cache.AvailableRead;
-                    OnFlush(_cache, cancel, out int bytesWrittenToStream, flush, complete);
-                    _position += bytesWrittenToStream;
+                    OnFlush(_cache, cancel, out int _, flush, complete);
                     _positionFullSize += size;
-                    BaseStream.Flush();
+                    _baseStream.Flush();
                 }
             }
         }
@@ -263,6 +285,10 @@ namespace Nanook.GrindCore
         /// <inheritdoc/>
         public override int ReadByte()
         {
+            if ((PositionFullSizeLimit ?? long.MaxValue) - _positionFullSize == 0)
+            {
+                return -1;
+            }
             if (_cache.AvailableRead == 0)
             {
                 int read = OnRead(_cache, new CancellableTask(), out int bytesReadFromStream);
@@ -366,7 +392,7 @@ namespace Nanook.GrindCore
                     onDispose(); // Custom cleanup for managed resources
 
                 if (!LeaveOpen)
-                    try { BaseStream.Dispose(); } catch { }
+                    try { _baseStream.Dispose(); } catch { }
 
                 _disposed = true;
             }
