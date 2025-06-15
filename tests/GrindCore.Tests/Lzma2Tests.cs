@@ -42,8 +42,8 @@ namespace GrindCore.Tests
                 TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, buffLen, (int)compressedSize, threadCount);
 
                 Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, {(blockSize <= 0 ? blockSize : ("0x" + blockSize.ToString("x")))}, {threadCount}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
-                //Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
-                //Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
+                Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
+                Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
                 Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
                 Assert.Equal(r.InHash, r.OutHash); //test IN and decompressed data hashes match
             }

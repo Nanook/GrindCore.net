@@ -44,7 +44,7 @@ namespace Nanook.GrindCore.Lzma
 
             if (IsCompress)
             {
-                this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 1) + 0x20;
+                this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 1) + 0x20;
                 if (this.BufferSizeOutput > int.MaxValue)
                     this.BufferSizeOutput = int.MaxValue;
 
@@ -59,7 +59,7 @@ namespace Nanook.GrindCore.Lzma
 
                 this.Properties = options.InitProperties;
                 _decoder = new Lzma2Decoder(options.InitProperties[0]);
-                this.BufferSizeOutput = CacheThreshold;
+                this.BufferSizeOutput = BufferThreshold;
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
@@ -96,29 +96,26 @@ namespace Nanook.GrindCore.Lzma
             if (length == 0 || length > data.AvailableWrite)
                 length = data.AvailableWrite;
 
-            //_ended = false; //hack - it doesn't seem right to go again after null byte
-
             while (!_ended && decoded != 0 && total < length)
             {
                 read = 0;
                 cancel.ThrowIfCancellationRequested();
                 if (_buffer.AvailableRead == 0)
                 {
-                    read = BaseRead(_buffer.Data, _buffer.Size, 1);
+                    read = BaseRead(_buffer, 1);
                     if (read == 1)
                     {
-                        if (_buffer.Data[_buffer.Size] != 0)
+                        if (_buffer.Data[_buffer.Size - 1] != 0)
                         {
-                            bool control = (_buffer.Data[_buffer.Size] & 0b10000000) != 0;
-                            read += BaseRead(_buffer.Data, _buffer.Size + read, (control ? 6 : 5) - read);
-                            Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)_buffer.Size);
+                            bool control = (_buffer.Data[_buffer.Size - 1] & 0b10000000) != 0;
+                            read += BaseRead(_buffer, (control ? 6 : 5) - 1);
+                            Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read));
                             if (info.CompressedSize != 0)
-                                read += BaseRead(_buffer.Data, _buffer.Size + read, info.BlockSize - read);
+                                read += BaseRead(_buffer, info.BlockSize - read);
                         }
                         else
                             _ended = true;
                     }
-                    _buffer.Write(read);
                 }
                 if (_buffer.AvailableRead == 0)
                     return total;
@@ -129,7 +126,6 @@ namespace Nanook.GrindCore.Lzma
                 _ended = _ended && decoded == 0;
             }
 
-            Trace.WriteLine($"!!{total} - {this.Position} {bytesReadFromStream}");
             return total;
         }
 
@@ -155,8 +151,7 @@ namespace Nanook.GrindCore.Lzma
 
             if (size > 0)
             {
-                BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
-                _buffer.Read(_buffer.AvailableRead);
+                BaseWrite(_buffer, _buffer.AvailableRead);
                 bytesWrittenToStream += (int)size;
             }
         }
@@ -179,14 +174,15 @@ namespace Nanook.GrindCore.Lzma
                 long size = _encoder.EncodeData(data, _buffer, true, cancel);
                 if (size > 0)
                 {
-                    BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
-                    _buffer.Read(_buffer.AvailableRead);
+                    BaseWrite(_buffer, _buffer.AvailableRead);
                     bytesWrittenToStream = (int)size;
                 }
                 if (complete)
                 {
-                    BaseWrite(new byte[1], 0, 1);
-                    bytesWrittenToStream += 1;
+                    _buffer.Pos = 0;
+                    _buffer.Size = 0;
+                    _buffer.Write(new byte[1], 0, 1);
+                    bytesWrittenToStream += BaseWrite(_buffer, 1);
                 }
             }
         }

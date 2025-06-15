@@ -80,8 +80,10 @@ namespace Nanook.GrindCore.Brotli
         /// <exception cref="ObjectDisposedException">Thrown if the decoder has been disposed.</exception>
         /// <exception cref="IOException">Thrown if the decoder could not be created.</exception>
         /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
-        public OperationStatus Decompress(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten)
+        public OperationStatus DecodeData(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten)
         {
+            outData.Tidy();
+
             EnsureInitialized();
             Debug.Assert(_state != null);
 

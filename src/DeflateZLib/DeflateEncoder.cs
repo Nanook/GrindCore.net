@@ -1,10 +1,7 @@
-using System.Diagnostics;
-using System.Security;
 using System;
-
+using System.Diagnostics;
 using ZErrorCode = Nanook.GrindCore.Interop.ZLib.ErrorCode;
 using ZFlushCode = Nanook.GrindCore.Interop.ZLib.FlushCode;
-using System.Xml.Linq;
 
 namespace Nanook.GrindCore.DeflateZLib
 {
@@ -154,7 +151,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <param name="outData">The buffer to write compressed data to.</param>
         /// <returns>The number of bytes written to the output buffer.</returns>
         /// <exception cref="ArgumentException">Thrown if <paramref name="outData"/> is not at the correct position.</exception>
-        internal int GetDeflateOutput(CompressionBuffer outData)
+        internal int EncodeData(CompressionBuffer outData)
         {
             Debug.Assert(null != outData, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
@@ -174,6 +171,8 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <exception cref="ArgumentException">Thrown if <paramref name="outData"/> is not at the correct position.</exception>
         private unsafe ZErrorCode readDeflateOutput(CompressionBuffer outData, ZFlushCode flushCode, out int bytesRead)
         {
+            outData.Tidy();
+
             if (outData.Size != 0)
                 throw new ArgumentException($"outData should have a Size of 0");
 

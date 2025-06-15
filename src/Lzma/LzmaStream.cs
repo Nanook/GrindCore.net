@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Threading;
 
 namespace Nanook.GrindCore.Lzma
 {
@@ -39,7 +38,7 @@ namespace Nanook.GrindCore.Lzma
             {
                 _encoder = new LzmaEncoder((int)CompressionType, (uint)dictionarySize, 0);
                 Properties = _encoder.Properties;
-                this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 1) + 0x10;
+                this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 1) + 0x10;
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
@@ -47,7 +46,7 @@ namespace Nanook.GrindCore.Lzma
                 if (options.InitProperties == null)
                     throw new Exception("LZMA requires CompressionOptions.InitProperties to be set to an array when decompressing");
 
-                this.BufferSizeOutput = CacheThreshold;
+                this.BufferSizeOutput = BufferThreshold;
                 _decoder = new LzmaDecoder(options.InitProperties);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
@@ -77,9 +76,8 @@ namespace Nanook.GrindCore.Lzma
         internal override int OnRead(CompressionBuffer data, CancellableTask cancel, out int bytesReadFromStream, int length = 0)
         {
             if (!CanRead)
-            {
                 throw new NotSupportedException("Not for Compression mode");
-            }
+
             bytesReadFromStream = 0;
             int decoded = -1;
             int total = 0;
@@ -91,11 +89,8 @@ namespace Nanook.GrindCore.Lzma
             while ((read != 0 || decoded != 0) && total < length)
             {
                 cancel.ThrowIfCancellationRequested();
-                if (decoded <= 0 && _buffer.AvailableWrite >= length - total)
-                {
-                    read = BaseRead(_buffer.Data, _buffer.Size, _buffer.AvailableWrite);
-                    _buffer.Write(read);
-                }
+                if (decoded <= 0 && _buffer.AvailableRead == 0)
+                    read = BaseRead(_buffer, _buffer.AvailableWrite);
                 if (_buffer.AvailableRead == 0)
                     return total;
                 decoded = _decoder.DecodeData(_buffer, out var readSz, data, length - total, out var _);
@@ -127,8 +122,7 @@ namespace Nanook.GrindCore.Lzma
 
             if (size > 0)
             {
-                BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
-                _buffer.Read(_buffer.AvailableRead);
+                BaseWrite(_buffer, _buffer.AvailableRead);
                 bytesWrittenToStream += (int)size;
             }
         }
@@ -153,8 +147,7 @@ namespace Nanook.GrindCore.Lzma
                     long size = _encoder.EncodeData(data, _buffer, true, cancel);
                     if (size == 0)
                         break;
-                    BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
-                    _buffer.Read(_buffer.AvailableRead);
+                    BaseWrite(_buffer, _buffer.AvailableRead);
                     bytesWrittenToStream += (int)size;
                 }
             }

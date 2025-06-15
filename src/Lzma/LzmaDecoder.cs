@@ -49,6 +49,8 @@ namespace Nanook.GrindCore.Lzma
         /// <exception cref="Exception">Thrown if decompression fails.</exception>
         public int DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData, int outSize, out int status)
         {
+            outData.Tidy(); //ensure all the space is at the end making _buffer.AvailableWrite safe for interop
+
             // Get properties from DataBlock
             ulong outSz = (ulong)outSize;
             ulong inSz = (ulong)inData.AvailableRead;

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.IO;
 using System;
 
@@ -186,7 +185,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="outData">When this method returns, a buffer where the compressed data will be stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="outData"/>.</param>
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
-        public OperationStatus Flush(CompressionBuffer outData, out int bytesWritten) => Compress(new CompressionBuffer(0), outData, out _, out bytesWritten, BrotliEncoderOperation.Flush);
+        public OperationStatus Flush(CompressionBuffer outData, out int bytesWritten) => EncodeData(new CompressionBuffer(0), outData, out _, out bytesWritten, BrotliEncoderOperation.Flush);
 
         /// <summary>
         /// Compresses a buffer into an output buffer.
@@ -197,7 +196,7 @@ namespace Nanook.GrindCore.Brotli
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="outData"/>.</param>
         /// <param name="isFinalBlock"><see langword="true"/> to finalize the internal stream, which prevents adding more input data when this method returns; <see langword="false"/> to allow the encoder to postpone the production of output until it has processed enough input.</param>
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
-        public OperationStatus Compress(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(inData, outData, out bytesConsumed, out bytesWritten, isFinalBlock ? BrotliEncoderOperation.Finish : BrotliEncoderOperation.Process);
+        public OperationStatus EncodeData(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => EncodeData(inData, outData, out bytesConsumed, out bytesWritten, isFinalBlock ? BrotliEncoderOperation.Finish : BrotliEncoderOperation.Process);
 
         /// <summary>
         /// Compresses a buffer into an output buffer using the specified encoder operation.
@@ -210,8 +209,11 @@ namespace Nanook.GrindCore.Brotli
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
         /// <exception cref="ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
         /// <exception cref="Exception">Thrown if the specified version is not supported.</exception>
-        internal OperationStatus Compress(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
+        internal OperationStatus EncodeData(CompressionBuffer inData, CompressionBuffer outData, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
         {
+            inData.Tidy();
+            outData.Tidy();
+
             if (inData.Pos != 0)
                 throw new ArgumentException($"inData should have a Pos of 0");
             if (outData.Size != 0)

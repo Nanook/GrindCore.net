@@ -108,6 +108,9 @@ namespace Nanook.GrindCore.Lz4
         /// <exception cref="Exception">Thrown if compression fails.</exception>
         public long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
+            inData.Tidy();
+            outData.Tidy();
+
             if (inData.Pos != 0)
                 throw new ArgumentException($"inData should have a Pos of 0");
             if (outData.Size != 0)

@@ -185,7 +185,7 @@ namespace GrindCore.Tests.Utility
                         using (var cryptoStream = new CryptoStream(Stream.Null, compXxhash, CryptoStreamMode.Write, true))
                             await compMemoryStream.CopyToAsync(cryptoStream);
 
-                        // Decompress and hash 
+                        // DecodeData and hash 
                         compMemoryStream.Position = 0; //reset for reading
                         using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, decompOptions))
                         {
@@ -282,7 +282,7 @@ namespace GrindCore.Tests.Utility
                             cryptoStream.WriteByte((byte)b);
                     }
 
-                    // Decompress and hash
+                    // DecodeData and hash
                     compMemoryStream.Position = 0; //reset for reading
                     using (var compressionStream = CompressionStreamFactory.Create(algorithm, compMemoryStream, decompOptions))
                     {

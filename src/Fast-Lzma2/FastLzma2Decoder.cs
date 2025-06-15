@@ -1,10 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using static Nanook.GrindCore.Interop.FastLzma2;
-using static Nanook.GrindCore.Interop;
-using System.Linq;
-using System.Threading;
-using System.IO;
 
 namespace Nanook.GrindCore.FastLzma2
 {
@@ -14,10 +9,9 @@ namespace Nanook.GrindCore.FastLzma2
     internal unsafe class FastLzma2Decoder : IDisposable
     {
         //private FL2OutBuffer _compOutBuffer;
-        private byte[] _bufferArray;
+        private CompressionBuffer _buffer;
         private readonly IntPtr _context;
         private GCHandle _bufferHandle;
-        private readonly int _bufferSize;
         private FL2InBuffer _decompInBuffer;
 
         /// <summary>
@@ -49,7 +43,7 @@ namespace Nanook.GrindCore.FastLzma2
         /// <param name="level">The compression level (default is 6).</param>
         /// <param name="compressParams">Optional compression parameters for multi-threaded decompression.</param>
         /// <exception cref="FL2Exception">Thrown if the decoder context cannot be initialized.</exception>
-        public FastLzma2Decoder(Func<byte[], int, int, int> read, int bufferSize, long size, int level = 6, CompressionParameters? compressParams = null)
+        public FastLzma2Decoder(Func<CompressionBuffer, int, int> read, int bufferSize, long size, int level = 6, CompressionParameters? compressParams = null)
         {
             if (compressParams == null)
                 compressParams = new CompressionParameters(0);
@@ -64,10 +58,9 @@ namespace Nanook.GrindCore.FastLzma2
                 throw new FL2Exception(code);
 
             // Compressed stream input buffer
-            _bufferSize = bufferSize;
-            _bufferArray = BufferPool.Rent((int)(size < _bufferSize ? size : _bufferSize));
-            int bytesRead = read(_bufferArray, 0, _bufferArray.Length);
-            _bufferHandle = GCHandle.Alloc(_bufferArray, GCHandleType.Pinned);
+            _buffer = new CompressionBuffer((int)(size < bufferSize ? size : bufferSize));
+            int bytesRead = read(_buffer, _buffer.AvailableWrite);
+            _bufferHandle = GCHandle.Alloc(_buffer.Data, GCHandleType.Pinned);
             _decompInBuffer = new FL2InBuffer()
             {
                 src = _bufferHandle.AddrOfPinnedObject(),
@@ -101,27 +94,29 @@ namespace Nanook.GrindCore.FastLzma2
         /// <summary>
         /// Decodes data from the input stream into the provided buffer.
         /// </summary>
-        /// <param name="buffer">The buffer to write decompressed data to.</param>
+        /// <param name="outData">The buffer to write decompressed data to.</param>
         /// <param name="read">A delegate to provide input data.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesReadFromStream">The number of bytes read from the input stream.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
         /// <exception cref="FL2Exception">Thrown if a fatal decompression error occurs.</exception>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        public unsafe int DecodeData(CompressionBuffer buffer, Func<byte[], int, int, int> read, CancellableTask cancel, out int bytesReadFromStream)
+        public unsafe int DecodeData(CompressionBuffer outData, Func<CompressionBuffer, int, int> read, CancellableTask cancel, out int bytesReadFromStream)
         {
+            outData.Tidy(); //ensure all the space is at the end making _buffer.AvailableWrite safe for interop
+
             bytesReadFromStream = 0;
 
             // Set the memory limit for the decompression stream under MT. Otherwise decode will fail if buffer is too small.
             // Guess 64mb buffer is enough for most cases.
 
-            fixed (byte* pBuffer = buffer.Data)
+            fixed (byte* pBuffer = outData.Data)
             {
-                *&pBuffer += buffer.Size; // writePos is Size
+                *&pBuffer += outData.Size; // writePos is Size
                 FL2OutBuffer outBuffer = new FL2OutBuffer()
                 {
                     dst = (nint)pBuffer,
-                    size = (nuint)buffer.AvailableWrite,
+                    size = (nuint)outData.AvailableWrite,
                     pos = 0
                 };
 
@@ -141,6 +136,7 @@ namespace Nanook.GrindCore.FastLzma2
                     }
 
                     bytesReadFromStream += (int)_decompInBuffer.pos - pos;
+                    _buffer.Read(bytesReadFromStream);
 
                     // output is full
                     if (outBuffer.pos == outBuffer.size)
@@ -150,13 +146,13 @@ namespace Nanook.GrindCore.FastLzma2
                         break;
                     if (code == 0 && _decompInBuffer.size == _decompInBuffer.pos)
                     {
-                        int bytesRead = read(_bufferArray, 0, _bufferArray.Length);
+                        int bytesRead = read(_buffer, _buffer.AvailableWrite);
                         _decompInBuffer.size = (nuint)bytesRead;
                         _decompInBuffer.pos = 0;
                     }
                 } while (true);
 
-                buffer.Write((int)outBuffer.pos);
+                outData.Write((int)outBuffer.pos);
                 return (int)outBuffer.pos;
             }
         }
@@ -169,7 +165,7 @@ namespace Nanook.GrindCore.FastLzma2
             _bufferHandle.Free();
             Interop.FastLzma2.FL2_freeDStream(_context);
             GC.SuppressFinalize(this);
-            BufferPool.Return(_bufferArray);
+            _buffer.Dispose();
         }
     }
 }

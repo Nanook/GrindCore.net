@@ -202,7 +202,7 @@
             </summary>
             <exception cref="T:System.ObjectDisposedException">Thrown if the decoder has been disposed.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.Brotli.BrotliDecoder.Decompress(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Int32@,System.Int32@)">
+        <member name="M:Nanook.GrindCore.Brotli.BrotliDecoder.DecodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Int32@,System.Int32@)">
             <summary>
             Decompresses data that was compressed using the Brotli algorithm.
             </summary>
@@ -303,7 +303,7 @@
             <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="outData"/>.</param>
             <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
         </member>
-        <member name="M:Nanook.GrindCore.Brotli.BrotliEncoder.Compress(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Int32@,System.Int32@,System.Boolean)">
+        <member name="M:Nanook.GrindCore.Brotli.BrotliEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Int32@,System.Int32@,System.Boolean)">
             <summary>
             Compresses a buffer into an output buffer.
             </summary>
@@ -314,7 +314,7 @@
             <param name="isFinalBlock"><see langword="true"/> to finalize the internal stream, which prevents adding more input data when this method returns; <see langword="false"/> to allow the encoder to postpone the production of output until it has processed enough input.</param>
             <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
         </member>
-        <member name="M:Nanook.GrindCore.Brotli.BrotliEncoder.Compress(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Int32@,System.Int32@,Nanook.GrindCore.Brotli.BrotliEncoderOperation)">
+        <member name="M:Nanook.GrindCore.Brotli.BrotliEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Int32@,System.Int32@,Nanook.GrindCore.Brotli.BrotliEncoderOperation)">
             <summary>
             Compresses a buffer into an output buffer using the specified encoder operation.
             </summary>
@@ -817,17 +817,17 @@
             Gets or sets the current size of valid data in the buffer.
             </summary>
         </member>
-        <member name="F:Nanook.GrindCore.CompressionBuffer.TidyThreshold">
+        <member name="P:Nanook.GrindCore.CompressionBuffer.MaxSize">
             <summary>
-            Gets or sets the threshold at which the buffer is tidied.
+            Gets the Maximum size that Size can be.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.CompressionBuffer.#ctor(System.Int64)">
+        <member name="M:Nanook.GrindCore.CompressionBuffer.#ctor(System.Int32)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.CompressionBuffer"/> class with the specified buffer size.
             </summary>
-            <param name="size">The size of the buffer to allocate.</param>
-            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="size"/> is not positive.</exception>
+            <param name="maxSize">The size of the buffer to allocate.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="maxSize"/> is not positive.</exception>
         </member>
         <member name="P:Nanook.GrindCore.CompressionBuffer.AvailableRead">
             <summary>
@@ -836,7 +836,7 @@
         </member>
         <member name="P:Nanook.GrindCore.CompressionBuffer.AvailableWrite">
             <summary>
-            Gets the number of bytes available to write to the buffer.
+            Gets the number of bytes available to write to the buffer. Includes already Read bytes as space will be reused.
             </summary>
         </member>
         <member name="M:Nanook.GrindCore.CompressionBuffer.Dispose">
@@ -846,7 +846,7 @@
         </member>
         <member name="M:Nanook.GrindCore.CompressionBuffer.Tidy">
             <summary>
-            Tidies the buffer by moving unread data to the start.
+            Manual tidy used to ensure free space starts at Size, by moving data to the start.
             </summary>
         </member>
         <member name="M:Nanook.GrindCore.CompressionBuffer.Read(System.Int32)">
@@ -1004,6 +1004,25 @@
             Returns a <see cref="T:Nanook.GrindCore.CompressionOptions"/> instance configured for optimal compression.
             </summary>
         </member>
+        <member name="T:Nanook.GrindCore.CompressionReaderStream">
+            <summary>
+            Wraps a source stream for use with GrindCore compression classes, providing enhanced buffering and position management.
+            This stream enables efficient resetting of the stream position when overreading occurs by using an internal buffer,
+            reducing the performance cost of frequent small reads. It supports non-disposing behavior, stream limits, and accurate
+            position tracking. While not required by GrindCore compression streams, using this class ensures that stream positions
+            remain accurate, allowing other code to reliably resume operations from the correct position.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionReaderStream.#ctor(System.IO.Stream,System.Boolean,System.Int32,System.Nullable{System.Int64})">
+            <summary>
+            Creates a new <see cref="T:Nanook.GrindCore.CompressionReaderStream"/> that wraps the specified stream with internal buffering and position management,
+            enabling efficient reading and accurate position tracking for GrindCore compression operations.
+            </summary>
+            <param name="stream">The source <see cref="T:System.IO.Stream"/> to read from.</param>
+            <param name="leaveOpen">If <c>true</c>, the underlying stream remains open after this stream is disposed; otherwise, it is closed.</param>
+            <param name="bufferSize">The size of the internal buffer, in bytes, used to optimize read operations and allow position resets.</param>
+            <param name="limit">The maximum number of bytes to read from the stream, or <c>null</c> for no limit. Used to enforce a read boundary.</param>
+        </member>
         <member name="T:Nanook.GrindCore.CompressionStream">
             <summary>
             Provides a base stream for compression and decompression operations.
@@ -1024,14 +1043,14 @@
             Gets the compression type for this stream.
             </summary>
         </member>
-        <member name="P:Nanook.GrindCore.CompressionStream._baseStream">
+        <member name="P:Nanook.GrindCore.CompressionStream.BaseStream">
             <summary>
             Gets the underlying base stream.
             </summary>
         </member>
-        <member name="F:Nanook.GrindCore.CompressionStream.CacheThreshold">
+        <member name="F:Nanook.GrindCore.CompressionStream.BufferThreshold">
             <summary>
-            Gets the threshold for the internal cache buffer.
+            Gets the threshold for the internal buffer.
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.CompressionStream.Defaults">
@@ -1596,7 +1615,7 @@
             <summary>
             Reads data from the stream and writes it to the buffer. Position is updated with the running total of bytes processed from the source stream.
             </summary>
-            <param name="data">The buffer to read data into.</param>
+            <param name="inData">The buffer to read data into.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
             <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
             <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
@@ -1608,7 +1627,7 @@
             <summary>
             Writes data from the buffer to the stream. Position is updated with the running total of bytes processed from the source stream.
             </summary>
-            <param name="data">The buffer containing data to write.</param>
+            <param name="outData">The buffer containing data to write.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
             <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
             <exception cref="T:System.NotSupportedException">Thrown if the stream is not in compression mode.</exception>
@@ -1618,7 +1637,7 @@
             <summary>
             Flushes any remaining data in the buffer to the stream.
             </summary>
-            <param name="data">The buffer containing data to flush.</param>
+            <param name="outData">The buffer containing data to flush.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
             <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
             <param name="flush">Indicates if this is a flush operation.</param>
@@ -1797,14 +1816,7 @@
             Returns true if the end of the stream has been reached.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateDecoder.Inflate(System.Byte@)">
-            <summary>
-            Inflates a single byte from the stream.
-            </summary>
-            <param name="b">The output byte.</param>
-            <returns>True if a byte was read; otherwise, false.</returns>
-        </member>
-        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateDecoder.Inflate(Nanook.GrindCore.CompressionBuffer,System.Int32)">
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateDecoder.DecodeData(Nanook.GrindCore.CompressionBuffer,System.Int32)">
             <summary>
             Inflates data from the stream into the provided <see cref="T:Nanook.GrindCore.CompressionBuffer"/>.
             </summary>
@@ -1951,7 +1963,7 @@
             <param name="count">The number of bytes to read from the input buffer.</param>
             <exception cref="T:System.ArgumentException">Thrown if the encoder is not ready for new input.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateEncoder.GetDeflateOutput(Nanook.GrindCore.CompressionBuffer)">
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer)">
             <summary>
             Compresses data from the input buffer into the output buffer.
             </summary>
@@ -2048,7 +2060,7 @@
             <summary>
             Compresses and writes data from the buffer to the underlying stream.
             </summary>
-            <param name="data">The buffer containing data to compress and write.</param>
+            <param name="outData">The buffer containing data to compress and write.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
             <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
             <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
@@ -2057,7 +2069,7 @@
             <summary>
             Flushes any remaining compressed data to the underlying stream.
             </summary>
-            <param name="data">The buffer containing data to flush.</param>
+            <param name="outData">The buffer containing data to flush.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
             <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
             <param name="flush">Indicates if this is a flush operation.</param>
@@ -2504,7 +2516,7 @@
             Gets the total number of decompressed bytes.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Decoder.#ctor(System.Func{System.Byte[],System.Int32,System.Int32,System.Int32},System.Int32,System.Int64,System.Int32,Nanook.GrindCore.FastLzma2.CompressionParameters)">
+        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Decoder.#ctor(System.Func{Nanook.GrindCore.CompressionBuffer,System.Int32,System.Int32},System.Int32,System.Int64,System.Int32,Nanook.GrindCore.FastLzma2.CompressionParameters)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.FastLzma2.FastLzma2Decoder"/> class for the specified input stream and parameters.
             </summary>
@@ -2529,11 +2541,11 @@
             Gets the number of bytes decompressed so far.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Decoder.DecodeData(Nanook.GrindCore.CompressionBuffer,System.Func{System.Byte[],System.Int32,System.Int32,System.Int32},Nanook.GrindCore.CancellableTask,System.Int32@)">
+        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Decoder.DecodeData(Nanook.GrindCore.CompressionBuffer,System.Func{Nanook.GrindCore.CompressionBuffer,System.Int32,System.Int32},Nanook.GrindCore.CancellableTask,System.Int32@)">
             <summary>
             Decodes data from the input stream into the provided buffer.
             </summary>
-            <param name="buffer">The buffer to write decompressed data to.</param>
+            <param name="outData">The buffer to write decompressed data to.</param>
             <param name="read">A delegate to provide input data.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
             <param name="bytesReadFromStream">The number of bytes read from the input stream.</param>
@@ -2577,11 +2589,11 @@
             <returns>The result code from the native call.</returns>
             <exception cref="T:Nanook.GrindCore.FastLzma2.FL2Exception">Thrown if the parameter cannot be set.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Encoder.EncodeData(Nanook.GrindCore.CompressionBuffer,System.Boolean,System.Func{System.Byte[],System.Int32,System.Int32,System.Int32},Nanook.GrindCore.CancellableTask,System.Int32@)">
+        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Encoder.EncodeData(Nanook.GrindCore.CompressionBuffer,System.Boolean,System.Func{Nanook.GrindCore.CompressionBuffer,System.Int32,System.Int32},Nanook.GrindCore.CancellableTask,System.Int32@)">
             <summary>
             Encodes data from the provided buffer and writes compressed output to the specified stream.
             </summary>
-            <param name="buffer">The buffer containing data to compress.</param>
+            <param name="inData">The buffer containing data to compress.</param>
             <param name="appending">Indicates if this is an appending operation (no end-of-stream marker).</param>
             <param name="write">A delegate to output data to.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
@@ -2590,7 +2602,7 @@
             <exception cref="T:Nanook.GrindCore.FastLzma2.FL2Exception">Thrown if a fatal compression error occurs.</exception>
             <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Encoder.Flush(System.Func{System.Byte[],System.Int32,System.Int32,System.Int32},Nanook.GrindCore.CancellableTask,System.Int32@)">
+        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Encoder.Flush(System.Func{Nanook.GrindCore.CompressionBuffer,System.Int32,System.Int32},Nanook.GrindCore.CancellableTask,System.Int32@)">
             <summary>
             Flushes any remaining compressed data to the output stream and finalizes the stream.
             </summary>
@@ -4894,7 +4906,7 @@
             <summary>Encoder ran into invalid data.</summary>
         </member>
         <member name="P:Nanook.GrindCore.SR.BrotliStream_Decompress_UnsupportedOperation">
-            <summary>Can not perform Write operations on a BrotliStream constructed with CompressionMode.Decompress.</summary>
+            <summary>Can not perform Write operations on a BrotliStream constructed with CompressionMode.DecodeData.</summary>
         </member>
         <member name="P:Nanook.GrindCore.SR.BrotliStream_Decompress_InvalidData">
             <summary>Decoder ran into invalid data.</summary>

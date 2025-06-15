@@ -8,7 +8,7 @@ namespace Nanook.GrindCore
     /// <summary>
     /// A lightweight class to wrap an output buffer for compression and decompression operations.
     /// </summary>
-    internal class CompressionBuffer : IDisposable
+    public class CompressionBuffer : IDisposable
     {
         /// <summary>
         /// Gets the underlying data buffer.
@@ -22,21 +22,23 @@ namespace Nanook.GrindCore
         /// Gets or sets the current size of valid data in the buffer.
         /// </summary>
         public int Size;
+
         /// <summary>
-        /// Gets or sets the threshold at which the buffer is tidied.
+        /// Gets the Maximum size that Size can be.
         /// </summary>
-        public int TidyThreshold = 0x400;
+        public int MaxSize { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompressionBuffer"/> class with the specified buffer size.
         /// </summary>
-        /// <param name="size">The size of the buffer to allocate.</param>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="size"/> is not positive.</exception>
-        public CompressionBuffer(long size)
+        /// <param name="maxSize">The size of the buffer to allocate.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="maxSize"/> is not positive.</exception>
+        public CompressionBuffer(int maxSize)
         {
-            if (size < 0)
-                throw new ArgumentOutOfRangeException(nameof(size), "Buffer size must be positive.");
-            Data = BufferPool.Rent(size);
+            if (maxSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(maxSize), "Buffer size must be positive.");
+            MaxSize = maxSize;
+            Data = BufferPool.Rent(maxSize);
             Size = 0;
         }
 
@@ -46,9 +48,9 @@ namespace Nanook.GrindCore
         public int AvailableRead => Size - Pos;
 
         /// <summary>
-        /// Gets the number of bytes available to write to the buffer.
+        /// Gets the number of bytes available to write to the buffer. Includes already Read bytes as space will be reused.
         /// </summary>
-        public int AvailableWrite => Data.Length - Size;
+        public int AvailableWrite => Data.Length - Size + Pos;
 
         /// <summary>
         /// Releases the buffer back to the pool.
@@ -58,8 +60,15 @@ namespace Nanook.GrindCore
             BufferPool.Return(Data);
         }
 
+        public void RewindRead(int length)
+        {
+            if (this.Pos < length)
+                throw new ArgumentOutOfRangeException(nameof(length), "Length must not be greater than Pos.");
+            this.Pos -= length;
+        }
+
         /// <summary>
-        /// Tidies the buffer by moving unread data to the start.
+        /// Manual tidy used to ensure free space starts at Size, by moving data to the start.
         /// </summary>
         public void Tidy()
         {
@@ -104,8 +113,6 @@ namespace Nanook.GrindCore
             if (data != null)
                 Array.Copy(Data, Pos, data, offset, sz);
             Pos += sz;
-            if (Pos != 0 && Size - Pos <= TidyThreshold)
-                Tidy();
             return sz;
         }
 
@@ -140,6 +147,9 @@ namespace Nanook.GrindCore
             if (data != null && (data.Length - offset < length))
                 throw new ArgumentException("The sum of offset and length is greater than the array length.", nameof(data));
 
+            if (this.Data.Length - this.Size < length)
+                Tidy(); //tidy if there's not enough room for the new data
+
             int sz = Math.Min(Data.Length - Size, length);
             if (sz != 0)
             {
@@ -164,14 +174,6 @@ namespace Nanook.GrindCore
             Data.AsSpan(Pos, sz).CopyTo(data);
             Pos += sz;
 
-            if (Pos != 0 && Size - Pos < TidyThreshold)
-            {
-                // Move data to start using Span.CopyTo
-                Data.AsSpan(Pos, Size - Pos).CopyTo(Data.AsSpan());
-                Size = Size - Pos;
-                Pos = 0;
-            }
-
             return sz;
         }
 
@@ -182,6 +184,14 @@ namespace Nanook.GrindCore
         /// <returns>The number of bytes actually written.</returns>
         public int Write(ReadOnlySpan<byte> data)
         {
+            if (this.Data.Length - this.Size < data.Length)
+            {
+                // Move data to start using Span.CopyTo
+                Data.AsSpan(Pos, Size - Pos).CopyTo(Data.AsSpan());
+                Size = Size - Pos;
+                Pos = 0;
+            }
+
             int sz = Math.Min(Data.Length - Size, data.Length);
             if (sz != 0)
             {

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Reflection.Emit;
-using System.Threading;
 
 namespace Nanook.GrindCore.ZStd
 {
@@ -39,13 +37,13 @@ namespace Nanook.GrindCore.ZStd
 
             if (IsCompress)
             {
-                this.BufferSizeOutput = CacheThreshold + (CacheThreshold >> 7) + 128;
-                _encoder = new ZStdEncoder(CacheThreshold, (int)this.CompressionType);
+                this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 7) + 128;
+                _encoder = new ZStdEncoder(BufferThreshold, (int)this.CompressionType);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
             {
-                this.BufferSizeOutput = CacheThreshold;
+                this.BufferSizeOutput = BufferThreshold;
                 _decoder = new ZStdDecoder();
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
@@ -74,8 +72,8 @@ namespace Nanook.GrindCore.ZStd
             {
                 cancel.ThrowIfCancellationRequested();
 
-                if (_buffer.Pos == 0)
-                    _buffer.Write(BaseRead(_buffer.Data, _buffer.Size, _buffer.AvailableWrite));
+                if (_buffer.AvailableRead == 0)
+                    BaseRead(_buffer, _buffer.AvailableWrite);
 
                 if (_buffer.AvailableRead == 0)
                     return total;
@@ -111,8 +109,7 @@ namespace Nanook.GrindCore.ZStd
 
             if (size > 0)
             {
-                BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
-                _buffer.Read(_buffer.AvailableRead);
+                BaseWrite(_buffer, _buffer.AvailableRead);
                 bytesWrittenToStream += (int)size;
             }
         }
@@ -138,8 +135,7 @@ namespace Nanook.GrindCore.ZStd
                 size += _encoder.Flush(_buffer);
                 if (size > 0)
                 {
-                    BaseWrite(_buffer.Data, _buffer.Pos, _buffer.AvailableRead);
-                    _buffer.Read(_buffer.AvailableRead);
+                    BaseWrite(_buffer, _buffer.AvailableRead);
                     bytesWrittenToStream = (int)size;
                 }
             }

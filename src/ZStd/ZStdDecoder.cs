@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using static Nanook.GrindCore.Interop;
 using static Nanook.GrindCore.Interop.ZStd;
 
@@ -52,6 +51,8 @@ namespace Nanook.GrindCore.ZStd
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
         public long DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData, CancellableTask cancel)
         {
+            outData.Tidy(); //ensure all the space is at the end making _buffer.AvailableWrite safe for interop
+
             int totalDecompressed = 0;
             readSz = 0;
             cancel.ThrowIfCancellationRequested();

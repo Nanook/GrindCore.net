@@ -52,6 +52,8 @@ namespace Nanook.GrindCore.Lz4
         /// <exception cref="Exception">Thrown if frame info or decompression fails.</exception>
         public long DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData)
         {
+            outData.Tidy(); //ensure all the space is at the end making _buffer.AvailableWrite safe for interop
+
             readSz = 0;
             int initOutSz = outData.Size;
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Xml.Linq;
 using static Nanook.GrindCore.Interop;
 using static Nanook.GrindCore.Interop.ZStd;
 
@@ -73,6 +72,9 @@ namespace Nanook.GrindCore.ZStd
         /// <exception cref="Exception">Thrown if compression fails or more data needs to be flushed.</exception>
         public long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
+            inData.Tidy();
+            outData.Tidy();
+
             if (inData.Pos != 0)
                 throw new ArgumentException($"inData should have a Pos of 0");
             if (outData.Size != 0)

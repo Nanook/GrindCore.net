@@ -2,10 +2,6 @@
 using System.Runtime.InteropServices;
 using static Nanook.GrindCore.Interop.Lzma;
 using static Nanook.GrindCore.Interop;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.Lzma
 {
@@ -114,6 +110,9 @@ namespace Nanook.GrindCore.Lzma
         /// <exception cref="Exception">Thrown if compression fails.</exception>
         public int EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
+            inData.Tidy();
+            outData.Tidy();
+
             if (inData.Pos != 0)
                 throw new ArgumentException($"inData should have a Pos of 0");
             if (outData.Size != 0)

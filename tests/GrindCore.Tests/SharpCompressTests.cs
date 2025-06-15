@@ -91,7 +91,7 @@
 
 //                        //// Deompress and hash 
 //                        //compMemoryStream.Position = 0; //reset for reading
-//                        //using (var compressionStream = CompressionStreamDotNetFactory.Create(algorithm, compMemoryStream, CompressionMode.Decompress, level, true))
+//                        //using (var compressionStream = CompressionStreamDotNetFactory.Create(algorithm, compMemoryStream, CompressionMode.DecodeData, level, true))
 //                        //{
 //                        //    int bytesRead;
 //                        //    while (totalOutProcessedBytes < total && (bytesRead = compressionStream.Read(buffer, 0, Math.Min(blockSize, (int)(total - totalOutProcessedBytes)))) > 0)

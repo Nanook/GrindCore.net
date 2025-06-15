@@ -1,7 +1,5 @@
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.IO;
 using System;
 
@@ -61,28 +59,15 @@ namespace Nanook.GrindCore.DeflateZLib
         public bool Finished() => _finished;
 
         /// <summary>
-        /// Inflates a single byte from the stream.
-        /// </summary>
-        /// <param name="b">The output byte.</param>
-        /// <returns>True if a byte was read; otherwise, false.</returns>
-        public unsafe bool Inflate(out byte b)
-        {
-            fixed (byte* bufPtr = &b)
-            {
-                int bytesRead = inflateVerified(bufPtr, 1);
-                Debug.Assert(bytesRead == 0 || bytesRead == 1);
-                return bytesRead != 0;
-            }
-        }
-
-        /// <summary>
         /// Inflates data from the stream into the provided <see cref="CompressionBuffer"/>.
         /// </summary>
         /// <param name="outData">The buffer to write decompressed data to.</param>
         /// <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
         /// <returns>The number of bytes written to the buffer.</returns>
-        public unsafe int Inflate(CompressionBuffer outData, int length)
+        public unsafe int DecodeData(CompressionBuffer outData, int length)
         {
+            outData.Tidy(); //ensure all the space is at the end making _buffer.AvailableWrite safe for interop
+
             if (outData.AvailableWrite == 0)
                 return 0;
 

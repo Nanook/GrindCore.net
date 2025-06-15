@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Linq;
-using System.Threading;
-using System.IO;
+using System.Xml.Linq;
 
 namespace Nanook.GrindCore.FastLzma2
 {
@@ -12,10 +10,9 @@ namespace Nanook.GrindCore.FastLzma2
     internal unsafe class FastLzma2Encoder : IDisposable
     {
         private FL2OutBuffer _compOutBuffer;
-        private byte[] _bufferArray;
+        private CompressionBuffer _buffer;
         private readonly IntPtr _context;
         private GCHandle _bufferHandle;
-        private readonly int _bufferSize;
         private bool _flushed;
 
         /// <summary>
@@ -35,7 +32,6 @@ namespace Nanook.GrindCore.FastLzma2
             else
                 _context = Interop.FastLzma2.FL2_createCStreamMt((uint)compressParams.Threads, 1);
 
-            _bufferSize = bufferSize;
             _flushed = false;
 
             foreach (var kv in compressParams.Values)
@@ -49,12 +45,12 @@ namespace Nanook.GrindCore.FastLzma2
                 throw new FL2Exception(code);
 
             // Compressed stream output buffer
-            _bufferArray = BufferPool.Rent(_bufferSize + (_bufferSize >> 1) + 0x20);
-            _bufferHandle = GCHandle.Alloc(_bufferArray, GCHandleType.Pinned);
+            _buffer = new CompressionBuffer(bufferSize + (bufferSize >> 1) + 0x20);
+            _bufferHandle = GCHandle.Alloc(_buffer.Data, GCHandleType.Pinned);
             _compOutBuffer = new FL2OutBuffer()
             {
                 dst = _bufferHandle.AddrOfPinnedObject(),
-                size = (UIntPtr)_bufferArray.Length,
+                size = (UIntPtr)_buffer.MaxSize,
                 pos = 0
             };
         }
@@ -92,7 +88,7 @@ namespace Nanook.GrindCore.FastLzma2
         /// <summary>
         /// Encodes data from the provided buffer and writes compressed output to the specified stream.
         /// </summary>
-        /// <param name="buffer">The buffer containing data to compress.</param>
+        /// <param name="inData">The buffer containing data to compress.</param>
         /// <param name="appending">Indicates if this is an appending operation (no end-of-stream marker).</param>
         /// <param name="write">A delegate to output data to.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
@@ -100,19 +96,20 @@ namespace Nanook.GrindCore.FastLzma2
         /// <returns>Always returns 0.</returns>
         /// <exception cref="FL2Exception">Thrown if a fatal compression error occurs.</exception>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        public unsafe int EncodeData(CompressionBuffer buffer, bool appending, Func<byte[], int, int, int> write, CancellableTask cancel, out int bytesWrittenToStream)
-
+        public unsafe int EncodeData(CompressionBuffer inData, bool appending, Func<CompressionBuffer, int, int> write, CancellableTask cancel, out int bytesWrittenToStream)
         {
+            inData.Tidy();
+
             bytesWrittenToStream = 0;
 
-            fixed (byte* pBuffer = buffer.Data)
+            fixed (byte* pBuffer = inData.Data)
             {
-                *&pBuffer += buffer.Pos;
+                *&pBuffer += inData.Pos;
 
                 FL2InBuffer inBuffer = new FL2InBuffer()
                 {
                     src = (IntPtr)pBuffer,
-                    size = (UIntPtr)buffer.AvailableRead,
+                    size = (UIntPtr)inData.AvailableRead,
                     pos = 0
                 };
                 UIntPtr code;
@@ -130,7 +127,10 @@ namespace Nanook.GrindCore.FastLzma2
                             throw new FL2Exception(code);
                     }
                     bytesWrittenToStream += (int)_compOutBuffer.pos;
-                    write(_bufferArray, 0, (int)_compOutBuffer.pos);
+                    _buffer.Pos = 0;
+                    _buffer.Size = 0;
+                    _buffer.Write((int)_compOutBuffer.pos);
+                    write(_buffer, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
 
                 // Continue to receive compressed data
@@ -146,7 +146,10 @@ namespace Nanook.GrindCore.FastLzma2
                             throw new FL2Exception(code);
                     }
                     bytesWrittenToStream += (int)_compOutBuffer.pos;
-                    write(_bufferArray, 0, (int)_compOutBuffer.pos);
+                    _buffer.Pos = 0;
+                    _buffer.Size = 0;
+                    _buffer.Write((int)_compOutBuffer.pos);
+                    write(_buffer, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
 
                 // Receive all remaining compressed data for safety
@@ -162,7 +165,10 @@ namespace Nanook.GrindCore.FastLzma2
                             throw new FL2Exception(code);
                     }
                     bytesWrittenToStream += (int)_compOutBuffer.pos;
-                    write(_bufferArray, 0, (int)_compOutBuffer.pos);
+                    _buffer.Pos = 0;
+                    _buffer.Size = 0;
+                    _buffer.Write((int)_compOutBuffer.pos);
+                    write(_buffer, (int)_compOutBuffer.pos);
                 } while (_compOutBuffer.pos != 0);
 
                 // Write compress checksum if not appending mode
@@ -180,13 +186,16 @@ namespace Nanook.GrindCore.FastLzma2
                         }
                     }
                     bytesWrittenToStream += (int)_compOutBuffer.pos;
-                    write(_bufferArray, 0, (int)_compOutBuffer.pos);
+                    _buffer.Pos = 0;
+                    _buffer.Size = 0;
+                    _buffer.Write((int)_compOutBuffer.pos);
+                    write(_buffer, (int)_compOutBuffer.pos);
                     // Reset for next mission
                     code = Interop.FastLzma2.FL2_initCStream(_context, 0);
                     if (FL2Exception.IsError(code))
                         throw new FL2Exception(code);
                 }
-                buffer.Read((int)inBuffer.pos);
+                inData.Read((int)inBuffer.pos);
             }
             return 0;
         }
@@ -199,7 +208,7 @@ namespace Nanook.GrindCore.FastLzma2
         /// <param name="bytesWrittenToStream">The number of bytes written to the output stream.</param>
         /// <exception cref="FL2Exception">Thrown if a fatal compression error occurs.</exception>
         /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
-        public void Flush(Func<byte[], int, int, int> write, CancellableTask cancel, out int bytesWrittenToStream)
+        public void Flush(Func<CompressionBuffer, int, int> write, CancellableTask cancel, out int bytesWrittenToStream)
         {
             cancel.ThrowIfCancellationRequested();
             bytesWrittenToStream = 0;
@@ -216,7 +225,10 @@ namespace Nanook.GrindCore.FastLzma2
                     throw new FL2Exception(code);
             }
             bytesWrittenToStream = (int)_compOutBuffer.pos;
-            write(_bufferArray, 0, (int)_compOutBuffer.pos);
+            _buffer.Pos = 0;
+            _buffer.Size = 0;
+            _buffer.Write((int)_compOutBuffer.pos);
+            write(_buffer, (int)_compOutBuffer.pos);
             // Prepare for next mission
             code = Interop.FastLzma2.FL2_initCStream(_context, 0);
             if (FL2Exception.IsError(code))
@@ -231,7 +243,7 @@ namespace Nanook.GrindCore.FastLzma2
             _bufferHandle.Free();
             Interop.FastLzma2.FL2_freeCStream(_context);
             GC.SuppressFinalize(this);
-            BufferPool.Return(_bufferArray);
+            _buffer.Dispose();
         }
     }
 }

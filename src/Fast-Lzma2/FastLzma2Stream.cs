@@ -45,9 +45,9 @@ namespace Nanook.GrindCore.FastLzma2
             : base(true, stream, CompressionAlgorithm.FastLzma2, options)
         {
             if (IsCompress)
-                this.BufferSizeOutput = CacheThreshold * 4;
+                this.BufferSizeOutput = BufferThreshold * 4;
             else
-                this.BufferSizeOutput = CacheThreshold;
+                this.BufferSizeOutput = BufferThreshold;
 
             if (compressParams == null)
                 compressParams = new CompressionParameters(options.ThreadCount ?? 0, 0);

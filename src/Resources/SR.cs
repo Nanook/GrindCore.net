@@ -152,7 +152,7 @@ namespace Nanook.GrindCore
         internal static string @BrotliStream_Compress_UnsupportedOperation => GetResourceString("BrotliStream_Compress_UnsupportedOperation", @"Can not perform Read operations on a BrotliStream constructed with CompressionMode.Compress.");
         /// <summary>Encoder ran into invalid data.</summary>
         internal static string @BrotliStream_Compress_InvalidData => GetResourceString("BrotliStream_Compress_InvalidData", @"Encoder ran into invalid data.");
-        /// <summary>Can not perform Write operations on a BrotliStream constructed with CompressionMode.Decompress.</summary>
+        /// <summary>Can not perform Write operations on a BrotliStream constructed with CompressionMode.DecodeData.</summary>
         internal static string @BrotliStream_Decompress_UnsupportedOperation => GetResourceString("BrotliStream_Decompress_UnsupportedOperation", @"Can not perform Write operations on a BrotliStream constructed with CompressionMode.Decompress.");
         /// <summary>Decoder ran into invalid data.</summary>
         internal static string @BrotliStream_Decompress_InvalidData => GetResourceString("BrotliStream_Decompress_InvalidData", @"Decoder ran into invalid data.");
