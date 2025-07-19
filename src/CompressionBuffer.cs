@@ -60,6 +60,13 @@ namespace Nanook.GrindCore
             BufferPool.Return(Data);
         }
 
+        /// <summary>
+        /// Moves the read position of the buffer backward by the specified number of bytes,
+        /// effectively "rewinding" the buffer so that previously read data can be read again.
+        /// This is useful when excess data has been read and needs to be made available for subsequent operations.
+        /// </summary>
+        /// <param name="length">The number of bytes to rewind. Must not be greater than the current read position (<see cref="Pos"/>).</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="length"/> is greater than the current read position.</exception>
         public void RewindRead(int length)
         {
             if (this.Pos < length)
@@ -68,10 +75,16 @@ namespace Nanook.GrindCore
         }
 
         /// <summary>
-        /// Manual tidy used to ensure free space starts at Size, by moving data to the start.
+        /// Compacts the buffer by moving any unread data to the start, freeing up space at the end for new writes.
+        /// This operation is only performed if the available space is less than the specified required size.
+        /// After tidying, the unread data is at the beginning of the buffer, and both <see cref="Pos"/> and <see cref="Size"/> are updated accordingly.
         /// </summary>
-        public void Tidy()
+        /// <param name="size">The minimum amount of free space required after tidying. If the buffer already has at least this much space, no action is taken</param>
+        public void Tidy(int size = int.MaxValue)
         {
+            if (Pos == 0 || this.Data.Length - this.Size >= size) //only tidy if required
+                return;
+
             if (Size - Pos != 0)
                 Array.Copy(Data, Pos, Data, 0, Size - Pos); //move data to start
             Size = Size - Pos;
@@ -147,8 +160,7 @@ namespace Nanook.GrindCore
             if (data != null && (data.Length - offset < length))
                 throw new ArgumentException("The sum of offset and length is greater than the array length.", nameof(data));
 
-            if (this.Data.Length - this.Size < length)
-                Tidy(); //tidy if there's not enough room for the new data
+            Tidy(length); //tidy if there's not enough room for the new data
 
             int sz = Math.Min(Data.Length - Size, length);
             if (sz != 0)

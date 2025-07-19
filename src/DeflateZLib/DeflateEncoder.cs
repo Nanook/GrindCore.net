@@ -22,6 +22,16 @@ namespace Nanook.GrindCore.DeflateZLib
         private object SyncLock => this;
 
         /// <summary>
+        /// Gets the number of bytes available for output from the underlying zlib stream.
+        /// </summary>
+        public int AvailableOutput => (int)_zlibStream.AvailOut;
+
+        /// <summary>
+        /// Gets the number of bytes available for input from the underlying zlib stream.
+        /// </summary>
+        public int AvailableInput => (int)_zlibStream.AvailIn;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DeflateEncoder"/> class with the specified version, compression level, and window bits.
         /// </summary>
         /// <param name="version">The compression version to use.</param>

@@ -54,6 +54,11 @@ namespace Nanook.GrindCore.DeflateZLib
         public int AvailableOutput => (int)_zlibStream.AvailOut;
 
         /// <summary>
+        /// Gets the number of bytes available for input from the underlying zlib stream.
+        /// </summary>
+        public int AvailableInput => (int)_zlibStream.AvailIn;
+
+        /// <summary>
         /// Returns true if the end of the stream has been reached.
         /// </summary>
         public bool Finished() => _finished;

@@ -157,7 +157,7 @@ namespace Nanook.GrindCore.Lzma
             fixed (byte* inPtr = inData.Data)
             fixed (int* statusPtr = &status)
             {
-                *&outPtr += outData.Size;
+                *&outPtr += outData.Size; //Size is writing Pos
                 *&inPtr += inData.Pos;
                 int res = SZ_Lzma2_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
                 if (res != 0)

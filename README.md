@@ -4,9 +4,13 @@ An AOT-compatible compression and hashing library built in the **System.IO.Compr
 
 Published on **NuGet** as [GrindCore](https://www.nuget.org/packages/GrindCore) with support for multiple platforms.  
 
-This library is in the early stages of development, meaning breaking changes may occur in the coming months.
+> **⚠️ Important Notice**: While GrindCore has reached its first stable release, it should still be used with caution in production environments. The library is actively being tested and refined. Please thoroughly test in your specific use cases and report any issues encountered.
 
 See [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Nanook/GrindCore.net) for more information.
+
+## Upcoming Releases
+
+**SharpCompress Fork**: A enhanced version of the popular [SharpCompress](https://github.com/adamhathcock/sharpcompress) library leveraging GrindCore will be released soon. This fork will provide improved performance and additional compression algorithm support while maintaining full API compatibility with the original SharpCompress library.
 
 ## Overview
 
@@ -16,11 +20,13 @@ GrindCore is an innovative library designed to streamline and enhance compressio
 
 The primary goal of GrindCore is to deliver a maintainable compression and hashing solution for dotnet applications. Leveraging the exact method used to build C in the dotnet runtime ensures a robust approach. By preserving precise compression algorithms for key versions, GrindCore guarantees compatibility and reliability for projects requiring byte-perfect output.
 
-## Current Features
+## Key Features
 
-### Supported Frameworks
-
-`net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35`
+- **Stream Position Correction**: Advanced buffer management for precise stream rewinding when overreading occurs
+- **Multi-Framework Support**: Compatible with .NET Framework 3.5 through .NET 9
+  `net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35`
+- **AOT Compatible**: Fully supports Ahead-of-Time compilation
+- **Native Performance**: Leverages native C libraries for optimal performance
 
 ### Compression  
 
@@ -39,6 +45,7 @@ To simplify instance creation, GrindCore provides:
 #### Supported Compression Algorithms  
 
 - **Brotli** v1.1.0 _(From .NET 9.0)_  
+- **Copy** _(No compression - direct stream copy)_  
 - **LZ4** v1.9.4 _(From 7Zip-mcmilk)_  
 - **LZMA** v24.7.0 _(From 7Zip-mcmilk)_  
 - **LZMA2** v24.7.0 _(From 7Zip-mcmilk)_  
@@ -53,7 +60,7 @@ Streams expose the `.Position` (compressed) and `.PositionFullSize` (uncompresse
 
 ### Hashing
 
-Hashes inherit from HashingAlgorithm allowing them to be use with CryptoStream for standard dotnet use.
+Hashes inherit from HashAlgorithm allowing them to be used with CryptoStream for standard dotnet use.
 
 - Blake3, Blake2sp
 - MD5, MD4, MD2
@@ -64,7 +71,7 @@ Hashes inherit from HashingAlgorithm allowing them to be use with CryptoStream f
 
 ## Continuous Integration (CI) Status
 
-A comprehensive list of test statuses for various platforms is available below. For a quick summary: GrindCore is being actively tested across major platforms including Linux ARM64, Linux ARM, Linux x64, macOS x64, macOS ARM64, Windows x64, and Windows x86. Windows ARM64 builds, but there is no test platform available.
+A comprehensive list of test statuses for various platforms is available below. For a quick summary: GrindCore is being actively tested across major platforms including Linux ARM64, Linux ARM, Linux x64, macOS x64, macOS ARM64, Windows x64, Windows x86, and Windows ARM64.
 
 ### Detailed Test Status
 
@@ -77,7 +84,7 @@ A comprehensive list of test statuses for various platforms is available below. 
 | **macOS ARM64**     | ![macOS ARM64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_osx_arm64)     |
 | **Windows x64**     | ![Windows x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_win_x64)       |
 | **Windows x86**     | ![Windows x86 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_win_x86)       |
-| **Windows ARM64**   | Builds, no test platform available |
+| **Windows ARM64**   | Tested on Samsung Galaxy Book S |
 
 ## Key Project Integrations
 
@@ -110,6 +117,7 @@ Several enhancements and additional features could be introduced to further impr
 - Multi-language support.
 - Dictionary support.
 - Progress updates raised from C library.
+- Update native compression versions.
 - Expanded compression algorithm capabilities.
   - If you identify missing features, feel free to raise issues or submit pull requests.
   - Any unimplemented methods from the C source can be exposed upon request.

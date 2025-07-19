@@ -59,7 +59,7 @@ namespace Nanook.GrindCore.Lzma
             fixed (byte* inPtr = inData.Data) // Pin memory for the input inData
             fixed (int* statusPtr = &status) // Pin memory for the status
             {
-                *&outPtr += outData.Size; //writePos is size
+                *&outPtr += outData.Size; //Size is writing Pos
                 *&inPtr += inData.Pos;
                 // Call the C interop function
                 int res = SZ_Lzma_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);

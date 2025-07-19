@@ -86,7 +86,7 @@ namespace Nanook.GrindCore.Lzma
             if (length == 0 || length > data.AvailableWrite)
                 length = data.AvailableWrite;
 
-            while ((read != 0 || decoded != 0) && total < length)
+            while (decoded != 0 && total < length)
             {
                 cancel.ThrowIfCancellationRequested();
                 if (decoded <= 0 && _buffer.AvailableRead == 0)

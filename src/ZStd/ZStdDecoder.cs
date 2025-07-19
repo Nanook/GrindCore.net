@@ -66,7 +66,7 @@ namespace Nanook.GrindCore.ZStd
             fixed (SZ_ZStd_v1_5_6_DecompressionContext* ctxPtr = &_context)
             {
                 *&inputPtr += inData.Pos;
-                *&outputPtr += outData.Pos;
+                *&outputPtr += outData.Size; //Size is writing Pos
 
                 UIntPtr toFlush = SZ_ZStd_v1_5_6_DecompressStream(
                     ctxPtr, outputPtr, (UIntPtr)outData.AvailableWrite,

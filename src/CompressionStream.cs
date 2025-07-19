@@ -10,6 +10,8 @@ using System.Xml.Linq;
 using static Nanook.GrindCore.Interop;
 #endif
 
+[assembly: CLSCompliant(true)]
+
 namespace Nanook.GrindCore
 {
     /// <summary>
@@ -20,9 +22,9 @@ namespace Nanook.GrindCore
         private bool _disposed;
         private bool _complete;
         /// <summary>
-        /// Gets a value indicating whether the base stream should be left open after the compression stream is disposed.
+        /// Gets or sets a value indicating whether the base stream should be left open after the compression stream is disposed.
         /// </summary>
-        protected readonly bool LeaveOpen;
+        public bool LeaveOpen { get; set; }
         /// <summary>
         /// Gets a value indicating whether this stream is in compression mode.
         /// </summary>
@@ -35,7 +37,7 @@ namespace Nanook.GrindCore
         /// <summary>
         /// Gets the underlying base stream.
         /// </summary>
-        protected Stream BaseStream { get; }
+        public Stream BaseStream { get; }
 
         public byte[] InternalBuffer => _buffer.Data;
 
@@ -43,11 +45,51 @@ namespace Nanook.GrindCore
         /// Gets the threshold for the internal buffer.
         /// </summary>
         protected readonly int BufferThreshold;
+
+        /// <summary>
+        /// Gets the number of bytes that are buffered internally by compression engines (e.g., ZLib inflater/deflater).
+        /// This is a virtual property that derived classes can override to include engine-specific buffered bytes.
+        /// The base implementation returns 0, indicating no internal buffering beyond the main buffer.
+        /// Used to calculate unused bytes for stream position correction when GrindCore overreads to fill buffers.
+        /// </summary>
+        protected virtual int InternalBufferedBytes { get => 0; }
+
+        /// <summary>
+        /// Gets the total number of bytes currently stored in the internal buffer.
+        /// This represents the valid data size within the buffer from overreading operations.
+        /// Used for calculating stream position corrections when GrindCore overreads to fill buffers for processing.
+        /// </summary>
+        public int BufferedBytesTotal => _buffer.Size;
+
+        /// <summary>
+        /// Gets the total number of bytes that have been consumed (read) from the internal buffer, including any internal engine buffering.
+        /// This combines the buffer's current read position with any additional bytes held by compression engines.
+        /// Used to determine how much of the overread data has actually been processed for stream position correction.
+        /// </summary>
+        public int BufferedBytesUsed => _buffer.Pos;
+
+        /// <summary>
+        /// Gets the number of bytes that were not consumed by the compression process.
+        /// This includes bytes remaining in the inflater/deflater buffer plus any buffered bytes that haven't been processed yet.
+        /// Essential for rewinding/correcting stream positions when GrindCore overreads to fill buffers for processing,
+        /// allowing wrapped streams to be repositioned correctly by rewinding the unused overread bytes.
+        /// </summary>
+        public int BufferedBytesUnused => this.BufferedBytesTotal - this.BufferedBytesUsed + this.InternalBufferedBytes;
+
         private CompressionBuffer _buffer;
 
-        protected void RewindRead(int length)
+        /// <summary>
+        /// Moves the read position of the internal buffer backward by the specified number of bytes,
+        /// allowing previously read data to be re-read. This is useful when excess data has been read
+        /// from the underlying stream and needs to be made available again, such as when switching
+        /// consumers or resuming reading from an earlier point.
+        /// </summary>
+        /// <param name="length">The number of bytes to rewind. Must not exceed the number of bytes already read from the buffer.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="length"/> is negative or greater than the current read position.</exception>
+        public void RewindRead(int length)
         {
             _buffer.RewindRead(length);
+            _positionFullSize -= length;
         }
 
         /// <summary>
@@ -66,7 +108,7 @@ namespace Nanook.GrindCore
         public override long Length => throw new NotSupportedException("Seeking is not supported.");
 
         private long _position;
-        private long _positionReadBase; //real amount read from stream - used for limiting
+        private long _positionBase; //real amount read from or written to base stream - used for limiting (should equal _position when writing)
         private long _positionFullSize; //count of bytes read/written to decompressed byte arrays
 
         /// <summary>
@@ -78,15 +120,26 @@ namespace Nanook.GrindCore
 
         protected long? PositionFullSizeLimit { get; }
 
+        public long BasePosition => _positionBase;
         protected long BaseLength => BaseStream.Length;
 
         protected int BaseRead(CompressionBuffer inData, int size)
         {
-            inData.Tidy();
-            int limited = (int)Math.Min(size, (PositionLimit ?? long.MaxValue) - _positionReadBase);
+            int limited = (int)Math.Min(size, (PositionLimit ?? long.MaxValue) - _positionBase);
+            int p = inData.Pos;
+            int sz = inData.Size;
+            inData.Tidy(limited);
             int read = BaseStream.Read(inData.Data, inData.Size, limited);
-            inData.Write(read);
-            _positionReadBase += read;
+            if (read == 0) //restore
+            {
+                inData.Pos = p;
+                inData.Size = sz;
+            }
+            else
+            {
+                inData.Write(read);
+                _positionBase += read;
+            }
             return read;
         }
 
@@ -95,7 +148,7 @@ namespace Nanook.GrindCore
             int limited = (int)Math.Min(length, (PositionLimit ?? long.MaxValue) - _position);
             BaseStream.Write(outData.Data, outData.Pos, limited);
             outData.Read(limited);
-            _position += limited;
+            _positionBase = _position += limited;
             return limited;
         }
 
@@ -165,8 +218,8 @@ namespace Nanook.GrindCore
                 if (CompressionType < 0 || CompressionType > this.Defaults.LevelSmallestSize)
                     throw new ArgumentException("Invalid Option, CompressionType / Level");
 
-                if (!stream.CanWrite)
-                    throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(BaseStream));
+                //if (!stream.CanWrite)
+                //    throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(BaseStream));
             }
         }
 

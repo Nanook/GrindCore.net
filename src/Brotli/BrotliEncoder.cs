@@ -239,7 +239,7 @@ namespace Nanook.GrindCore.Brotli
                     fixed (byte* outBytes = outData.Data)
                     {
                         *&inBytes += inData.Pos;
-                        *&outBytes += outData.Size; //writePos is Size
+                        *&outBytes += outData.Size; //Size is writing Pos
 
                         if (!skipFirstFlush) //don't flush if there's no data as it can add 2 bytes (that check is after)
                         {

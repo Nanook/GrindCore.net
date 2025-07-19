@@ -844,10 +844,22 @@
             Releases the buffer back to the pool.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.CompressionBuffer.Tidy">
+        <member name="M:Nanook.GrindCore.CompressionBuffer.RewindRead(System.Int32)">
             <summary>
-            Manual tidy used to ensure free space starts at Size, by moving data to the start.
+            Moves the read position of the buffer backward by the specified number of bytes,
+            effectively "rewinding" the buffer so that previously read data can be read again.
+            This is useful when excess data has been read and needs to be made available for subsequent operations.
             </summary>
+            <param name="length">The number of bytes to rewind. Must not be greater than the current read position (<see cref="F:Nanook.GrindCore.CompressionBuffer.Pos"/>).</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="length"/> is greater than the current read position.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionBuffer.Tidy(System.Int32)">
+            <summary>
+            Compacts the buffer by moving any unread data to the start, freeing up space at the end for new writes.
+            This operation is only performed if the available space is less than the specified required size.
+            After tidying, the unread data is at the beginning of the buffer, and both <see cref="F:Nanook.GrindCore.CompressionBuffer.Pos"/> and <see cref="F:Nanook.GrindCore.CompressionBuffer.Size"/> are updated accordingly.
+            </summary>
+            <param name="size">The minimum amount of free space required after tidying. If the buffer already has at least this much space, no action is taken</param>
         </member>
         <member name="M:Nanook.GrindCore.CompressionBuffer.Read(System.Int32)">
             <summary>
@@ -1004,33 +1016,14 @@
             Returns a <see cref="T:Nanook.GrindCore.CompressionOptions"/> instance configured for optimal compression.
             </summary>
         </member>
-        <member name="T:Nanook.GrindCore.CompressionReaderStream">
-            <summary>
-            Wraps a source stream for use with GrindCore compression classes, providing enhanced buffering and position management.
-            This stream enables efficient resetting of the stream position when overreading occurs by using an internal buffer,
-            reducing the performance cost of frequent small reads. It supports non-disposing behavior, stream limits, and accurate
-            position tracking. While not required by GrindCore compression streams, using this class ensures that stream positions
-            remain accurate, allowing other code to reliably resume operations from the correct position.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionReaderStream.#ctor(System.IO.Stream,System.Boolean,System.Int32,System.Nullable{System.Int64})">
-            <summary>
-            Creates a new <see cref="T:Nanook.GrindCore.CompressionReaderStream"/> that wraps the specified stream with internal buffering and position management,
-            enabling efficient reading and accurate position tracking for GrindCore compression operations.
-            </summary>
-            <param name="stream">The source <see cref="T:System.IO.Stream"/> to read from.</param>
-            <param name="leaveOpen">If <c>true</c>, the underlying stream remains open after this stream is disposed; otherwise, it is closed.</param>
-            <param name="bufferSize">The size of the internal buffer, in bytes, used to optimize read operations and allow position resets.</param>
-            <param name="limit">The maximum number of bytes to read from the stream, or <c>null</c> for no limit. Used to enforce a read boundary.</param>
-        </member>
         <member name="T:Nanook.GrindCore.CompressionStream">
             <summary>
             Provides a base stream for compression and decompression operations.
             </summary>
         </member>
-        <member name="F:Nanook.GrindCore.CompressionStream.LeaveOpen">
+        <member name="P:Nanook.GrindCore.CompressionStream.LeaveOpen">
             <summary>
-            Gets a value indicating whether the base stream should be left open after the compression stream is disposed.
+            Gets or sets a value indicating whether the base stream should be left open after the compression stream is disposed.
             </summary>
         </member>
         <member name="F:Nanook.GrindCore.CompressionStream.IsCompress">
@@ -1052,6 +1045,46 @@
             <summary>
             Gets the threshold for the internal buffer.
             </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionStream.InternalBufferedBytes">
+            <summary>
+            Gets the number of bytes that are buffered internally by compression engines (e.g., ZLib inflater/deflater).
+            This is a virtual property that derived classes can override to include engine-specific buffered bytes.
+            The base implementation returns 0, indicating no internal buffering beyond the main buffer.
+            Used to calculate unused bytes for stream position correction when GrindCore overreads to fill buffers.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionStream.BufferedBytesTotal">
+            <summary>
+            Gets the total number of bytes currently stored in the internal buffer.
+            This represents the valid data size within the buffer from overreading operations.
+            Used for calculating stream position corrections when GrindCore overreads to fill buffers for processing.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionStream.BufferedBytesUsed">
+            <summary>
+            Gets the total number of bytes that have been consumed (read) from the internal buffer, including any internal engine buffering.
+            This combines the buffer's current read position with any additional bytes held by compression engines.
+            Used to determine how much of the overread data has actually been processed for stream position correction.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionStream.BufferedBytesUnused">
+            <summary>
+            Gets the number of bytes that were not consumed by the compression process.
+            This includes bytes remaining in the inflater/deflater buffer plus any buffered bytes that haven't been processed yet.
+            Essential for rewinding/correcting stream positions when GrindCore overreads to fill buffers for processing,
+            allowing wrapped streams to be repositioned correctly by rewinding the unused overread bytes.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.RewindRead(System.Int32)">
+            <summary>
+            Moves the read position of the internal buffer backward by the specified number of bytes,
+            allowing previously read data to be re-read. This is useful when excess data has been read
+            from the underlying stream and needs to be made available again, such as when switching
+            consumers or resuming reading from an earlier point.
+            </summary>
+            <param name="length">The number of bytes to rewind. Must not exceed the number of bytes already read from the buffer.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="length"/> is negative or greater than the current read position.</exception>
         </member>
         <member name="P:Nanook.GrindCore.CompressionStream.Defaults">
             <summary>
@@ -1811,6 +1844,11 @@
             Gets the number of bytes available for output from the underlying zlib stream.
             </summary>
         </member>
+        <member name="P:Nanook.GrindCore.DeflateZLib.DeflateDecoder.AvailableInput">
+            <summary>
+            Gets the number of bytes available for input from the underlying zlib stream.
+            </summary>
+        </member>
         <member name="M:Nanook.GrindCore.DeflateZLib.DeflateDecoder.Finished">
             <summary>
             Returns true if the end of the stream has been reached.
@@ -1925,6 +1963,16 @@
             Provides a wrapper around the ZLib compression API for block and stream compression.
             </summary>
         </member>
+        <member name="P:Nanook.GrindCore.DeflateZLib.DeflateEncoder.AvailableOutput">
+            <summary>
+            Gets the number of bytes available for output from the underlying zlib stream.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.DeflateZLib.DeflateEncoder.AvailableInput">
+            <summary>
+            Gets the number of bytes available for input from the underlying zlib stream.
+            </summary>
+        </member>
         <member name="M:Nanook.GrindCore.DeflateZLib.DeflateEncoder.#ctor(Nanook.GrindCore.CompressionVersion,Nanook.GrindCore.CompressionType,System.Int32)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.DeflateZLib.DeflateEncoder"/> class with the specified version, compression level, and window bits.
@@ -2023,6 +2071,14 @@
         <member name="P:Nanook.GrindCore.DeflateZLib.DeflateStream.BufferSizeOutput">
             <summary>
             Gets the output buffer size for Deflate operations.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.DeflateZLib.DeflateStream.InternalBufferedBytes">
+            <summary>
+            Gets the number of bytes buffered internally by the ZLib inflater/deflater engine.
+            Returns the available input bytes remaining in the native ZLib stream that have been read from the base stream
+            but not yet processed by the compression engine. Essential for accurate stream position correction when 
+            GrindCore overreads to fill buffers, allowing precise calculation of unused bytes for stream rewinding.
             </summary>
         </member>
         <member name="M:Nanook.GrindCore.DeflateZLib.DeflateStream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions)">

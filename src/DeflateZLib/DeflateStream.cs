@@ -25,6 +25,14 @@ namespace Nanook.GrindCore.DeflateZLib
         internal override int BufferSizeOutput { get; }
 
         /// <summary>
+        /// Gets the number of bytes buffered internally by the ZLib inflater/deflater engine.
+        /// Returns the available input bytes remaining in the native ZLib stream that have been read from the base stream
+        /// but not yet processed by the compression engine. Essential for accurate stream position correction when 
+        /// GrindCore overreads to fill buffers, allowing precise calculation of unused bytes for stream rewinding.
+        /// </summary>
+        protected override int InternalBufferedBytes => (_inflater?.AvailableInput ?? _deflater?.AvailableInput ?? 0);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DeflateStream"/> class with the specified stream and options, using the default window bits.
         /// </summary>
         /// <param name="stream">The underlying stream to read from or write to.</param>

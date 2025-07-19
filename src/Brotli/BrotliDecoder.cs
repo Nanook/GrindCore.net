@@ -110,7 +110,7 @@ namespace Nanook.GrindCore.Brotli
                     fixed (byte* outBytes = outData.Data)
                     {
                         *&inBytes += inData.Pos;
-                        *&outBytes += outData.Size; //writePos is Size
+                        *&outBytes += outData.Size; //Size is writing Pos
 
                         int brotliResult;
                         if (_state.Version.Index == 0)
