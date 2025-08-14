@@ -15,10 +15,10 @@ namespace SharpCompress.Compressors.LZ4;
 /// </summary>
 public sealed class LZ4Stream : Stream, IStreamStack
 {
+    private bool _disposed;
 #if GRINDCORE
     private readonly GrindCoreLz4Stream _grindCoreStream;
     private readonly bool _leaveOpen;
-    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the LZ4Stream class for compression

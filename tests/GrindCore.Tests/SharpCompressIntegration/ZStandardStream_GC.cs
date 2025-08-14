@@ -15,10 +15,10 @@ namespace SharpCompress.Compressors.ZStandard;
 /// </summary>
 public sealed class ZStandardStream : Stream, IStreamStack
 {
+    private bool _disposed;
 #if GRINDCORE
     private readonly GrindCoreZStdStream _grindCoreStream;
     private readonly bool _leaveOpen;
-    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the ZStandardStream class for compression

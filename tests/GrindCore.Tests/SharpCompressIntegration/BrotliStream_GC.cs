@@ -15,10 +15,10 @@ namespace SharpCompress.Compressors.Brotli;
 /// </summary>
 public sealed class BrotliStream : Stream, IStreamStack
 {
+    private bool _disposed;
 #if GRINDCORE
     private readonly GrindCoreBrotliStream _grindCoreStream;
     private readonly bool _leaveOpen;
-    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the BrotliStream class for compression
