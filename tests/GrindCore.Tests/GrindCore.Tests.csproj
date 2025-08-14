@@ -21,7 +21,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">WIN_X64,TRACE</DefineConstants>
+		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">WIN_X64,TRACE,GRINDCORE</DefineConstants>
 		<DefineConstants Condition=" '$(PlatformTarget)' == 'x86' or '$(PlatformTarget)' == 'arm' ">IS_32BIT</DefineConstants>
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>GrindCore.snk</AssemblyOriginatorKeyFile>

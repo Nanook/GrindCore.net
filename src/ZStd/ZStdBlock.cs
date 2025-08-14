@@ -1,7 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
 using static Nanook.GrindCore.Interop;
-using static Nanook.GrindCore.Interop.ZStd;
 
 namespace Nanook.GrindCore.ZStd
 {
@@ -31,10 +30,6 @@ namespace Nanook.GrindCore.ZStd
         /// <summary>
         /// Compresses the source data block into the destination data block using ZStd.
         /// </summary>
-        /// <param name="srcData">The source data block to compress.</param>
-        /// <param name="dstData">The destination data block to write compressed data to.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if compression fails.</exception>
         internal unsafe override int OnCompress(DataBlock srcData, DataBlock dstData)
         {
             fixed (byte* srcPtr = srcData.Data)
@@ -43,28 +38,43 @@ namespace Nanook.GrindCore.ZStd
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                SZ_ZStd_v1_5_6_CompressionContext ctx = new SZ_ZStd_v1_5_6_CompressionContext();
-                SZ_ZStd_v1_5_6_CreateCompressionContext(&ctx);
+                var version = Options.Version;
+                if (version == null || version.Index == 0)
+                {
+                    var ctx = new Interop.SZ_ZStd_v1_5_6_CompressionContext();
+                    Interop.ZStd.SZ_ZStd_v1_5_6_CreateCompressionContext(&ctx);
 
-                UIntPtr compressedSize = SZ_ZStd_v1_5_6_CompressBlock(
-                    &ctx, (IntPtr)dstPtr, (UIntPtr)dstData.Length, srcPtr, (UIntPtr)srcData.Length, _compressionLevel);
+                    UIntPtr compressedSize = Interop.ZStd.SZ_ZStd_v1_5_6_CompressBlock(
+                        &ctx, (IntPtr)dstPtr, (UIntPtr)dstData.Length, srcPtr, (UIntPtr)srcData.Length, _compressionLevel);
 
-                SZ_ZStd_v1_5_6_FreeCompressionContext(&ctx);
+                    Interop.ZStd.SZ_ZStd_v1_5_6_FreeCompressionContext(&ctx);
 
-                if (compressedSize == UIntPtr.Zero)
-                    throw new InvalidOperationException("Zstd Block Compression failed.");
+                    if (compressedSize == UIntPtr.Zero)
+                        throw new InvalidOperationException("Zstd Block Compression failed.");
 
-                return (int)compressedSize;
+                    return (int)compressedSize;
+                }
+                else // Index == 1, v1.5.2
+                {
+                    var ctx = new Interop.SZ_ZStd_v1_5_2_CompressionContext();
+                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateCompressionContext(&ctx);
+
+                    UIntPtr compressedSize = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressBlock(
+                        &ctx, (IntPtr)dstPtr, (UIntPtr)dstData.Length, srcPtr, (UIntPtr)srcData.Length, _compressionLevel);
+
+                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeCompressionContext(&ctx);
+
+                    if (compressedSize == UIntPtr.Zero)
+                        throw new InvalidOperationException("Zstd Block Compression failed.");
+
+                    return (int)compressedSize;
+                }
             }
         }
 
         /// <summary>
         /// Decompresses the source data block into the destination data block using ZStd.
         /// </summary>
-        /// <param name="srcData">The source data block to decompress.</param>
-        /// <param name="dstData">The destination data block to write decompressed data to.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if decompression fails.</exception>
         internal unsafe override int OnDecompress(DataBlock srcData, DataBlock dstData)
         {
             fixed (byte* srcPtr = srcData.Data)
@@ -73,26 +83,40 @@ namespace Nanook.GrindCore.ZStd
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                SZ_ZStd_v1_5_6_DecompressionContext ctx = new SZ_ZStd_v1_5_6_DecompressionContext();
-                SZ_ZStd_v1_5_6_CreateDecompressionContext(&ctx);
+                var version = Options.Version;
+                if (version == null || version.Index == 0)
+                {
+                    var ctx = new Interop.SZ_ZStd_v1_5_6_DecompressionContext();
+                    Interop.ZStd.SZ_ZStd_v1_5_6_CreateDecompressionContext(&ctx);
 
-                UIntPtr decompressedSize = SZ_ZStd_v1_5_6_DecompressBlock(
-                    &ctx, (IntPtr)dstPtr, (UIntPtr)dstData.Length, srcPtr, (UIntPtr)srcData.Length);
+                    UIntPtr decompressedSize = Interop.ZStd.SZ_ZStd_v1_5_6_DecompressBlock(
+                        &ctx, (IntPtr)dstPtr, (UIntPtr)dstData.Length, srcPtr, (UIntPtr)srcData.Length);
 
-                SZ_ZStd_v1_5_6_FreeDecompressionContext(&ctx);
+                    Interop.ZStd.SZ_ZStd_v1_5_6_FreeDecompressionContext(&ctx);
 
-                if ((uint)decompressedSize < 0)
-                    throw new InvalidOperationException("Zstd Block Decompression failed.");
+                    if ((uint)decompressedSize < 0)
+                        throw new InvalidOperationException("Zstd Block Decompression failed.");
 
-                return (int)decompressedSize;
+                    return (int)decompressedSize;
+                }
+                else // Index == 1, v1.5.2
+                {
+                    var ctx = new Interop.SZ_ZStd_v1_5_2_DecompressionContext();
+                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateDecompressionContext(&ctx);
+
+                    UIntPtr decompressedSize = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_DecompressBlock(
+                        &ctx, (IntPtr)dstPtr, (UIntPtr)dstData.Length, srcPtr, (UIntPtr)srcData.Length);
+
+                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeDecompressionContext(&ctx);
+
+                    if ((uint)decompressedSize < 0)
+                        throw new InvalidOperationException("Zstd Block Decompression failed.");
+
+                    return (int)decompressedSize;
+                }
             }
         }
 
-        /// <summary>
-        /// Releases any resources used by the <see cref="ZStdBlock"/>.
-        /// </summary>
-        internal override void OnDispose()
-        {
-        }
+        internal override void OnDispose() { }
     }
 }

@@ -6,11 +6,20 @@ Published on **NuGet** as [GrindCore](https://www.nuget.org/packages/GrindCore) 
 
 > **⚠️ Important Notice**: While GrindCore has reached its first stable release, it should still be used with caution in production environments. The library is actively being tested and refined. Please thoroughly test in your specific use cases and report any issues encountered.
 
-See [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Nanook/GrindCore.net) for more information.
+## Quick Start
 
-## Upcoming Releases
+For usage examples and API patterns, see the **[Quick Start Guide](QuickStart.md)**.
 
-**SharpCompress Fork**: A enhanced version of the popular [SharpCompress](https://github.com/adamhathcock/sharpcompress) library leveraging GrindCore will be released soon. This fork will provide improved performance and additional compression algorithm support while maintaining full API compatibility with the original SharpCompress library.
+For more in-depth information, see [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Nanook/GrindCore.net).
+
+### Nuget
+
+[![NuGet](https://img.shields.io/nuget/v/GrindCore.svg)](https://www.nuget.org/packages/GrindCore)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+```
+dotnet add package GrindCore
+```
 
 ## Overview
 
@@ -52,7 +61,7 @@ To simplify instance creation, GrindCore provides:
 - **Fast-LZMA2** v1.0.1 _(From 7Zip-mcmilk)_  
 - **ZLib** v1.3.1 _(GZip, ZLib, Deflate - From .NET 8.0)_  
 - **ZLib-NG** v2.2.1 _(GZip, ZLib, Deflate - From .NET 9.0)_  
-- **ZStd** v1.5.6 _(From 7Zip-mcmilk)_  
+- **ZStd** v1.5.6 & v1.5.2 _(From 7Zip-mcmilk)_  
 
 Additionally, **blocking and asynchronous methods** are implemented, allowing flexible compression workflows.
 
@@ -82,9 +91,9 @@ A comprehensive list of test statuses for various platforms is available below. 
 | **Linux x64**       | ![Linux x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_linux_x64)       |
 | **macOS x64**       | ![macOS x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_osx_x64)         |
 | **macOS ARM64**     | ![macOS ARM64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_osx_arm64)     |
-| **Windows x64**     | ![Windows x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_win_x64)       |
 | **Windows x86**     | ![Windows x86 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_win_x86)       |
-| **Windows ARM64**   | Tested on Samsung Galaxy Book S |
+| **Windows x64**     | ![Windows x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_win_x64)       |
+| **Windows ARM64**   | ![Windows arm64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?event=push&job=test_win_arm64)   |
 
 ## Key Project Integrations
 
@@ -95,6 +104,8 @@ GrindCore integrates robust solutions from several key projects:
   - Supplies zlib/deflate and Brotli from the dotnet 8 code, combined with C# wrappers, to offer efficient and reliable compression algorithms.
 - **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):**
   - Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
+- **[GrindCore.SharpCompress](https://github.com/Nanook/GrindCore.SharpCompress):**
+  - Enhanced fork of SharpCompress leveraging GrindCore's native streams for improved performance and additional features like LZMA/2 level support.
 
 ## Addressing Current Issues
 

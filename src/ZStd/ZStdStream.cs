@@ -38,13 +38,13 @@ namespace Nanook.GrindCore.ZStd
             if (IsCompress)
             {
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 7) + 128;
-                _encoder = new ZStdEncoder(BufferThreshold, (int)this.CompressionType);
+                _encoder = new ZStdEncoder(BufferThreshold, (int)this.CompressionType, options.Version);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
             {
                 this.BufferSizeOutput = BufferThreshold;
-                _decoder = new ZStdDecoder();
+                _decoder = new ZStdDecoder(options.Version);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }

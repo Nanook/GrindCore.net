@@ -1,6 +1,5 @@
 ﻿using System;
 using static Nanook.GrindCore.Interop;
-using static Nanook.GrindCore.Interop.ZStd;
 
 namespace Nanook.GrindCore.ZStd
 {
@@ -9,49 +8,53 @@ namespace Nanook.GrindCore.ZStd
     /// </summary>
     internal unsafe class ZStdDecoder : IDisposable
     {
-        private SZ_ZStd_v1_5_6_DecompressionContext _context;
-
-        /// <summary>
-        /// Gets the recommended input buffer size for ZStd decompression.
-        /// </summary>
+        private SZ_ZStd_v1_5_6_DecompressionContext _ctx156;
+        private SZ_ZStd_v1_5_2_DecompressionContext _ctx152;
+        private readonly int _versionIndex;
         public int InputBufferSize { get; }
-
-        /// <summary>
-        /// Gets the recommended output buffer size for ZStd decompression.
-        /// </summary>
         public int OutputBufferSize { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ZStdDecoder"/> class and creates a decompression context.
         /// </summary>
+        /// <param name="version">The compression version to use (null or 0 = latest, 1 = v1.5.2).</param>
         /// <exception cref="Exception">Thrown if the decompression context cannot be created.</exception>
-        public ZStdDecoder()
+        public ZStdDecoder(CompressionVersion? version = null)
         {
-            // Get recommended buffer sizes
-            InputBufferSize = (int)SZ_ZStd_v1_5_6_CStreamInSize();
-            OutputBufferSize = (int)SZ_ZStd_v1_5_6_CStreamOutSize() * 0x2;
+            _versionIndex = version?.Index ?? 0;
 
-            _context = new SZ_ZStd_v1_5_6_DecompressionContext();
-
-            fixed (SZ_ZStd_v1_5_6_DecompressionContext* ctxPtr = &_context)
+            if (_versionIndex == 0)
             {
-                if (SZ_ZStd_v1_5_6_CreateDecompressionContext(ctxPtr) < 0)
-                    throw new Exception("Failed to create Zstd decompression context");
+                InputBufferSize = (int)Interop.ZStd.SZ_ZStd_v1_5_6_CStreamInSize();
+                OutputBufferSize = (int)Interop.ZStd.SZ_ZStd_v1_5_6_CStreamOutSize() * 0x2;
+                _ctx156 = new SZ_ZStd_v1_5_6_DecompressionContext();
+
+                fixed (SZ_ZStd_v1_5_6_DecompressionContext* ctxPtr = &_ctx156)
+                {
+                    if (Interop.ZStd.SZ_ZStd_v1_5_6_CreateDecompressionContext(ctxPtr) < 0)
+                        throw new Exception("Failed to create Zstd v1.5.6 decompression context");
+                }
+            }
+            else // v1.5.2
+            {
+                InputBufferSize = (int)Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CStreamInSize();
+                OutputBufferSize = (int)Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CStreamOutSize() * 0x2;
+                _ctx152 = new SZ_ZStd_v1_5_2_DecompressionContext();
+
+                fixed (SZ_ZStd_v1_5_2_DecompressionContext* ctxPtr = &_ctx152)
+                {
+                    if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateDecompressionContext(ctxPtr) < 0)
+                        throw new Exception("Failed to create Zstd v1.5.2 decompression context");
+                }
             }
         }
 
         /// <summary>
         /// Decodes ZStd-compressed data from the input buffer into the output buffer.
         /// </summary>
-        /// <param name="inData">The input buffer containing compressed data.</param>
-        /// <param name="readSz">Outputs the number of bytes read from the input buffer.</param>
-        /// <param name="outData">The output buffer to write decompressed data to.</param>
-        /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
-        /// <returns>The total number of bytes written to the output buffer.</returns>
-        /// <exception cref="OperationCanceledException">Thrown if cancellation is requested.</exception>
         public long DecodeData(CompressionBuffer inData, out int readSz, CompressionBuffer outData, CancellableTask cancel)
         {
-            outData.Tidy(); //ensure all the space is at the end making _buffer.AvailableWrite safe for interop
+            outData.Tidy();
 
             int totalDecompressed = 0;
             readSz = 0;
@@ -61,24 +64,43 @@ namespace Nanook.GrindCore.ZStd
             long inSize;
             long outSize;
 
-            fixed (byte* inputPtr = inData.Data)
-            fixed (byte* outputPtr = outData.Data)
-            fixed (SZ_ZStd_v1_5_6_DecompressionContext* ctxPtr = &_context)
+            if (_versionIndex == 0)
             {
-                *&inputPtr += inData.Pos;
-                *&outputPtr += outData.Size; //Size is writing Pos
+                fixed (byte* inputPtr = inData.Data)
+                fixed (byte* outputPtr = outData.Data)
+                fixed (SZ_ZStd_v1_5_6_DecompressionContext* ctxPtr = &_ctx156)
+                {
+                    *&inputPtr += inData.Pos;
+                    *&outputPtr += outData.Size;
 
-                UIntPtr toFlush = SZ_ZStd_v1_5_6_DecompressStream(
-                    ctxPtr, outputPtr, (UIntPtr)outData.AvailableWrite,
-                    inputPtr, (UIntPtr)srcCapacity, out inSize, out outSize);
+                    UIntPtr toFlush = Interop.ZStd.SZ_ZStd_v1_5_6_DecompressStream(
+                        ctxPtr, outputPtr, (UIntPtr)outData.AvailableWrite,
+                        inputPtr, (UIntPtr)srcCapacity, out inSize, out outSize);
 
-                //if (toFlush != UIntPtr.Zero)
-                //    throw new Exception("TODO: ZStd decompression has more to flush");
+                    inData.Read((int)inSize);
+                    readSz += (int)inSize;
+                    outData.Write((int)outSize);
+                    totalDecompressed += (int)outSize;
+                }
+            }
+            else // v1.5.2
+            {
+                fixed (byte* inputPtr = inData.Data)
+                fixed (byte* outputPtr = outData.Data)
+                fixed (SZ_ZStd_v1_5_2_DecompressionContext* ctxPtr = &_ctx152)
+                {
+                    *&inputPtr += inData.Pos;
+                    *&outputPtr += outData.Size;
 
-                inData.Read((int)inSize);
-                readSz += (int)inSize;
-                outData.Write((int)outSize);
-                totalDecompressed += (int)outSize;
+                    UIntPtr toFlush = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_DecompressStream(
+                        ctxPtr, outputPtr, (UIntPtr)outData.AvailableWrite,
+                        inputPtr, (UIntPtr)srcCapacity, out inSize, out outSize);
+
+                    inData.Read((int)inSize);
+                    readSz += (int)inSize;
+                    outData.Write((int)outSize);
+                    totalDecompressed += (int)outSize;
+                }
             }
 
             return totalDecompressed;
@@ -89,11 +111,20 @@ namespace Nanook.GrindCore.ZStd
         /// </summary>
         public void Dispose()
         {
-            fixed (SZ_ZStd_v1_5_6_DecompressionContext* ctxPtr = &_context)
+            if (_versionIndex == 0)
             {
-                SZ_ZStd_v1_5_6_FreeDecompressionContext(ctxPtr);
+                fixed (SZ_ZStd_v1_5_6_DecompressionContext* ctxPtr = &_ctx156)
+                {
+                    Interop.ZStd.SZ_ZStd_v1_5_6_FreeDecompressionContext(ctxPtr);
+                }
+            }
+            else
+            {
+                fixed (SZ_ZStd_v1_5_2_DecompressionContext* ctxPtr = &_ctx152)
+                {
+                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeDecompressionContext(ctxPtr);
+                }
             }
         }
     }
 }
-
