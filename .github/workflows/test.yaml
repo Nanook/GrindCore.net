@@ -24,9 +24,7 @@ jobs:
 
       - name: Initial Tests
         run: |
-          dotnet build tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0
-          cp tests/GrindCore.Tests/bin/Release/net9.0/linux-x64/runtimes/linux-x64/native/libGrindCore.so tests/GrindCore.Tests/bin/Release/net9.0/linux-x64/
-          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0 --no-build
+          dotnet test tests/GrindCore.Tests/GrindCore.Tests.csproj -c Release -r linux-x64 -p:TargetFramework=net9.0
 
       - name: Build project for all platforms
         run: |
