@@ -232,6 +232,10 @@ jobs:
     needs: build_all_platforms
     runs-on: [self-hosted, Windows, ARM64]
     steps:
+      - name: Clean windows workspace (remove entire repo folder)
+        run: del /f /q "%GITHUB_WORKSPACE%\*"
+        shell: cmd
+
       - name: Download Windows arm64 build
         uses: actions/download-artifact@v4
         with:

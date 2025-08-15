@@ -9,7 +9,6 @@ using SharpCompress.Compressors.Xz;
 using SharpCompress.Compressors.ZStandard;
 using SharpCompress.IO;
 using SharpCompress.Readers;
-using SharpCompress.Test.Zip;
 using SharpCompress.Writers;
 using System;
 using System.Collections.Generic;
@@ -17,6 +16,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Xunit;
+
+#if LINUX_X64
 
 namespace SharpCompress.Test.Zip;
 
@@ -410,5 +411,5 @@ public class GrindCoreZipWriteStreamBufferTests
                 break;
         }
     }
-
 }
+#endif

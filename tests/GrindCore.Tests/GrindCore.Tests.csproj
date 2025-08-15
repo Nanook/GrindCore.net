@@ -22,6 +22,7 @@
 
 	<PropertyGroup>
 		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">$(DefineConstants);WIN_X64;TRACE</DefineConstants>
+		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'linux-x64' ">$(DefineConstants);LINUX_X64;TRACE</DefineConstants>
 		<DefineConstants Condition=" '$(PlatformTarget)' == 'x86' or '$(PlatformTarget)' == 'arm' ">$(DefineConstants);IS_32BIT</DefineConstants>
 		<DefineConstants>$(DefineConstants);GRINDCORE</DefineConstants>
 		<SignAssembly>True</SignAssembly>
