@@ -38,17 +38,11 @@ jobs:
     - name: Pack NuGet package
       run: dotnet pack --configuration Release --output ./.nuget --no-restore
 
-    - name: List .nuget directory contents
-      run: ls -l ./.nuget
-
-    - name: List .nuget directory contents
-      run: ls -l ${{ github.workspace }}/.nuget
-
     - name: Upload NuGet package as artifact
       uses: actions/upload-artifact@v4
       with:
         name: nuget-package
-        path: ./.nuget/*.nupkg
+        path: ${{ github.workspace }}/.nuget/*.nupkg
 
     - name: Publish NuGet package
       if: ${{ github.event.inputs.upload_to_nuget == 'true' }}
