@@ -46,4 +46,4 @@ jobs:
 
     - name: Publish NuGet package
       if: ${{ github.event.inputs.upload_to_nuget == 'true' }}
-      run: dotnet nuget push ./.nuget/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ${{ github.workspace }}/.nuget/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
