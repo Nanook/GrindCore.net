@@ -178,10 +178,10 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, null, 0xba1, "2b9ecf7dce8e81ce")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, null, 0x827, "6227887e1bc483a0")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, null, 0x7f2, "b18fa96dc3b4708d")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, null, 0x5c2, "5b61c22239bba82c")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, null, 0x561, "dcff6b04d3f0e324")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, "1.5.2", 0x827, "6227887e1bc483a0")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, "1.5.2", 0x7f2, "b18fa96dc3b4708d")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, "1.5.2", 0x561, "dcff6b04d3f0e324")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, "1.5.2", 0x6bd, "085483666aa6a09f")]
 #endif
         public void Text_Stream64KiB(CompressionAlgorithm algorithm, CompressionType type, string? version, int compressedSize, string compXxH64)
         {
@@ -241,7 +241,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Level0, 0x25f6, "5cb9b63eb9a4c344", "fc2e2fcb6505c945")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Level0, 0x6001eb, "5cb9b63eb9a4c344", "0a28fcae3b408197")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Level0, 0x6001eb, "5cb9b63eb9a4c344", "0a28fcae3b408197")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Level0, 0x5778, "5cb9b63eb9a4c344", "e2b8c5961872ad4c")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Level0, 0x56fe, "5cb9b63eb9a4c344", "3fd54e059fd2d650")]
         public void NoCompression_Stream6MiB_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxh64, string compXxH64)
         {
             int streamLen = 6 * 1024 * 1024; // Total bytes to process

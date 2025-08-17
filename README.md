@@ -61,9 +61,13 @@ To simplify instance creation, GrindCore provides:
 - **Fast-LZMA2** v1.0.1 _(From 7Zip-mcmilk)_  
 - **ZLib** v1.3.1 _(GZip, ZLib, Deflate - From .NET 8.0)_  
 - **ZLib-NG** v2.2.1 _(GZip, ZLib, Deflate - From .NET 9.0)_  
-- **ZStd** v1.5.6 & v1.5.2 _(From 7Zip-mcmilk)_  
+- **ZStd** v1.5.7 & v1.5.2 _(From Facebook ZStd)_  
 
-Additionally, **blocking and asynchronous methods** are implemented, allowing flexible compression workflows.
+> **Note:** Where multiple versions of a compression algorithm are listed (e.g., ZStd v1.5.7 & v1.5.2 / ZLib & ZLib-NG), this is to support applications that require pinned or frozen versions—most commonly for scenarios demanding byte-perfect, deterministic outputs.
+
+_The supported algorithms will soon be updated and expanded, with additional algorithms such as Snappy and BZip2 planned for inclusion._
+
+- Additionally, **blocking and asynchronous methods** are implemented, allowing flexible compression workflows.
 
 Streams expose the `.Position` (compressed) and `.PositionFullSize` (uncompressed) properties, allowing consuming objects to track progress and status with accuracy.
 
@@ -102,6 +106,8 @@ GrindCore integrates robust solutions from several key projects:
 - **[dotnet Runtime GitHub Repository](https://github.com/dotnet/runtime):**
   - Provides a foundation with multiplatform C compilation based on CMake and C, ensuring seamless integration across different platforms.
   - Supplies zlib/deflate and Brotli from the dotnet 8 code, combined with C# wrappers, to offer efficient and reliable compression algorithms.
+- **[ZStd Facebook GitHub Repository](https://github.com/facebook/zstd):**
+  - Multiplatform zstandard direct for the source.
 - **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):**
   - Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
 - **[GrindCore.SharpCompress](https://github.com/Nanook/GrindCore.SharpCompress):**

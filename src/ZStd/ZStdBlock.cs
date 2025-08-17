@@ -41,13 +41,13 @@ namespace Nanook.GrindCore.ZStd
                 var version = Options.Version;
                 if (version == null || version.Index == 0)
                 {
-                    var ctx = new Interop.SZ_ZStd_v1_5_6_CompressionContext();
-                    Interop.ZStd.SZ_ZStd_v1_5_6_CreateCompressionContext(&ctx);
+                    var ctx = new Interop.SZ_ZStd_v1_5_7_CompressionContext();
+                    Interop.ZStd.SZ_ZStd_v1_5_7_CreateCompressionContext(&ctx);
 
-                    UIntPtr compressedSize = Interop.ZStd.SZ_ZStd_v1_5_6_CompressBlock(
+                    UIntPtr compressedSize = Interop.ZStd.SZ_ZStd_v1_5_7_CompressBlock(
                         &ctx, (IntPtr)dstPtr, (UIntPtr)dstData.Length, srcPtr, (UIntPtr)srcData.Length, _compressionLevel);
 
-                    Interop.ZStd.SZ_ZStd_v1_5_6_FreeCompressionContext(&ctx);
+                    Interop.ZStd.SZ_ZStd_v1_5_7_FreeCompressionContext(&ctx);
 
                     if (compressedSize == UIntPtr.Zero)
                         throw new InvalidOperationException("Zstd Block Compression failed.");
@@ -86,13 +86,13 @@ namespace Nanook.GrindCore.ZStd
                 var version = Options.Version;
                 if (version == null || version.Index == 0)
                 {
-                    var ctx = new Interop.SZ_ZStd_v1_5_6_DecompressionContext();
-                    Interop.ZStd.SZ_ZStd_v1_5_6_CreateDecompressionContext(&ctx);
+                    var ctx = new Interop.SZ_ZStd_v1_5_7_DecompressionContext();
+                    Interop.ZStd.SZ_ZStd_v1_5_7_CreateDecompressionContext(&ctx);
 
-                    UIntPtr decompressedSize = Interop.ZStd.SZ_ZStd_v1_5_6_DecompressBlock(
+                    UIntPtr decompressedSize = Interop.ZStd.SZ_ZStd_v1_5_7_DecompressBlock(
                         &ctx, (IntPtr)dstPtr, (UIntPtr)dstData.Length, srcPtr, (UIntPtr)srcData.Length);
 
-                    Interop.ZStd.SZ_ZStd_v1_5_6_FreeDecompressionContext(&ctx);
+                    Interop.ZStd.SZ_ZStd_v1_5_7_FreeDecompressionContext(&ctx);
 
                     if ((uint)decompressedSize < 0)
                         throw new InvalidOperationException("Zstd Block Decompression failed.");

@@ -80,8 +80,8 @@ namespace Nanook.GrindCore
     public enum ZStdVersion
     {
         v1_5_2 = 1,
-        v1_5_6 = 2,
-        Latest = v1_5_6
+        v1_5_7 = 2,
+        Latest = v1_5_7
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ namespace Nanook.GrindCore
         public static string FASTLZMA2_v1_0_1 = "1.0.1";
         public static string LZ4_v1_9_4 = "1.9.4";
         public static string ZSTD_v1_5_2 = "1.5.2";
-        public static string ZSTD_v1_5_6 = "1.5.6";
+        public static string ZSTD_v1_5_7 = "1.5.7";
 
         /// <summary>
         /// Converts an enum name to a version string (e.g., v1_2_3 to 1.2.3).
@@ -269,7 +269,7 @@ namespace Nanook.GrindCore
                     }
                     else
                     {
-                        result.Version = ZSTD_v1_5_6;
+                        result.Version = ZSTD_v1_5_7;
                         result.Index = 0; //latest
                     }
                     break;
