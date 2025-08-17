@@ -33,7 +33,7 @@ namespace Nanook.GrindCore.Brotli
             if (version == null)
                 version = CompressionVersion.BrotliLatest();
             if (version.Index == 0)
-                _state = Interop.Brotli.DN9_BRT_v1_1_0_EncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                _state = Interop.Brotli.DN9_BRT_v1_1_0_BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
             else
                 throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
             _state!.Version = version;
@@ -55,7 +55,7 @@ namespace Nanook.GrindCore.Brotli
             if (version == null)
                 version = CompressionVersion.BrotliLatest();
             if (version.Index == 0)
-                _state = Interop.Brotli.DN9_BRT_v1_1_0_EncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                _state = Interop.Brotli.DN9_BRT_v1_1_0_BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
             else
                 throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
             _state!.Version = version;
@@ -110,7 +110,7 @@ namespace Nanook.GrindCore.Brotli
 
             if (_state.Version.Index == 0)
             {
-                if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)level) == Interop.BOOL.FALSE)
+                if (Interop.Brotli.DN9_BRT_v1_1_0_BrotliEncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)level) == Interop.BOOL.FALSE)
                     throw new InvalidOperationException(string.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
             }
             else
@@ -146,7 +146,7 @@ namespace Nanook.GrindCore.Brotli
 
             if (_state.Version.Index == 0)
             {
-                if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
+                if (Interop.Brotli.DN9_BRT_v1_1_0_BrotliEncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
                     throw new InvalidOperationException(string.Format(SR.BrotliEncoder_InvalidSetParameter, "Window"));
             }
             else
@@ -245,7 +245,7 @@ namespace Nanook.GrindCore.Brotli
                         {
                             if (_state.Version.Index == 0)
                             {
-                                if (Interop.Brotli.DN9_BRT_v1_1_0_EncoderCompressStream(_state!, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _) == Interop.BOOL.FALSE)
+                                if (Interop.Brotli.DN9_BRT_v1_1_0_BrotliEncoderCompressStream(_state!, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _) == Interop.BOOL.FALSE)
                                     return OperationStatus.InvalidData;
                             }
                             else
@@ -261,7 +261,7 @@ namespace Nanook.GrindCore.Brotli
                         if (_state.Version.Index == 0)
                         {
                             // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
-                            if ((int)availableOutput == outData.AvailableWrite && Interop.Brotli.DN9_BRT_v1_1_0_EncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
+                            if ((int)availableOutput == outData.AvailableWrite && Interop.Brotli.DN9_BRT_v1_1_0_BrotliEncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
                                 return OperationStatus.Done;
                             skipFirstFlush = false; //will loop if there's data to be flushed - prevent extra 2 bytes being written when there's extra data
                         }

@@ -24,7 +24,7 @@ namespace Nanook.GrindCore.Brotli
             if (version == null)
                 version = CompressionVersion.BrotliLatest();
             if (version.Index == 0)
-                _state = Interop.Brotli.DN9_BRT_v1_1_0_DecoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                _state = Interop.Brotli.DN9_BRT_v1_1_0_BrotliDecoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
             else
                 throw new Exception($"{version.Algorithm} version {version.Version} is not supported");
             _state.Version = version;
@@ -91,7 +91,7 @@ namespace Nanook.GrindCore.Brotli
             bytesWritten = 0;
             if (_state.Version.Index == 0)
             {
-                if (Interop.Brotli.DN9_BRT_v1_1_0_DecoderIsFinished(_state!) != Interop.BOOL.FALSE)
+                if (Interop.Brotli.DN9_BRT_v1_1_0_BrotliDecoderIsFinished(_state!) != Interop.BOOL.FALSE)
                     return OperationStatus.Done;
             }
             else
@@ -114,7 +114,7 @@ namespace Nanook.GrindCore.Brotli
 
                         int brotliResult;
                         if (_state.Version.Index == 0)
-                            brotliResult = Interop.Brotli.DN9_BRT_v1_1_0_DecoderDecompressStream(_state, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _);
+                            brotliResult = Interop.Brotli.DN9_BRT_v1_1_0_BrotliDecoderDecompressStream(_state, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _);
                         else
                             throw new Exception($"{_state.Version.Algorithm} version {_state.Version.Version} is not supported");
 

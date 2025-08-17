@@ -35,12 +35,12 @@ namespace Nanook.GrindCore.Brotli
 
             int blockSize = (int)options.BlockSize!;
 
-            _encoderState = DN9_BRT_v1_1_0_EncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            _encoderState = DN9_BRT_v1_1_0_BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
             _encoderState.Version = this.Options.Version ?? this.Defaults.Version;
 
             // Set compression parameters
-            DN9_BRT_v1_1_0_EncoderSetParameter(_encoderState, BrotliEncoderParameter.Quality, (uint)this.CompressionType);
-            DN9_BRT_v1_1_0_EncoderSetParameter(_encoderState, BrotliEncoderParameter.LGWin, (uint)this.Options.BlockSize!);
+            DN9_BRT_v1_1_0_BrotliEncoderSetParameter(_encoderState, BrotliEncoderParameter.Quality, (uint)this.CompressionType);
+            DN9_BRT_v1_1_0_BrotliEncoderSetParameter(_encoderState, BrotliEncoderParameter.LGWin, (uint)this.Options.BlockSize!);
 
             RequiredCompressOutputSize = blockSize + (blockSize >> 1) + 0x10; // Adjust for overhead
         }
@@ -61,7 +61,7 @@ namespace Nanook.GrindCore.Brotli
                 *&dstPtr += dstData.Offset;
 
                 UIntPtr compressedSize = (UIntPtr)dstData.Length;
-                BOOL success = DN9_BRT_v1_1_0_EncoderCompress(
+                BOOL success = DN9_BRT_v1_1_0_BrotliEncoderCompress(
                     (int)this.CompressionType, //level
                     WindowBits_Default,
                     0,
@@ -96,7 +96,7 @@ namespace Nanook.GrindCore.Brotli
                 UIntPtr srcSize = (UIntPtr)srcData.Length;
                 UIntPtr decompressedSize = (UIntPtr)dstData.Length;
 
-                BOOL success = DN9_BRT_v1_1_0_DecoderDecompress(srcSize, srcPtr, &decompressedSize, dstPtr);
+                BOOL success = DN9_BRT_v1_1_0_BrotliDecoderDecompress(srcSize, srcPtr, &decompressedSize, dstPtr);
 
                 if (success == BOOL.FALSE)
                     throw new InvalidOperationException("Brotli Block Decompression failed.");
