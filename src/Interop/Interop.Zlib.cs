@@ -203,7 +203,7 @@ namespace Nanook.GrindCore
              */
 
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_DeflateInit2_")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN8_ZLib_v1_3_1_DeflateInit2_(
                 Interop.ZStream* stream,
                 CompressionLevel level,
@@ -212,32 +212,32 @@ namespace Nanook.GrindCore
                 int memLevel,
                 CompressionStrategy strategy);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Deflate")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN8_ZLib_v1_3_1_Deflate(Interop.ZStream* stream, FlushCode flush);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_DeflateEnd")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN8_ZLib_v1_3_1_DeflateEnd(Interop.ZStream* stream);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_InflateInit2_")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN8_ZLib_v1_3_1_InflateInit2_(Interop.ZStream* stream, int windowBits);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Inflate")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN8_ZLib_v1_3_1_Inflate(Interop.ZStream* stream, FlushCode flush);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_InflateEnd")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN8_ZLib_v1_3_1_InflateEnd(Interop.ZStream* stream);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Crc32")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern uint DN8_ZLib_v1_3_1_crc32(uint crc, byte* buffer, int len);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Compress")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN8_ZLib_v1_3_1_Compress(
                 byte* dest,
                 ref uint destLen,
                 byte* source,
                 uint sourceLen);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Compress2")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN8_ZLib_v1_3_1_Compress2(
                 byte* dest,
                 ref uint destLen,
@@ -245,7 +245,7 @@ namespace Nanook.GrindCore
                 uint sourceLen,
                 int level);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Compress3")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN8_ZLib_v1_3_1_Compress3(
                 byte* dest,
                 ref uint destLen,
@@ -256,21 +256,21 @@ namespace Nanook.GrindCore
                 int memLevel,
                 int strategy);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Uncompress")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN8_ZLib_v1_3_1_Uncompress(
                 byte* dest,
                 ref uint destLen,
                 byte* source,
                 uint sourceLen);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Uncompress2")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN8_ZLib_v1_3_1_Uncompress2(
                 byte* dest,
                 ref uint destLen,
                 byte* source,
                 ref uint sourceLen);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN8_ZLib_v1_3_1_Uncompress3")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN8_ZLib_v1_3_1_Uncompress3(
                 byte* dest,
                 ref uint destLen,
@@ -279,7 +279,7 @@ namespace Nanook.GrindCore
                 int windowBits);
 
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_DeflateInit2_")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN9_ZLibNg_v2_2_1_DeflateInit2_(
                 Interop.ZStream* stream,
                 CompressionLevel level,
@@ -288,32 +288,32 @@ namespace Nanook.GrindCore
                 int memLevel,
                 CompressionStrategy strategy);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Deflate")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN9_ZLibNg_v2_2_1_Deflate(Interop.ZStream* stream, FlushCode flush);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_DeflateEnd")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN9_ZLibNg_v2_2_1_DeflateEnd(Interop.ZStream* stream);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_InflateInit2_")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN9_ZLibNg_v2_2_1_InflateInit2_(Interop.ZStream* stream, int windowBits);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Inflate")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN9_ZLibNg_v2_2_1_Inflate(Interop.ZStream* stream, FlushCode flush);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_InflateEnd")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern ErrorCode DN9_ZLibNg_v2_2_1_InflateEnd(Interop.ZStream* stream);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Crc32")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern uint DN9_ZLibNg_v2_2_1_crc32(uint crc, byte* buffer, int len);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Compress")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN9_ZLibNg_v2_2_1_Compress(
                 byte* dest,
                 ref uint destLen,
                 byte* source,
                 uint sourceLen);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Compress2")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN9_ZLibNg_v2_2_1_Compress2(
                 byte* dest,
                 ref uint destLen,
@@ -321,7 +321,7 @@ namespace Nanook.GrindCore
                 uint sourceLen,
                 int level);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Compress3")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN9_ZLibNg_v2_2_1_Compress3(
                 byte* dest,
                 ref uint destLen,
@@ -332,21 +332,21 @@ namespace Nanook.GrindCore
                 int memLevel,
                 int strategy);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Uncompress")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN9_ZLibNg_v2_2_1_Uncompress(
                 byte* dest,
                 ref uint destLen,
                 byte* source,
                 uint sourceLen);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Uncompress2")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN9_ZLibNg_v2_2_1_Uncompress2(
                 byte* dest,
                 ref uint destLen,
                 byte* source,
                 ref uint sourceLen);
 
-            [DllImport(Libraries.GrindCoreLib, EntryPoint = "DN9_ZLibNg_v2_2_1_Uncompress3")]
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int DN9_ZLibNg_v2_2_1_Uncompress3(
                 byte* dest,
                 ref uint destLen,
