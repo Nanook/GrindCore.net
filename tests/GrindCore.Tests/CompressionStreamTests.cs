@@ -241,7 +241,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Level0, 0x25f6, "5cb9b63eb9a4c344", "fc2e2fcb6505c945")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Level0, 0x6001eb, "5cb9b63eb9a4c344", "0a28fcae3b408197")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Level0, 0x6001eb, "5cb9b63eb9a4c344", "0a28fcae3b408197")]
-        //failing on some platforms [InlineData(CompressionAlgorithm.ZStd, CompressionType.Level0, 0x5717, "5cb9b63eb9a4c344", "3fd54e059fd2d650")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Level0, 0x5717, "5cb9b63eb9a4c344", "425403335cb3485b")]
         public void NoCompression_Stream6MiB_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxh64, string compXxH64)
         {
             int streamLen = 6 * 1024 * 1024; // Total bytes to process
