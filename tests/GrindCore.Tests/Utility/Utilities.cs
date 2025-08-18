@@ -20,7 +20,7 @@ namespace GrindCore.Tests.Utility
     internal partial class Utilities
     {
 
-        public static TestResults TestStreamBlocks(Stream data, CompressionAlgorithm algorithm, CompressionType type, int dataSize, int bufferSize, int compSize, int? threads = null)
+        public static TestResults TestStreamBlocks(Stream data, CompressionAlgorithm algorithm, CompressionType type, int dataSize, int bufferSize, int compSize, int? threads = null, string? version = null)
         {
             // Process in 1MiB blocks
             int total = dataSize; // Total bytes to process
@@ -38,7 +38,7 @@ namespace GrindCore.Tests.Utility
                 BufferSize = bufferSize,
                 BlockSize = bufferSize,
                 ThreadCount = threadCount,
-                Version = CompressionVersion.Create(algorithm)
+                Version = CompressionVersion.Create(algorithm, version ?? "")
             };
 
             CompressionOptions decompOptions = new CompressionOptions()
@@ -46,7 +46,7 @@ namespace GrindCore.Tests.Utility
                 Type = CompressionType.Decompress,
                 LeaveOpen = true,
                 BlockSize = bufferSize,
-                Version = CompressionVersion.Create(algorithm)
+                Version = CompressionVersion.Create(algorithm, version ?? "")
             };
 
             try

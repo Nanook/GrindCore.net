@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net9.0;net8.0;net6.0</TargetFrameworks>
-		<NoWarn>CA2022,xUnit1026</NoWarn>
+		<NoWarn>CA2022,CS3021,CA2265,xUnit1026</NoWarn>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -21,8 +21,10 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">WIN_X64,TRACE</DefineConstants>
-		<DefineConstants Condition=" '$(PlatformTarget)' == 'x86' or '$(PlatformTarget)' == 'arm' ">IS_32BIT</DefineConstants>
+		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">$(DefineConstants);WIN_X64;TRACE</DefineConstants>
+		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'linux-x64' ">$(DefineConstants);LINUX_X64;TRACE</DefineConstants>
+		<DefineConstants Condition=" '$(PlatformTarget)' == 'x86' or '$(PlatformTarget)' == 'arm' ">$(DefineConstants);IS_32BIT</DefineConstants>
+		<DefineConstants>$(DefineConstants);GRINDCORE</DefineConstants>
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>GrindCore.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>

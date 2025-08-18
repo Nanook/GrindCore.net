@@ -228,6 +228,29 @@ jobs:
           ./GrindCore.Tests.Runtime
         shell: bash
 
+  test_win_arm64:
+    needs: build_all_platforms
+    runs-on: [self-hosted, Windows, ARM64]
+    steps:
+      - name: Clean windows workspace (remove entire repo folder)
+        run: del /f /q "%GITHUB_WORKSPACE%\*"
+        shell: cmd
+
+      - name: Download Windows arm64 build
+        uses: actions/download-artifact@v4
+        with:
+          name: win-arm64-build
+          path: output/win-arm64/
+
+      - name: Build and run tests for Windows arm64
+        run: |
+          Set-Location -Path output/win-arm64/
+          Copy-Item -Path runtimes/win-arm64/native/* -Destination . -Recurse
+          Remove-Item -Path runtimes -Recurse -Force
+          Get-ChildItem
+          .\GrindCore.Tests.Runtime.exe
+        shell: pwsh
+
   test_win_x64:
     needs: build_all_platforms
     runs-on: windows-latest

@@ -138,58 +138,61 @@ namespace GrindCore.Tests
 
         [Theory]
 #if IS_32BIT
-        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
-        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x1db4, "2464d64063e022ba")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x264c, "728b6f680101e18d")]
-        //[InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x16e8, "a0783a6c336c8bd9")]
-        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x632, "1ee9e334582493e9")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x636, "eca2b056732b6c26")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "cdd2efd3865069b2")]
-        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x1dba, "bdd8b43a296a44ad")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x2652, "f2324065e2e34d09")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x827, "6227887e1bc483a0")]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, null, 0x84d, "25be05c704cb5995")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, null, 0x1db4, "2464d64063e022ba")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, null, 0x264c, "728b6f680101e18d")]
+        //[InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, null, 0x16e8, "a0783a6c336c8bd9")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, null, 0x632, "1ee9e334582493e9")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, null, 0x636, "eca2b056732b6c26")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, null, 0x5e5, "cdd2efd3865069b2")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, null, 0x1dba, "bdd8b43a296a44ad")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, null, 0x2652, "f2324065e2e34d09")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, null, 0x827, "6227887e1bc483a0")]
 #else
-        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x84d, "25be05c704cb5995")]
-        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x5d1, "2b444156a4305ae3")]
-        [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x4fa, "bd7a15fc895f1b65")]
-        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x1db4, "2464d64063e022ba")]
-        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0xcc2, "88b181dc28558433")]
-        [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0xb9b, "080ef351410b77ac")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x264c, "728b6f680101e18d")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0xbe1, "8fbdcf11b9e9fcb4")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0xb9b, "080ef351410b77ac")]
-        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x16e8, "a0783a6c336c8bd9")]
-        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Optimal, 0xebf, "a64c1f527824c624")]
-        [InlineData(CompressionAlgorithm.Lz4, CompressionType.SmallestSize, 0xebc, "62e511e4bd89818b")]
-        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x632, "1ee9e334582493e9")]
-        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0x64e, "e36983b8df1f0fa0")]
-        [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0x64e, "e36983b8df1f0fa0")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x636, "eca2b056732b6c26")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x605, "9ac9ca397bdbf54b")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x647, "1b1484110fe9391a")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x5e5, "cdd2efd3865069b2")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x733, "347363ee8e7e7f1d")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x733, "0f256c67b74d6676")]
-        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x1dba, "bdd8b43a296a44ad")]
-        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0xcc8, "aa99d2252c2f6606")]
-        [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0xba1, "2b9ecf7dce8e81ce")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x2652, "f2324065e2e34d09")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0xbe7, "bd93e4482eb778cb")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0xba1, "2b9ecf7dce8e81ce")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x827, "6227887e1bc483a0")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x7f2, "b18fa96dc3b4708d")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x5c2, "5b61c22239bba82c")]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, null, 0x84d, "25be05c704cb5995")]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, null, 0x5d1, "2b444156a4305ae3")]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, null, 0x4fa, "bd7a15fc895f1b65")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, null, 0x1db4, "2464d64063e022ba")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, null, 0xcc2, "88b181dc28558433")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, null, 0xb9b, "080ef351410b77ac")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, null, 0x264c, "728b6f680101e18d")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, null, 0xbe1, "8fbdcf11b9e9fcb4")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, null, 0xb9b, "080ef351410b77ac")]
+        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, null, 0x16e8, "a0783a6c336c8bd9")]
+        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Optimal, null, 0xebf, "a64c1f527824c624")]
+        [InlineData(CompressionAlgorithm.Lz4, CompressionType.SmallestSize, null, 0xebc, "62e511e4bd89818b")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, null, 0x632, "1ee9e334582493e9")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, null, 0x64e, "e36983b8df1f0fa0")]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, null, 0x64e, "e36983b8df1f0fa0")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, null, 0x636, "eca2b056732b6c26")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, null, 0x605, "9ac9ca397bdbf54b")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, null, 0x647, "1b1484110fe9391a")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, null, 0x5e5, "cdd2efd3865069b2")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, null, 0x733, "347363ee8e7e7f1d")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, null, 0x733, "0f256c67b74d6676")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, null, 0x1dba, "bdd8b43a296a44ad")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, null, 0xcc8, "aa99d2252c2f6606")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, null, 0xba1, "2b9ecf7dce8e81ce")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, null, 0x2652, "f2324065e2e34d09")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, null, 0xbe7, "bd93e4482eb778cb")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, null, 0xba1, "2b9ecf7dce8e81ce")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, null, 0x827, "6227887e1bc483a0")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, null, 0x7f2, "b18fa96dc3b4708d")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, null, 0x561, "dcff6b04d3f0e324")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, "1.5.2", 0x827, "6227887e1bc483a0")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, "1.5.2", 0x7f2, "b18fa96dc3b4708d")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, "1.5.2", 0x6bd, "085483666aa6a09f")]
 #endif
-        public void Text_Stream64KiB(CompressionAlgorithm algorithm, CompressionType type, int compressedSize, string compXxH64)
+        public void Text_Stream64KiB(CompressionAlgorithm algorithm, CompressionType type, string? version, int compressedSize, string compXxH64)
         {
             int streamLen = 64 * 1024; // Total bytes to process
             int bufferSize = 64 * 1024;
 
             using (var data = new TestPseudoTextStream())
             {
-                TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, (int)compressedSize);
+                TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, (int)compressedSize, version: version);
 
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, {(version == null ? "null" : $"\"{version}\"")}, 0x{r.CompressedBytes:x}, \"{r.CompressedHash}\")]");
                 Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
                 Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
                 //Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
@@ -238,7 +241,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Level0, 0x25f6, "5cb9b63eb9a4c344", "fc2e2fcb6505c945")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Level0, 0x6001eb, "5cb9b63eb9a4c344", "0a28fcae3b408197")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Level0, 0x6001eb, "5cb9b63eb9a4c344", "0a28fcae3b408197")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Level0, 0x5778, "5cb9b63eb9a4c344", "e2b8c5961872ad4c")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Level0, 0x5717, "5cb9b63eb9a4c344", "425403335cb3485b")]
         public void NoCompression_Stream6MiB_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxh64, string compXxH64)
         {
             int streamLen = 6 * 1024 * 1024; // Total bytes to process
@@ -370,19 +373,19 @@ namespace GrindCore.Tests
         }
 
         [Theory]
-        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x129aa, "c668fabe6e6e9235", "150b42d11de57fc7")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x138c1, "c668fabe6e6e9235", "cc526df9a9d44632")]
-        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x29dc9, "c668fabe6e6e9235", "d2ec321fdb0dc743")]
-        public void Data_Stream512MiB_Chunk128MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, null, 0x129aa, "c668fabe6e6e9235", "150b42d11de57fc7")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, null, 0x138c1, "c668fabe6e6e9235", "cc526df9a9d44632")]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, null, 0x29dc9, "c668fabe6e6e9235", "d2ec321fdb0dc743")]
+        public void Data_Stream512MiB_Chunk128MiB(CompressionAlgorithm algorithm, CompressionType type, string? version, long compressedSize, string rawXxH64, string compXxH64)
         {
             int streamLen = 512 * 1024 * 1024; // Total bytes to process
             int bufferSize = 128 * 1024 * 1024; // 128MiB block size
 
             using (var data = new TestDataStream())
             {
-                TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, (int)compressedSize);
+                TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, (int)compressedSize, version: version);
 
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, {(version == null ? "null" : $"\"{version}\"")}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
                 Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
                 Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
                 Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected

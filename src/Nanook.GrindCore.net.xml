@@ -5566,65 +5566,50 @@
             <summary>
             Compresses the source data block into the destination data block using ZStd.
             </summary>
-            <param name="srcData">The source data block to compress.</param>
-            <param name="dstData">The destination data block to write compressed data to.</param>
-            <returns>The number of bytes written to the destination block.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown if compression fails.</exception>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdBlock.OnDecompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock)">
             <summary>
             Decompresses the source data block into the destination data block using ZStd.
             </summary>
-            <param name="srcData">The source data block to decompress.</param>
-            <param name="dstData">The destination data block to write decompressed data to.</param>
-            <returns>The number of bytes written to the destination block.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown if decompression fails.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdBlock.OnDispose">
-            <summary>
-            Releases any resources used by the <see cref="T:Nanook.GrindCore.ZStd.ZStdBlock"/>.
-            </summary>
         </member>
         <member name="T:Nanook.GrindCore.ZStd.ZStdDecoder">
             <summary>
             Provides a decoder for Zstandard (ZStd) compressed data, supporting streaming decompression.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.ZStd.ZStdDecoder.InputBufferSize">
-            <summary>
-            Gets the recommended input buffer size for ZStd decompression.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.ZStd.ZStdDecoder.OutputBufferSize">
-            <summary>
-            Gets the recommended output buffer size for ZStd decompression.
+            This class implements the latest ZStd version (1.5.7) directly.
+            For older versions (e.g., 1.5.2), use <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2"/>, which inherits from this class and overrides only the version-specific logic.
             </summary>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdDecoder.#ctor">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> class and creates a decompression context.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> class and creates a decompression context for ZStd v1.5.7.
             </summary>
-            <exception cref="T:System.Exception">Thrown if the decompression context cannot be created.</exception>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdDecoder.DecodeData(Nanook.GrindCore.CompressionBuffer,System.Int32@,Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask)">
             <summary>
             Decodes ZStd-compressed data from the input buffer into the output buffer.
             </summary>
-            <param name="inData">The input buffer containing compressed data.</param>
-            <param name="readSz">Outputs the number of bytes read from the input buffer.</param>
-            <param name="outData">The output buffer to write decompressed data to.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <returns>The total number of bytes written to the output buffer.</returns>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdDecoder.Dispose">
             <summary>
             Releases all resources used by the <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/>.
             </summary>
         </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2">
+            <summary>
+            Provides a decoder for Zstandard (ZStd) compressed data using version 1.5.2.
+            Inherits from <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> and overrides only the version-specific logic.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2"/> class and creates a decompression context for ZStd v1.5.2.
+            </summary>
+        </member>
         <member name="T:Nanook.GrindCore.ZStd.ZStdEncoder">
             <summary>
             Provides an encoder for Zstandard (ZStd) compressed data, supporting streaming compression.
+            This class implements the latest ZStd version (1.5.7) directly.
+            For older versions (e.g., 1.5.2), use <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoderV1_5_2"/>, which inherits from this class and overrides only the version-specific logic.
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.ZStd.ZStdEncoder.InputBufferSize">
@@ -5643,32 +5628,26 @@
             </summary>
             <param name="blockSize">The block size to use for compression.</param>
             <param name="compressionLevel">The compression level to use (default is 3).</param>
-            <exception cref="T:System.Exception">Thrown if the compression context cannot be created or configured.</exception>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
             <summary>
             Encodes data from the input buffer into the output buffer using ZStd compression.
             </summary>
-            <param name="inData">The input buffer containing data to compress.</param>
-            <param name="outData">The output buffer to write compressed data to.</param>
-            <param name="final">Indicates if this is the final block of data.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <returns>The total number of bytes written to the output buffer.</returns>
-            <exception cref="T:System.ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
-            <exception cref="T:System.Exception">Thrown if compression fails or more data needs to be flushed.</exception>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.Flush(Nanook.GrindCore.CompressionBuffer)">
             <summary>
             Flushes any remaining compressed data to the output buffer and finalizes the compression stream.
             </summary>
-            <param name="outData">The output buffer to write flushed data to.</param>
-            <returns>The total number of bytes flushed and finalized.</returns>
-            <exception cref="T:System.Exception">Thrown if flushing or finalizing the compression stream fails.</exception>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.Dispose">
             <summary>
             Releases all resources used by the <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoder"/>.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdEncoderV1_5_2">
+            <summary>
+            Provides an encoder for Zstandard (ZStd) compressed data using version 1.5.2.
+            Inherits from <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoder"/> and overrides only the version-specific logic.
             </summary>
         </member>
         <member name="T:Nanook.GrindCore.ZStd.ZStdStream">
@@ -5676,6 +5655,10 @@
             Provides a stream implementation for Zstandard (ZStd) compression and decompression.
             Inherits common <see cref="T:System.IO.Stream"/> functionality from <see cref="T:Nanook.GrindCore.CompressionStream"/>.
             Uses a customized ZStd implementation to allow the Stream.Write pattern for compression.
+            
+            This stream will always use <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoder"/> and <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> as its internal types.
+            If an older version (e.g., 1.5.2) is requested, the version-specific implementation is used but cast to the base type,
+            making versioning transparent to consumers.
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.ZStd.ZStdStream.BufferSizeInput">

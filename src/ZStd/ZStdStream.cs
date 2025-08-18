@@ -7,6 +7,10 @@ namespace Nanook.GrindCore.ZStd
     /// Provides a stream implementation for Zstandard (ZStd) compression and decompression.
     /// Inherits common <see cref="Stream"/> functionality from <see cref="CompressionStream"/>.
     /// Uses a customized ZStd implementation to allow the Stream.Write pattern for compression.
+    /// 
+    /// This stream will always use <see cref="ZStdEncoder"/> and <see cref="ZStdDecoder"/> as its internal types.
+    /// If an older version (e.g., 1.5.2) is requested, the version-specific implementation is used but cast to the base type,
+    /// making versioning transparent to consumers.
     /// </summary>
     public class ZStdStream : CompressionStream
     {
@@ -35,16 +39,25 @@ namespace Nanook.GrindCore.ZStd
         {
             _wroteData = false;
 
+            // Determine if we need to use a legacy version
+            bool useV152 = options.Version != null && options.Version.Index == 1; //1.5.2
+
             if (IsCompress)
             {
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 7) + 128;
-                _encoder = new ZStdEncoder(BufferThreshold, (int)this.CompressionType);
+                if (useV152)
+                    _encoder = new ZStdEncoderV1_5_2(BufferThreshold, (int)this.CompressionType);
+                else
+                    _encoder = new ZStdEncoder(BufferThreshold, (int)this.CompressionType);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
             {
                 this.BufferSizeOutput = BufferThreshold;
-                _decoder = new ZStdDecoder();
+                if (useV152)
+                    _decoder = new ZStdDecoderV1_5_2();
+                else
+                    _decoder = new ZStdDecoder();
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
