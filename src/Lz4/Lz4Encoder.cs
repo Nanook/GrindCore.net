@@ -10,7 +10,7 @@ namespace Nanook.GrindCore.Lz4
     /// </summary>
     internal unsafe class Lz4Encoder : IDisposable
     {
-        private SZ_Lz4F_v1_9_4_CompressionContext _context;
+        private SZ_Lz4F_v1_10_0_CompressionContext _context;
         private byte[] _buffer;
         private GCHandle _bufferPinned;
         private IntPtr _bufferPtr;
@@ -32,11 +32,11 @@ namespace Nanook.GrindCore.Lz4
         {
             BlockSize = blockSize;
 
-            _context = new SZ_Lz4F_v1_9_4_CompressionContext();
+            _context = new SZ_Lz4F_v1_10_0_CompressionContext();
 
-            fixed (SZ_Lz4F_v1_9_4_CompressionContext* ctxPtr = &_context)
+            fixed (SZ_Lz4F_v1_10_0_CompressionContext* ctxPtr = &_context)
             {
-                if (SZ_Lz4F_v1_9_4_CreateCompressionContext(ctxPtr) < 0)
+                if (SZ_Lz4F_v1_10_0_CreateCompressionContext(ctxPtr) < 0)
                     throw new Exception("Failed to create LZ4 Frame compression context");
             }
 
@@ -56,7 +56,7 @@ namespace Nanook.GrindCore.Lz4
                 compressionLevel = compressionLevel
             };
 
-            _buffer = BufferPool.Rent((int)SZ_Lz4F_v1_9_4_CompressFrameBound((ulong)BlockSize, IntPtr.Zero));
+            _buffer = BufferPool.Rent((int)SZ_Lz4F_v1_10_0_CompressFrameBound((ulong)BlockSize, IntPtr.Zero));
             if (_buffer == null)
                 throw new Exception("Failed to allocate buffer for LZ4 compression");
 
@@ -79,9 +79,9 @@ namespace Nanook.GrindCore.Lz4
             {
                 ulong headerSize;
                 fixed (LZ4F_preferences_t* prefsPtr = &_preferences)
-                fixed (SZ_Lz4F_v1_9_4_CompressionContext* ctxPtr = &_context)
+                fixed (SZ_Lz4F_v1_10_0_CompressionContext* ctxPtr = &_context)
                 {
-                    headerSize = SZ_Lz4F_v1_9_4_CompressBegin(
+                    headerSize = SZ_Lz4F_v1_10_0_CompressBegin(
                         ctxPtr, _bufferPtr, (ulong)_buffer.Length, prefsPtr);
                 }
 
@@ -126,10 +126,10 @@ namespace Nanook.GrindCore.Lz4
                 int inputSize = Math.Min(inData.AvailableRead, BlockSize);
 
                 fixed (byte* inputPtr = inData.Data)
-                fixed (SZ_Lz4F_v1_9_4_CompressionContext* ctxPtr = &_context)
+                fixed (SZ_Lz4F_v1_10_0_CompressionContext* ctxPtr = &_context)
                 {
                     *&inputPtr += inData.Pos;
-                    ulong compressedSize = SZ_Lz4F_v1_9_4_CompressUpdate(
+                    ulong compressedSize = SZ_Lz4F_v1_10_0_CompressUpdate(
                         ctxPtr, _bufferPtr, (ulong)_buffer.Length,
                         inputPtr, (ulong)inputSize, IntPtr.Zero);
 
@@ -156,7 +156,7 @@ namespace Nanook.GrindCore.Lz4
         /// <exception cref="Exception">Thrown if flush or finalize fails.</exception>
         public long Flush(CompressionBuffer outData, bool flush, bool complete)
         {
-            fixed (SZ_Lz4F_v1_9_4_CompressionContext* ctxPtr = &_context)
+            fixed (SZ_Lz4F_v1_10_0_CompressionContext* ctxPtr = &_context)
             {
                 ulong flushedSize = 0;
                 ulong endSize = 0;
@@ -166,7 +166,7 @@ namespace Nanook.GrindCore.Lz4
 
                 if (flush)
                 {
-                    flushedSize = SZ_Lz4F_v1_9_4_Flush(ctxPtr, _bufferPtr, (ulong)_buffer.Length, IntPtr.Zero);
+                    flushedSize = SZ_Lz4F_v1_10_0_Flush(ctxPtr, _bufferPtr, (ulong)_buffer.Length, IntPtr.Zero);
                     if (flushedSize < 0)
                         throw new Exception("LZ4 Frame flush failed");
                     outData.Write(_buffer, 0, (int)flushedSize);
@@ -174,7 +174,7 @@ namespace Nanook.GrindCore.Lz4
 
                 if (complete)
                 {
-                    endSize = SZ_Lz4F_v1_9_4_CompressEnd(ctxPtr, _bufferPtr, (ulong)_buffer.Length, IntPtr.Zero);
+                    endSize = SZ_Lz4F_v1_10_0_CompressEnd(ctxPtr, _bufferPtr, (ulong)_buffer.Length, IntPtr.Zero);
                     if (endSize <= 0)
                         throw new Exception("Failed to finalize LZ4 Frame compression");
 
@@ -190,9 +190,9 @@ namespace Nanook.GrindCore.Lz4
         /// </summary>
         public void Dispose()
         {
-            fixed (SZ_Lz4F_v1_9_4_CompressionContext* ctxPtr = &_context)
+            fixed (SZ_Lz4F_v1_10_0_CompressionContext* ctxPtr = &_context)
             {
-                SZ_Lz4F_v1_9_4_FreeCompressionContext(ctxPtr);
+                SZ_Lz4F_v1_10_0_FreeCompressionContext(ctxPtr);
             }
 
             if (_bufferPinned.IsAllocated)

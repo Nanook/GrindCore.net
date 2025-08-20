@@ -11,7 +11,7 @@ namespace Nanook.GrindCore.Lz4
     /// </summary>
     internal unsafe class Lz4Decoder : IDisposable
     {
-        private SZ_Lz4F_v1_9_4_DecompressionContext _context;
+        private SZ_Lz4F_v1_10_0_DecompressionContext _context;
         private byte[] _buffer;
         private GCHandle _bufferPinned;
         private IntPtr _bufferPtr;
@@ -24,11 +24,11 @@ namespace Nanook.GrindCore.Lz4
         /// <exception cref="Exception">Thrown if the decompression context or buffer cannot be allocated.</exception>
         public Lz4Decoder(int blockSize)
         {
-            _context = new SZ_Lz4F_v1_9_4_DecompressionContext();
+            _context = new SZ_Lz4F_v1_10_0_DecompressionContext();
 
-            fixed (SZ_Lz4F_v1_9_4_DecompressionContext* ctxPtr = &_context)
+            fixed (SZ_Lz4F_v1_10_0_DecompressionContext* ctxPtr = &_context)
             {
-                if (SZ_Lz4F_v1_9_4_CreateDecompressionContext(ctxPtr) < 0)
+                if (SZ_Lz4F_v1_10_0_CreateDecompressionContext(ctxPtr) < 0)
                     throw new Exception("Failed to create LZ4 Frame decompression context");
             }
 
@@ -66,11 +66,11 @@ namespace Nanook.GrindCore.Lz4
 
                 ulong srcSize = (ulong)inData.AvailableRead;
 
-                fixed (SZ_Lz4F_v1_9_4_DecompressionContext* ctxPtr = &_context)
+                fixed (SZ_Lz4F_v1_10_0_DecompressionContext* ctxPtr = &_context)
                 fixed (byte* srcPtr = inData.Data)
                 {
                     *&srcPtr += inData.Pos;
-                    ulong frameInfoSize = SZ_Lz4F_v1_9_4_GetFrameInfo(ctxPtr, frameInfoPtr, srcPtr, ref srcSize);
+                    ulong frameInfoSize = SZ_Lz4F_v1_10_0_GetFrameInfo(ctxPtr, frameInfoPtr, srcPtr, ref srcSize);
 
                     if ((long)frameInfoSize < 0)
                         throw new Exception($"LZ4 Frame info error: {frameInfoSize}");
@@ -86,11 +86,11 @@ namespace Nanook.GrindCore.Lz4
 
             fixed (byte* inPtr = inData.Data)
             fixed (byte* outPtr = outData.Data)
-            fixed (SZ_Lz4F_v1_9_4_DecompressionContext* ctxPtr = &_context)
+            fixed (SZ_Lz4F_v1_10_0_DecompressionContext* ctxPtr = &_context)
             {
                 *&inPtr += inData.Pos;
 
-                ulong decompressedSize = SZ_Lz4F_v1_9_4_Decompress(ctxPtr, outPtr, ref outSz, inPtr, ref inSz, IntPtr.Zero);
+                ulong decompressedSize = SZ_Lz4F_v1_10_0_Decompress(ctxPtr, outPtr, ref outSz, inPtr, ref inSz, IntPtr.Zero);
 
                 if (decompressedSize < 0)
                     throw new Exception($"LZ4 Frame decompression failed with error code {decompressedSize}");
@@ -108,9 +108,9 @@ namespace Nanook.GrindCore.Lz4
         /// </summary>
         public void Dispose()
         {
-            fixed (SZ_Lz4F_v1_9_4_DecompressionContext* ctxPtr = &_context)
+            fixed (SZ_Lz4F_v1_10_0_DecompressionContext* ctxPtr = &_context)
             {
-                SZ_Lz4F_v1_9_4_FreeDecompressionContext(ctxPtr);
+                SZ_Lz4F_v1_10_0_FreeDecompressionContext(ctxPtr);
             }
 
             if (_bufferPinned.IsAllocated)

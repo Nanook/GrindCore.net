@@ -19,6 +19,7 @@ namespace Nanook.GrindCore
             public int numBlockThreads_Reduced;
             public int numBlockThreads_Max;
             public int numTotalThreads;
+            public uint numThreadGroups;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -54,10 +55,14 @@ namespace Nanook.GrindCore
             public uint writeEndMark;  /* 0 - do not write EOPM, 1 - write EOPM, default = 0 */
             public int numThreads;  /* 1 or 2, default = 2 */
 
+            public int affinityGroup;
+
             public ulong reduceSize; /* estimated size of data that will be compressed. default = (UInt64)(Int64)-1.
                                  Encoder uses this value to reduce dictionary size */
 
             public ulong affinity;
+
+            public ulong affinityInGroup;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -122,139 +127,139 @@ namespace Nanook.GrindCore
         internal static unsafe partial class Lzma
         {
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma2_v24_07_Dec_Construct(ref CLzma2Dec p);
+            public static extern void SZ_Lzma2_v25_01_Dec_Construct(ref CLzma2Dec p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma2_v24_07_Dec_FreeProbs(ref CLzma2Dec p);
+            public static extern void SZ_Lzma2_v25_01_Dec_FreeProbs(ref CLzma2Dec p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma2_v24_07_Dec_Free(ref CLzma2Dec p);
+            public static extern void SZ_Lzma2_v25_01_Dec_Free(ref CLzma2Dec p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Dec_AllocateProbs(ref CLzma2Dec p, byte prop);
+            public static extern int SZ_Lzma2_v25_01_Dec_AllocateProbs(ref CLzma2Dec p, byte prop);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Dec_Allocate(ref CLzma2Dec p, byte prop);
+            public static extern int SZ_Lzma2_v25_01_Dec_Allocate(ref CLzma2Dec p, byte prop);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma2_v24_07_Dec_Init(ref CLzma2Dec p);
+            public static extern void SZ_Lzma2_v25_01_Dec_Init(ref CLzma2Dec p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Dec_DecodeToDic(ref CLzma2Dec p, ulong dicLimit, byte* src, ulong* srcLen, int finishMode, int* status);
+            public static extern int SZ_Lzma2_v25_01_Dec_DecodeToDic(ref CLzma2Dec p, ulong dicLimit, byte* src, ulong* srcLen, int finishMode, int* status);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Dec_DecodeToBuf(ref CLzma2Dec p, byte* dest, ulong* destLen, byte* src, ulong* srcLen, int finishMode, int* status);
+            public static extern int SZ_Lzma2_v25_01_Dec_DecodeToBuf(ref CLzma2Dec p, byte* dest, ulong* destLen, byte* src, ulong* srcLen, int finishMode, int* status);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Dec_Parse(ref CLzma2Dec p, ulong outSize, byte* src, ulong* srcLen, int checkFinishBlock);
+            public static extern int SZ_Lzma2_v25_01_Dec_Parse(ref CLzma2Dec p, ulong outSize, byte* src, ulong* srcLen, int checkFinishBlock);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Decode(byte* dest, ulong* destLen, byte* src, ulong* srcLen, byte prop, int finishMode, int* status);
-
-
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma2_v24_07_Enc_Construct(ref CLzma2EncProps p);
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma2_v24_07_Enc_Normalize(ref CLzma2EncProps p);
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern IntPtr SZ_Lzma2_v24_07_Enc_Create();
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma2_v24_07_Enc_Destroy(IntPtr p);
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Enc_SetProps(IntPtr p, ref CLzma2EncProps props);
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma2_v24_07_Enc_SetDataSize(IntPtr p, ulong expectedDataSize);
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern byte SZ_Lzma2_v24_07_Enc_WriteProperties(IntPtr p);
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Enc_Encode2(IntPtr p, byte* outBuf, ulong* outBufSize, byte* inData, ulong inDataSize, IntPtr progress);
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Enc_EncodeMultiCallPrepare(IntPtr p);
-
-            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v24_07_Enc_EncodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, uint init, uint final);
+            public static extern int SZ_Lzma2_v25_01_Decode(byte* dest, ulong* destLen, byte* src, ulong* srcLen, byte prop, int finishMode, int* status);
 
 
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma_v24_07_Dec_Construct(ref CLzmaDec p);
+            public static extern void SZ_Lzma2_v25_01_Enc_Construct(ref CLzma2EncProps p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma_v24_07_Dec_Init(ref CLzmaDec p);
+            public static extern void SZ_Lzma2_v25_01_Enc_Normalize(ref CLzma2EncProps p);
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern IntPtr SZ_Lzma2_v25_01_Enc_Create();
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Dec_AllocateProbs(ref CLzmaDec p, byte* props, uint propsSize);
+            public static extern void SZ_Lzma2_v25_01_Enc_Destroy(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma_v24_07_Dec_FreeProbs(ref CLzmaDec p);
+            public static extern int SZ_Lzma2_v25_01_Enc_SetProps(IntPtr p, ref CLzma2EncProps props);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Dec_Allocate(ref CLzmaDec p, byte* props, uint propsSize);
+            public static extern void SZ_Lzma2_v25_01_Enc_SetDataSize(IntPtr p, ulong expectedDataSize);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma_v24_07_Dec_Free(ref CLzmaDec p);
+            public static extern byte SZ_Lzma2_v25_01_Enc_WriteProperties(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Dec_DecodeToDic(ref CLzmaDec p, ulong dicLimit, byte* src, ulong* srcLen, int finishMode, int* status);
+            public static extern int SZ_Lzma2_v25_01_Enc_Encode2(IntPtr p, byte* outBuf, ulong* outBufSize, byte* inData, ulong inDataSize, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Dec_DecodeToBuf(ref CLzmaDec p, byte* dest, ulong* destLen, byte* src, ulong* srcLen, int finishMode, int* status);
+            public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCallPrepare(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Dec_LzmaDecode(byte* dest, ulong* destLen, byte* src, ulong* srcLen, byte* propData, uint propSize, int finishMode, int* status);
+            public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, uint init, uint final);
+
+
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern void SZ_Lzma_v25_01_Dec_Construct(ref CLzmaDec p);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern void SZ_Lzma_v25_01_Dec_Init(ref CLzmaDec p);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lzma_v25_01_Dec_AllocateProbs(ref CLzmaDec p, byte* props, uint propsSize);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern void SZ_Lzma_v25_01_Dec_FreeProbs(ref CLzmaDec p);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lzma_v25_01_Dec_Allocate(ref CLzmaDec p, byte* props, uint propsSize);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern void SZ_Lzma_v25_01_Dec_Free(ref CLzmaDec p);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lzma_v25_01_Dec_DecodeToDic(ref CLzmaDec p, ulong dicLimit, byte* src, ulong* srcLen, int finishMode, int* status);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lzma_v25_01_Dec_DecodeToBuf(ref CLzmaDec p, byte* dest, ulong* destLen, byte* src, ulong* srcLen, int finishMode, int* status);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lzma_v25_01_Dec_LzmaDecode(byte* dest, ulong* destLen, byte* src, ulong* srcLen, byte* propData, uint propSize, int finishMode, int* status);
 
 
 
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma_v24_07_EncProps_Init(ref CLzmaEncProps p);
+            public static extern void SZ_Lzma_v25_01_EncProps_Init(ref CLzmaEncProps p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma_v24_07_EncProps_Normalize(ref CLzmaEncProps p);
+            public static extern void SZ_Lzma_v25_01_EncProps_Normalize(ref CLzmaEncProps p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern uint SZ_Lzma_v24_07_EncProps_GetDictSize(ref CLzmaEncProps props);
+            public static extern uint SZ_Lzma_v25_01_EncProps_GetDictSize(ref CLzmaEncProps props);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern IntPtr SZ_Lzma_v24_07_Enc_Create();
+            public static extern IntPtr SZ_Lzma_v25_01_Enc_Create();
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma_v24_07_Enc_Destroy(IntPtr p);
+            public static extern void SZ_Lzma_v25_01_Enc_Destroy(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Enc_SetProps(IntPtr p, ref CLzmaEncProps props);
+            public static extern int SZ_Lzma_v25_01_Enc_SetProps(IntPtr p, ref CLzmaEncProps props);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Lzma_v24_07_Enc_SetDataSize(IntPtr p, ulong expectedDataSize);
+            public static extern void SZ_Lzma_v25_01_Enc_SetDataSize(IntPtr p, ulong expectedDataSize);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Enc_WriteProperties(IntPtr p, byte* properties, ulong* size);
+            public static extern int SZ_Lzma_v25_01_Enc_WriteProperties(IntPtr p, byte* properties, ulong* size);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern uint SZ_Lzma_v24_07_Enc_IsWriteEndMark(IntPtr p);
+            public static extern uint SZ_Lzma_v25_01_Enc_IsWriteEndMark(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Enc_Encode(IntPtr p, IntPtr outStream, IntPtr inStream, IntPtr progress);
+            public static extern int SZ_Lzma_v25_01_Enc_Encode(IntPtr p, IntPtr outStream, IntPtr inStream, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Enc_MemEncode(IntPtr p, byte* dest, ulong* destLen, byte* src, ulong srcLen, int writeEndMark, IntPtr progress);
+            public static extern int SZ_Lzma_v25_01_Enc_MemEncode(IntPtr p, byte* dest, ulong* destLen, byte* src, ulong srcLen, int writeEndMark, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Enc_LzmaEncode(byte* dest, ulong* destLen, byte* src, ulong srcLen, ref CLzmaEncProps props, byte* propsEncoded, ulong* propsSize, int writeEndMark, IntPtr progress);
+            public static extern int SZ_Lzma_v25_01_Enc_LzmaEncode(byte* dest, ulong* destLen, byte* src, ulong srcLen, ref CLzmaEncProps props, byte* propsEncoded, ulong* propsSize, int writeEndMark, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Enc_LzmaCodeMultiCallPrepare(IntPtr p, uint* blockSize, uint* dictSize, uint final);
+            public static extern int SZ_Lzma_v25_01_Enc_LzmaCodeMultiCallPrepare(IntPtr p, uint* blockSize, uint* dictSize, uint final);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v24_07_Enc_LzmaCodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, int limit,uint* availableBytes, int final);
+            public static extern int SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, int limit,uint* availableBytes, int final);
         }
     }
 }

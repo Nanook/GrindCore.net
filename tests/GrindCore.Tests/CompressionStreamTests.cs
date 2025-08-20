@@ -179,9 +179,9 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, null, 0x827, "6227887e1bc483a0")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, null, 0x7f2, "b18fa96dc3b4708d")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, null, 0x561, "dcff6b04d3f0e324")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, "1.5.2", 0x827, "6227887e1bc483a0")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, "1.5.2", 0x7f2, "b18fa96dc3b4708d")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, "1.5.2", 0x6bd, "085483666aa6a09f")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, CompressionVersion.ZSTD_v1_5_2, 0x827, "6227887e1bc483a0")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, CompressionVersion.ZSTD_v1_5_2, 0x7f2, "b18fa96dc3b4708d")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, CompressionVersion.ZSTD_v1_5_2, 0x6bd, "085483666aa6a09f")]
 #endif
         public void Text_Stream64KiB(CompressionAlgorithm algorithm, CompressionType type, string? version, int compressedSize, string compXxH64)
         {

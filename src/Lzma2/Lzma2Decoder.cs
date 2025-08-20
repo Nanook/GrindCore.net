@@ -82,7 +82,7 @@ namespace Nanook.GrindCore.Lzma
         private void createDecoder(byte props)
         {
             _decCtx = new CLzma2Dec() { decoder = new CLzmaDec() };
-            int res = SZ_Lzma2_v24_07_Dec_Allocate(ref _decCtx, props);
+            int res = SZ_Lzma2_v25_01_Dec_Allocate(ref _decCtx, props);
 
             if (res != 0)
                 throw new Exception($"Allocate Error {res}");
@@ -125,7 +125,7 @@ namespace Nanook.GrindCore.Lzma
         /// <exception cref="Exception">Thrown if the decoder context cannot be allocated.</exception>
         public void SetProps(byte props)
         {
-            SZ_Lzma2_v24_07_Dec_Free(ref _decCtx);
+            SZ_Lzma2_v25_01_Dec_Free(ref _decCtx);
             createDecoder(props);
         }
 
@@ -134,7 +134,7 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public void SetState()
         {
-            SZ_Lzma2_v24_07_Dec_Init(ref _decCtx);
+            SZ_Lzma2_v25_01_Dec_Init(ref _decCtx);
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace Nanook.GrindCore.Lzma
             {
                 *&outPtr += outData.Size; //Size is writing Pos
                 *&inPtr += inData.Pos;
-                int res = SZ_Lzma2_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
+                int res = SZ_Lzma2_v25_01_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");
 
@@ -175,7 +175,7 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public void Dispose()
         {
-            SZ_Lzma2_v24_07_Dec_Free(ref _decCtx);
+            SZ_Lzma2_v25_01_Dec_Free(ref _decCtx);
         }
     }
 }

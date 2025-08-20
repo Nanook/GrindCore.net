@@ -30,8 +30,8 @@ namespace Nanook.GrindCore.Lzma
             _decCtx = new CLzmaDec();
             fixed (byte* outPtr = properties)
             {
-                res = SZ_Lzma_v24_07_Dec_Allocate(ref _decCtx, outPtr, (uint)properties.Length);
-                SZ_Lzma_v24_07_Dec_Init(ref _decCtx);
+                res = SZ_Lzma_v25_01_Dec_Allocate(ref _decCtx, outPtr, (uint)properties.Length);
+                SZ_Lzma_v25_01_Dec_Init(ref _decCtx);
             }
             if (res != 0)
                 throw new Exception($"Allocate Error {res}");
@@ -62,7 +62,7 @@ namespace Nanook.GrindCore.Lzma
                 *&outPtr += outData.Size; //Size is writing Pos
                 *&inPtr += inData.Pos;
                 // Call the C interop function
-                int res = SZ_Lzma_v24_07_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
+                int res = SZ_Lzma_v25_01_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");
 
@@ -78,7 +78,7 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public void Dispose()
         {
-            SZ_Lzma_v24_07_Dec_Free(ref _decCtx);
+            SZ_Lzma_v25_01_Dec_Free(ref _decCtx);
         }
     }
 }

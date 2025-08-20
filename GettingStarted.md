@@ -10,7 +10,7 @@ GrindCore is a high-performance C# compression and hashing library built on top 
 - **GrindCore**: The multiplatform C library.
 - **GrindCore.net**: The .NET wrapper, providing a standardized API for .NET applications.
 
-Published to nuget simply as **GrindCore**.
+Published to NuGet simply as **GrindCore**.
 
 **Related Projects:**
 - **[GrindCore.SharpCompress](https://github.com/Nanook/GrindCore.SharpCompress)**: Enhanced fork of SharpCompress leveraging GrindCore's native streams for improved performance and additional features like LZMA/2 level support.
