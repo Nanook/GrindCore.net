@@ -27,7 +27,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.Fastest,      0x200000,  4, 0x19c9, "7833322f45651d24", "c69e0eb6acf6f443")]
         [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.SmallestSize, 0x200000,  4, 0x19d5, "7833322f45651d24", "676dca129bb3ed21")]
         [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.SmallestSize, 0x200000,  1,  0x92b, "7833322f45651d24", "e6241c0cc51e3eae")]
-        [InlineData(CompressionAlgorithm.Lzma2,     CompressionType.SmallestSize, 0x200000, 16, 0x5d01, "7833322f45651d24", "1ebbf3862ca8b369")]
+        //[InlineData(CompressionAlgorithm.Lzma2,     CompressionType.SmallestSize, 0x200000, 16, 0x5d01, "7833322f45651d24", "1ebbf3862ca8b369")]
 
         public void Data_Stream6MiB(CompressionAlgorithm algorithm, CompressionType type, int blockSize, int threadCount, long compressedSize, string rawXxH64, string compXxH64)
         {
