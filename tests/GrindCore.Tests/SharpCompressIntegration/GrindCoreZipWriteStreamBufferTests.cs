@@ -17,7 +17,7 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-#if LINUX_X64 || DEBUG
+#if LINUX_X64
 
 namespace SharpCompress.Test.Zip;
 
