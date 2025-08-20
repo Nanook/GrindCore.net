@@ -49,20 +49,20 @@ namespace Nanook.GrindCore.Lz4
 
                 if ((int)this.CompressionType >= 3) // Use HC compression for level 3 or higher
                 {
-                    compressedSize = Interop.Lz4.SZ_Lz4_v1_9_4_CompressHC(
+                    compressedSize = Interop.Lz4.SZ_Lz4_v1_10_0_CompressHC(
                         srcPtr, (IntPtr)dstPtr,
                         srcData.Length, dstData.Length,
                         (int)this.CompressionType); // Pass HC compression level
                 }
                 else
                 {
-                    SZ_Lz4_v1_9_4_Stream stream = new SZ_Lz4_v1_9_4_Stream();
-                    SZ_Lz4_v1_9_4_Init(ref stream);
+                    SZ_Lz4_v1_10_0_Stream stream = new SZ_Lz4_v1_10_0_Stream();
+                    SZ_Lz4_v1_10_0_Init(ref stream);
 
-                    compressedSize = SZ_Lz4_v1_9_4_CompressFastContinue(
+                    compressedSize = SZ_Lz4_v1_10_0_CompressFastContinue(
                         ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstData.Length, this.CompressionType == CompressionType.Level1 ? 1 : 0);
 
-                    SZ_Lz4_v1_9_4_End(ref stream);
+                    SZ_Lz4_v1_10_0_End(ref stream);
                 }
 
                 if (compressedSize <= 0)
@@ -87,13 +87,13 @@ namespace Nanook.GrindCore.Lz4
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                SZ_Lz4_v1_9_4_Stream stream = new SZ_Lz4_v1_9_4_Stream();
-                SZ_Lz4_v1_9_4_Init(ref stream);
+                SZ_Lz4_v1_10_0_Stream stream = new SZ_Lz4_v1_10_0_Stream();
+                SZ_Lz4_v1_10_0_Init(ref stream);
 
-                int decompressedSize = SZ_Lz4_v1_9_4_DecompressSafeContinue(
+                int decompressedSize = SZ_Lz4_v1_10_0_DecompressSafeContinue(
                     ref stream, srcPtr, dstPtr, srcData.Length, dstData.Length);
 
-                SZ_Lz4_v1_9_4_End(ref stream);
+                SZ_Lz4_v1_10_0_End(ref stream);
 
                 if (decompressedSize < 0)
                     throw new InvalidOperationException("LZ4 Block Decompression failed.");

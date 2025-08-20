@@ -1,18 +1,32 @@
 # GrindCore  
 
-An AOT-compatible compression and hashing library built in the **System.IO.Compression** style—providing a managed .NET wrapper around the native **[GrindCore](https://github.com/Nanook/GrindCore) Native** library.  
+An AOT-compatible compression and hashing library built in the **System.IO.Compression** style—providing a managed .NET wrapper around the **[GrindCore](https://github.com/Nanook/GrindCore) Native** library.  
 
 Published on **NuGet** as [GrindCore](https://www.nuget.org/packages/GrindCore) with support for multiple platforms.  
 
 > **⚠️ Important Notice**: While GrindCore has reached its first stable release, it should still be used with caution in production environments. The library is actively being tested and refined. Please thoroughly test in your specific use cases and report any issues encountered.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Overview](#overview)
+- [Core Objectives](#core-objectives)
+- [Key Features](#key-features)
+- [Compression](#compression)
+- [Hashing](#hashing)
+- [Continuous Integration (CI) Status](#continuous-integration-ci-status)
+- [Key Project Integrations](#key-project-integrations)
+- [Addressing Current Issues](#addressing-current-issues)
+- [To Do](#to-do)
+- [Conclusion](#conclusion)
+
 ## Quick Start
 
-For usage examples and API patterns, see the **[Quick Start Guide](QuickStart.md)**.
+For usage examples and API patterns, see the **[Getting Started Guide](GettingStarted.md)**.
 
 For more in-depth information, see [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Nanook/GrindCore.net).
 
-### Nuget
+### NuGet
 
 [![NuGet](https://img.shields.io/nuget/v/GrindCore.svg)](https://www.nuget.org/packages/GrindCore)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -51,29 +65,31 @@ To simplify instance creation, GrindCore provides:
 - `CompressionStreamFactory`, allowing easy instantiation of stream-based compression classes.  
 - `CompressionBlockFactory`, offering a straightforward mechanism for initializing block-based compression instances.  
 
+---
+
 #### Supported Compression Algorithms  
 
-- **Brotli** v1.1.0 _(From .NET 9.0)_  
-- **Copy** _(No compression - direct stream copy)_  
-- **LZ4** v1.9.4 _(From 7Zip-mcmilk)_  
-- **LZMA** v24.7.0 _(From 7Zip-mcmilk)_  
-- **LZMA2** v24.7.0 _(From 7Zip-mcmilk)_  
-- **Fast-LZMA2** v1.0.1 _(From 7Zip-mcmilk)_  
-- **ZLib** v1.3.1 _(GZip, ZLib, Deflate - From .NET 8.0)_  
-- **ZLib-NG** v2.2.1 _(GZip, ZLib, Deflate - From .NET 9.0)_  
-- **ZStd** v1.5.7 & v1.5.2 _(From Facebook ZStd)_  
+All native compression algorithms are directly built into the [GrindCore Native](https://github.com/Nanook/GrindCore) project—**no third-party binaries are used or required**. The following algorithms are compiled from source as part of the native library, ensuring full integration, security, and maintainability:
 
-> **Note:** Where multiple versions of a compression algorithm are listed (e.g., ZStd v1.5.7 & v1.5.2 / ZLib & ZLib-NG), this is to support applications that require pinned or frozen versions—most commonly for scenarios demanding byte-perfect, deterministic outputs.
+- **Brotli** v1.1.0 (from [.NET 9.0](https://github.com/dotnet/runtime/tree/release/9.0/src/native/external/brotli))
+- **Copy** (no compression - direct stream copy)
+- **LZ4** v1.10.0 (from [LZ4](https://github.com/lz4/lz4/tree/dev/lib))
+- **LZMA** v25.1.0 (from [7Zip](https://sourceforge.net/projects/sevenzip/files/7-Zip/25.01/) App)
+- **LZMA2** v25.1.0 (from [7Zip](https://sourceforge.net/projects/sevenzip/files/7-Zip/25.01/) App)
+- **Fast-LZMA2** v1.0.1 (from [7Zip-mcmilk](https://github.com/mcmilk/7-Zip-zstd/tree/master/C/fast-lzma2))
+- **ZLib** v1.3.1 (GZip, ZLib, Deflate - from [.NET 8.0](https://github.com/dotnet/runtime/tree/release/8.0/src/native/external/zlib))
+- **ZLib-NG** v2.2.1 (GZip, ZLib, Deflate - from [.NET 9.0](https://github.com/dotnet/runtime/tree/release/9.0/src/native/external/zlib-ng))
+- **ZStd** v1.5.7 & v1.5.2 (from [Facebook](https://github.com/facebook/zstd/tree/dev/lib))
 
-_The supported algorithms will soon be updated and expanded, with additional algorithms such as Snappy and BZip2 planned for inclusion._
-
-- Additionally, **blocking and asynchronous methods** are implemented, allowing flexible compression workflows.
-
-Streams expose the `.Position` (compressed) and `.PositionFullSize` (uncompressed) properties, allowing consuming objects to track progress and status with accuracy.
+**Notes:**
+- Multiple versions of some algorithms (e.g., ZStd, ZLib/ZLib-NG) are included to support applications that require pinned or frozen versions, most commonly for scenarios demanding byte-perfect, deterministic outputs.
+- The set of supported algorithms will continue to expand, with Snappy and BZip2 planned for future releases.
+- Both blocking and asynchronous methods are available, allowing flexible compression workflows.
+- Compression streams expose `.Position` (compressed) and `.PositionFullSize` (uncompressed) properties for accurate progress tracking.
 
 ### Hashing
 
-Hashes inherit from HashAlgorithm allowing them to be used with CryptoStream for standard dotnet use.
+Hashes inherit from HashAlgorithm allowing them to be used with CryptoStream for standard .Net use.
 
 - Blake3, Blake2sp
 - MD5, MD4, MD2
@@ -107,7 +123,7 @@ GrindCore integrates robust solutions from several key projects:
   - Provides a foundation with multiplatform C compilation based on CMake and C, ensuring seamless integration across different platforms.
   - Supplies zlib/deflate and Brotli from the dotnet 8 code, combined with C# wrappers, to offer efficient and reliable compression algorithms.
 - **[ZStd Facebook GitHub Repository](https://github.com/facebook/zstd):**
-  - Multiplatform zstandard direct for the source.
+  - Multiplatform zstandard direct from the source.
 - **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):**
   - Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
 - **[GrindCore.SharpCompress](https://github.com/Nanook/GrindCore.SharpCompress):**

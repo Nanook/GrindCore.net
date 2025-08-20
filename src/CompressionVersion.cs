@@ -43,8 +43,8 @@ namespace Nanook.GrindCore
     /// </summary>
     public enum LzmaVersion
     {
-        v24_7_0 = 1,
-        Latest = v24_7_0
+        v25_1_0 = 1,
+        Latest = v25_1_0
     }
 
     /// <summary>
@@ -52,8 +52,8 @@ namespace Nanook.GrindCore
     /// </summary>
     public enum Lzma2Version
     {
-        v24_7_0 = 1,
-        Latest = v24_7_0
+        v25_1_0 = 1,
+        Latest = v25_1_0
     }
 
     /// <summary>
@@ -70,8 +70,8 @@ namespace Nanook.GrindCore
     /// </summary>
     public enum Lz4Version
     {
-        v1_9_4 = 1,
-        Latest = v1_9_4
+        v1_10_0 = 1,
+        Latest = v1_10_0
     }
 
     /// <summary>
@@ -97,10 +97,10 @@ namespace Nanook.GrindCore
         public static string ZLIB_v1_3_1 = "1.3.1";
         public static string ZLIBNG_v2_2_1 = "2.2.1";
         public static string BROTLI_v1_1_0 = "1.1.0";
-        public static string LZMA_v24_7_0 = "24.7.0";
-        public static string LZMA2_v24_7_0 = "24.7.0";
+        public static string LZMA_v25_1_0 = "25.1.0";
+        public static string LZMA2_v25_1_0 = "25.1.0";
         public static string FASTLZMA2_v1_0_1 = "1.0.1";
-        public static string LZ4_v1_9_4 = "1.9.4";
+        public static string LZ4_v1_10_0 = "v1.10.0";
         public static string ZSTD_v1_5_2 = "1.5.2";
         public static string ZSTD_v1_5_7 = "1.5.7";
 
@@ -274,23 +274,23 @@ namespace Nanook.GrindCore
                     }
                     break;
                 case CompressionAlgorithm.Lz4:
-                    if (string.IsNullOrEmpty(version) || version == LZ4_v1_9_4)
+                    if (string.IsNullOrEmpty(version) || version == LZ4_v1_10_0)
                     {
-                        result.Version = LZ4_v1_9_4;
+                        result.Version = LZ4_v1_10_0;
                         result.Index = 0;
                     }
                     break;
                 case CompressionAlgorithm.Lzma:
-                    if (string.IsNullOrEmpty(version) || version == LZMA_v24_7_0)
+                    if (string.IsNullOrEmpty(version) || version == LZMA_v25_1_0)
                     {
-                        result.Version = LZMA_v24_7_0;
+                        result.Version = LZMA_v25_1_0;
                         result.Index = 0;
                     }
                     break;
                 case CompressionAlgorithm.Lzma2:
-                    if (string.IsNullOrEmpty(version) || version == LZMA2_v24_7_0)
+                    if (string.IsNullOrEmpty(version) || version == LZMA2_v25_1_0)
                     {
-                        result.Version = LZMA2_v24_7_0;
+                        result.Version = LZMA2_v25_1_0;
                         result.Index = 0;
                     }
                     break;
