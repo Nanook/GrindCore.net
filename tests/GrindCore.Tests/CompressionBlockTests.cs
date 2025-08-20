@@ -68,9 +68,9 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, null, 0x195, "3545b23ad651d5d4")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, null, 0x195, "3545b23ad651d5d4")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, null, 0x195, "3545b23ad651d5d4")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, "1.5.2", 0x195, "3545b23ad651d5d4")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, "1.5.2", 0x195, "3545b23ad651d5d4")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, "1.5.2", 0x195, "3545b23ad651d5d4")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, CompressionVersion.ZSTD_v1_5_2, 0x195, "3545b23ad651d5d4")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, CompressionVersion.ZSTD_v1_5_2, 0x195, "3545b23ad651d5d4")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, CompressionVersion.ZSTD_v1_5_2, 0x195, "3545b23ad651d5d4")]
         public void Data_ByteArray64KiB_BlockCompress(CompressionAlgorithm algorithm, CompressionType type, string? version, int size, string expected)
         {
             using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _data64KiB.Length, false, CompressionVersion.Create(algorithm, version)))
@@ -184,9 +184,9 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, null, 0x83a, "8a7fd9bf458ad52a")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, null, 0x7f0, "8723d465c72e2e88")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, null, 0x5c0, "6775dd2c3d7c5222")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, "1.5.2", 0x83a, "8a7fd9bf458ad52a")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, "1.5.2", 0x7f0, "8723d465c72e2e88")]
-        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize,  "1.5.2", 0x714, "fd2c3ec61fa17a6a")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, CompressionVersion.ZSTD_v1_5_2, 0x83a, "8a7fd9bf458ad52a")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, CompressionVersion.ZSTD_v1_5_2, 0x7f0, "8723d465c72e2e88")]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, CompressionVersion.ZSTD_v1_5_2, 0x714, "fd2c3ec61fa17a6a")]
 
 #endif
         public void Text_ByteArray64KiB(CompressionAlgorithm algorithm, CompressionType type, string? version, int size, string expected)

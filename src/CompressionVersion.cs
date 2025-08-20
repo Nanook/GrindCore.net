@@ -92,17 +92,17 @@ namespace Nanook.GrindCore
         /// <summary>
         /// Gets a string representing the latest version.
         /// </summary>
-        public static string LATEST = "";
-        public static string COPY_v0_0_0 = "0.0.0";
-        public static string ZLIB_v1_3_1 = "1.3.1";
-        public static string ZLIBNG_v2_2_1 = "2.2.1";
-        public static string BROTLI_v1_1_0 = "1.1.0";
-        public static string LZMA_v25_1_0 = "25.1.0";
-        public static string LZMA2_v25_1_0 = "25.1.0";
-        public static string FASTLZMA2_v1_0_1 = "1.0.1";
-        public static string LZ4_v1_10_0 = "v1.10.0";
-        public static string ZSTD_v1_5_2 = "1.5.2";
-        public static string ZSTD_v1_5_7 = "1.5.7";
+        public const string LATEST = "";
+        public const string COPY_v0_0_0 = "0.0.0";
+        public const string ZLIB_v1_3_1 = "1.3.1";
+        public const string ZLIBNG_v2_2_1 = "2.2.1";
+        public const string BROTLI_v1_1_0 = "1.1.0";
+        public const string LZMA_v25_1_0 = "25.1.0";
+        public const string LZMA2_v25_1_0 = "25.1.0";
+        public const string FASTLZMA2_v1_0_1 = "1.0.1";
+        public const string LZ4_v1_10_0 = "1.10.0";
+        public const string ZSTD_v1_5_2 = "1.5.2";
+        public const string ZSTD_v1_5_7 = "1.5.7";
 
         /// <summary>
         /// Converts an enum name to a version string (e.g., v1_2_3 to 1.2.3).
