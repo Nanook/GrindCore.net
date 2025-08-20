@@ -1,22 +1,12 @@
 #!/bin/bash
+set -e
 
-build=".build"
+# Publish the test project for linux-x64, Debug configuration, .NET 9.0, output to output/linux-x64
+dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
 
-# Copy GrindCore.build files
-rm -rf "$build"/*
-for item in *; do
-    if [[ "$item" != "$build" ]]; then
-        cp -r "$item" "$build/"
-    fi
-done
+# Copy native libraries to the output directory for easier loading
+cp -a ./output/linux-x64/runtimes/linux-x64/native/* ./output/linux-x64/
 
-# Merge in GrindCore files
-for item in ../GrindCore/*; do
-    cp -r "$item" "$build/src/native/"
-done
-
-# Test Build
-pushd "$build"
-docker build -t grindcore.build.linux:latest -f Dockerfile.linux-x64 -m 2GB .
-docker run --rm -v "$(pwd):/workspaces" grindcore.build.linux:latest /bin/sh -c "rm -rf /workspaces/artifacts && /workspaces/src/native/libs/build-native.sh x64 Release outconfig linux-x64 -os unix -numproc 16"
-popd
+# Run the test executable
+chmod +x ./output/linux-x64/GrindCore.Tests.Runtime
+./output/linux-x64/GrindCore.Tests.Runtime
