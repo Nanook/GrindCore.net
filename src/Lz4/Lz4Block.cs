@@ -35,9 +35,9 @@ namespace Nanook.GrindCore.Lz4
         /// </summary>
         /// <param name="srcData">The source data block to compress.</param>
         /// <param name="dstData">The destination data block to write compressed data to.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if compression fails.</exception>
-        internal unsafe override int OnCompress(DataBlock srcData, DataBlock dstData)
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal unsafe override CompressionResultCode OnCompress(DataBlock srcData, DataBlock dstData, ref int dstCount)
         {
             fixed (byte* srcPtr = srcData.Data)
             fixed (byte* dstPtr = dstData.Data)
@@ -51,7 +51,7 @@ namespace Nanook.GrindCore.Lz4
                 {
                     compressedSize = Interop.Lz4.SZ_Lz4_v1_10_0_CompressHC(
                         srcPtr, (IntPtr)dstPtr,
-                        srcData.Length, dstData.Length,
+                        srcData.Length, dstCount,
                         (int)this.CompressionType); // Pass HC compression level
                 }
                 else
@@ -60,15 +60,19 @@ namespace Nanook.GrindCore.Lz4
                     SZ_Lz4_v1_10_0_Init(ref stream);
 
                     compressedSize = SZ_Lz4_v1_10_0_CompressFastContinue(
-                        ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstData.Length, this.CompressionType == CompressionType.Level1 ? 1 : 0);
+                        ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstCount, this.CompressionType == CompressionType.Level1 ? 1 : 0);
 
                     SZ_Lz4_v1_10_0_End(ref stream);
                 }
 
                 if (compressedSize <= 0)
-                    throw new InvalidOperationException("LZ4 Block Compression failed.");
+                {
+                    dstCount = 0;
+                    return mapResult(compressedSize);
+                }
 
-                return compressedSize;
+                dstCount = compressedSize;
+                return CompressionResultCode.Success;
             }
         }
 
@@ -77,9 +81,9 @@ namespace Nanook.GrindCore.Lz4
         /// </summary>
         /// <param name="srcData">The source data block to decompress.</param>
         /// <param name="dstData">The destination data block to write decompressed data to.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if decompression fails.</exception>
-        internal unsafe override int OnDecompress(DataBlock srcData, DataBlock dstData)
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal unsafe override CompressionResultCode OnDecompress(DataBlock srcData, DataBlock dstData, ref int dstCount)
         {
             fixed (byte* srcPtr = srcData.Data)
             fixed (byte* dstPtr = dstData.Data)
@@ -91,14 +95,18 @@ namespace Nanook.GrindCore.Lz4
                 SZ_Lz4_v1_10_0_Init(ref stream);
 
                 int decompressedSize = SZ_Lz4_v1_10_0_DecompressSafeContinue(
-                    ref stream, srcPtr, dstPtr, srcData.Length, dstData.Length);
+                    ref stream, srcPtr, dstPtr, srcData.Length, dstCount);
 
                 SZ_Lz4_v1_10_0_End(ref stream);
 
                 if (decompressedSize < 0)
-                    throw new InvalidOperationException("LZ4 Block Decompression failed.");
+                {
+                    dstCount = 0;
+                    return mapResult(decompressedSize);
+                }
 
-                return decompressedSize;
+                dstCount = decompressedSize;
+                return CompressionResultCode.Success;
             }
         }
 
@@ -107,6 +115,19 @@ namespace Nanook.GrindCore.Lz4
         /// </summary>
         internal override void OnDispose()
         {
+        }
+
+        private static CompressionResultCode mapResult(int code)
+        {
+            return code switch
+            {
+                0      => CompressionResultCode.Success,
+                -1     => CompressionResultCode.Error,
+                -2     => CompressionResultCode.InsufficientBuffer,
+                -3     => CompressionResultCode.InvalidParameter,
+                -4     => CompressionResultCode.InvalidData,
+                _      => CompressionResultCode.Error
+            };
         }
     }
 }

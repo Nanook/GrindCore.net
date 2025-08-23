@@ -50,9 +50,9 @@ namespace Nanook.GrindCore.Brotli
         /// </summary>
         /// <param name="srcData">The source data block to compress.</param>
         /// <param name="dstData">The destination data block to write compressed data to.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if Brotli block compression fails.</exception>
-        internal unsafe override int OnCompress(DataBlock srcData, DataBlock dstData)
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal unsafe override CompressionResultCode OnCompress(DataBlock srcData, DataBlock dstData, ref int dstCount)
         {
             fixed (byte* srcPtr = srcData.Data)
             fixed (byte* dstPtr = dstData.Data)
@@ -60,7 +60,7 @@ namespace Nanook.GrindCore.Brotli
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                UIntPtr compressedSize = (UIntPtr)dstData.Length;
+                UIntPtr compressedSize = (UIntPtr)dstCount;
                 BOOL success = DN9_BRT_v1_1_0_BrotliEncoderCompress(
                     (int)this.CompressionType, //level
                     WindowBits_Default,
@@ -72,9 +72,13 @@ namespace Nanook.GrindCore.Brotli
                 );
 
                 if (success == BOOL.FALSE)
-                    throw new InvalidOperationException("Brotli Block Compression failed.");
+                {
+                    dstCount = 0;
+                    return mapResult(0);
+                }
 
-                return (int)compressedSize;
+                dstCount = (int)compressedSize;
+                return CompressionResultCode.Success;
             }
         }
 
@@ -83,9 +87,9 @@ namespace Nanook.GrindCore.Brotli
         /// </summary>
         /// <param name="srcData">The source data block to decompress.</param>
         /// <param name="dstData">The destination data block to write decompressed data to.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if Brotli block decompression fails.</exception>
-        internal unsafe override int OnDecompress(DataBlock srcData, DataBlock dstData)
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal unsafe override CompressionResultCode OnDecompress(DataBlock srcData, DataBlock dstData, ref int dstCount)
         {
             fixed (byte* srcPtr = srcData.Data)
             fixed (byte* dstPtr = dstData.Data)
@@ -94,14 +98,18 @@ namespace Nanook.GrindCore.Brotli
                 *&dstPtr += dstData.Offset;
 
                 UIntPtr srcSize = (UIntPtr)srcData.Length;
-                UIntPtr decompressedSize = (UIntPtr)dstData.Length;
+                UIntPtr decompressedSize = (UIntPtr)dstCount;
 
                 BOOL success = DN9_BRT_v1_1_0_BrotliDecoderDecompress(srcSize, srcPtr, &decompressedSize, dstPtr);
 
                 if (success == BOOL.FALSE)
-                    throw new InvalidOperationException("Brotli Block Decompression failed.");
+                {
+                    dstCount = 0;
+                    return mapResult(0);
+                }
 
-                return (int)decompressedSize;
+                dstCount = (int)decompressedSize;
+                return CompressionResultCode.Success;
             }
         }
 
@@ -111,6 +119,18 @@ namespace Nanook.GrindCore.Brotli
         internal override void OnDispose()
         {
             _encoderState.Dispose();
+        }
+
+        private static CompressionResultCode mapResult(int code)
+        {
+            return code switch
+            {
+                1 => CompressionResultCode.Success, // BROTLI_TRUE, BROTLI_DECODER_RESULT_SUCCESS
+                0 => CompressionResultCode.Error,   // BROTLI_FALSE, BROTLI_DECODER_RESULT_ERROR
+                2 => CompressionResultCode.InsufficientBuffer, // BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT
+                3 => CompressionResultCode.InsufficientBuffer, // BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT
+                _ => CompressionResultCode.Error
+            };
         }
     }
 }

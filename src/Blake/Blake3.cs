@@ -7,7 +7,7 @@ namespace Nanook.GrindCore.Blake
     /// <summary>
     /// Represents the Blake3 hashing algorithm.
     /// </summary>
-    public unsafe class Blake3 : HashAlgorithm
+    public unsafe class Blake3 : HashAlgorithmGC
     {
         private const int _hashSizeBytes = 32;
         private Interop.Blake3Hasher _hasher;

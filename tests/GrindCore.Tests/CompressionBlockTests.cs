@@ -78,20 +78,28 @@ namespace GrindCore.Tests
                 byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
                 byte[] decompressed = BufferPool.Rent(_data64KiB.Length);
 
-                int sz = block.Compress(_data64KiB, 0, _data64KiB.Length, compressed, 0, compressed.Length);
-                int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, decompressed.Length);
+                int compressedLength = compressed.Length;
+                int decompressedLength = decompressed.Length;
+                var compressResult = block.Compress(_data64KiB, 0, _data64KiB.Length, compressed, 0, ref compressedLength);
+                var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
 
-                string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
-                string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
+                Assert.Equal(CompressionResultCode.Success, compressResult);
+                Assert.Equal(CompressionResultCode.Success, decompressResult);
+
+                int sz = compressedLength;
+                int dsz = decompressedLength;
+
+                ulong compHash = XXHash64.Compute(compressed, 0, sz);
+                ulong decompHash = XXHash64.Compute(decompressed, 0, dsz);
 
                 BufferPool.Return(compressed);
                 BufferPool.Return(decompressed);
 
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash:x16}\")]");
                 Assert.Equal(size, sz);
-                Assert.Equal(expected, compHash);
+                Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), compHash);
                 Assert.Equal(_data64KiB.Length, dsz);
-                Assert.Equal(XXHash64.Compute(_data64KiB, 0, _data64KiB.Length).ToHexString(), decompHash);
+                Assert.Equal(XXHash64.Compute(_data64KiB, 0, _data64KiB.Length), decompHash);
             }
         }
 
@@ -102,8 +110,8 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x1000a, "f4a2740735a848e5")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x1000a, "602832ca2a11542c")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0x1000a, "602832ca2a11542c")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x10021, "a5ed03187d448a19")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x10021, "e2f946756bf49fce")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x10e0a, "0b264682a2203a5b")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x10030, "7a65952ac6da5760")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x1000a, "f4a2740735a848e5")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x1000c, "b2cee4d81324c0e2")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1000c, "03b1e2cafe441952")]
@@ -120,8 +128,8 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x10010, "306fb18b107697be")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x10010, "e6f25d701c2ebb19")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0x10010, "cf6bcf32107b4790")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x10021, "687553b61e121c29")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x10021, "750a3decaa561361")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x10e10, "c62e8521f3170356")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x10036, "dc209cb9c92041db")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0x10010, "ae8890c171895efb")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x1000a, "4b9f7d6be30a4eca")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x1000a, "4b9f7d6be30a4eca")]
@@ -131,12 +139,15 @@ namespace GrindCore.Tests
             using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _dataNC64KiB.Length, false, CompressionVersion.Create(algorithm)))
             {
                 byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
-                int sz = block.Compress(_dataNC64KiB, 0, _dataNC64KiB.Length, compressed, 0, compressed.Length);
+                int compressedLength = compressed.Length;
+                var compressResult = block.Compress(_dataNC64KiB, 0, _dataNC64KiB.Length, compressed, 0, ref compressedLength);
+                Assert.Equal(CompressionResultCode.Success, compressResult);
+                int sz = compressedLength;
 
-                string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{sz:x}, \"{result}\")]");
+                ulong result = XXHash64.Compute(compressed, 0, sz);
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{sz:x}, \"{result:x16}\")]");
                 Assert.Equal(size, sz);
-                Assert.Equal(expected, result);
+                Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
             }
         }
 
@@ -196,20 +207,28 @@ namespace GrindCore.Tests
                 byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
                 byte[] decompressed = BufferPool.Rent(_text64KiB.Length);
 
-                int sz = block.Compress(_text64KiB, 0, _text64KiB.Length, compressed, 0, compressed.Length);
-                int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, decompressed.Length);
+                int compressedLength = compressed.Length;
+                int decompressedLength = decompressed.Length;
+                var compressResult = block.Compress(_text64KiB, 0, _text64KiB.Length, compressed, 0, ref compressedLength);
+                var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
 
-                string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
-                string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
+                Assert.Equal(CompressionResultCode.Success, compressResult);
+                Assert.Equal(CompressionResultCode.Success, decompressResult);
+
+                int sz = compressedLength;
+                int dsz = decompressedLength;
+
+                ulong compHash = XXHash64.Compute(compressed, 0, sz);
+                ulong decompHash = XXHash64.Compute(decompressed, 0, dsz);
 
                 BufferPool.Return(compressed);
                 BufferPool.Return(decompressed);
 
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, {(version == null ? "null" : $"\"{version}\"")}, 0x{sz:x}, \"{compHash}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, {(version == null ? "null" : $"\"{version}\"")}, 0x{sz:x}, \"{compHash:x16}\")]");
                 Assert.Equal(size, sz);
-                Assert.Equal(expected, compHash);
+                Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), compHash);
                 Assert.Equal(_text64KiB.Length, dsz);
-                Assert.Equal(XXHash64.Compute(_text64KiB, 0, _data64KiB.Length).ToHexString(), decompHash);
+                Assert.Equal(XXHash64.Compute(_text64KiB, 0, _data64KiB.Length), decompHash);
             }
         }
 
@@ -265,39 +284,46 @@ namespace GrindCore.Tests
                 byte[] compressed = BufferPool.Rent(0x100);
                 byte[] decompressed = BufferPool.Rent(0x100);
 
-                int sz = block.Compress(_text64KiB, 0, 0, compressed, 0, compressed.Length);
-                int dsz = block.Decompress(compressed, 0, sz, decompressed, 0, 0);
+                int compressedLength = compressed.Length;
+                int decompressedLength = 0;
+                var compressResult = block.Compress(_text64KiB, 0, 0, compressed, 0, ref compressedLength);
+                var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
 
-                string compHash = XXHash64.Compute(compressed, 0, sz).ToHexString();
-                string decompHash = XXHash64.Compute(decompressed, 0, dsz).ToHexString();
+                Assert.Equal(CompressionResultCode.Success, compressResult);
+                Assert.Equal(CompressionResultCode.Success, decompressResult);
+
+                int sz = compressedLength;
+                int dsz = decompressedLength;
+
+                ulong compHash = XXHash64.Compute(compressed, 0, sz);
+                ulong decompHash = XXHash64.Compute(decompressed, 0, dsz);
 
                 BufferPool.Return(compressed);
                 BufferPool.Return(decompressed);
 
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{sz:x}, \"{compHash}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{sz:x}, \"{compHash:x16}\")]");
                 Assert.Equal(size, sz);
-                Assert.Equal(expected, compHash);
+                Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), compHash);
                 Assert.Equal(0, dsz);
-                Assert.Equal(XXHash64.Compute(new byte[0]).ToHexString(), decompHash);
+                Assert.Equal(XXHash64.Compute(new byte[0]), decompHash);
             }
         }
-
 
         [Fact]
         public void Data_ByteArray64KiB_Zlib_Compress()
         {
             byte[] compressed = new byte[_data64KiB.Length * 2];
             int sz = ZLib.Compress(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length);
-            string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
-            string inHash = XXHash64.Compute(_data64KiB).ToHexString();
+            ulong result = XXHash64.Compute(compressed, 0, sz);
+            ulong inHash = XXHash64.Compute(_data64KiB);
             Assert.Equal(0x305, sz);
-            Assert.Equal("a3c36ab37f8f236d", result);
+            Assert.Equal(ulong.Parse("a3c36ab37f8f236d", System.Globalization.NumberStyles.HexNumber), result);
 
             byte[] decompressed = new byte[_data64KiB.Length * 2];
             sz = ZLib.Uncompress(decompressed, 0, decompressed.Length, compressed, 0, sz);
 
             Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB).ToHexString(), XXHash64.Compute(decompressed, 0, sz).ToHexString());
+            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
         }
 
         [Theory]
@@ -317,18 +343,17 @@ namespace GrindCore.Tests
             CompressionVersion version = CompressionVersion.Create(CompressionAlgorithm.ZLib, CompressionVersion.ZLIB_v1_3_1); //latest regular zlib
             byte[] compressed = new byte[_data64KiB.Length * 2];
             int sz = ZLib.Compress2(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, version);
-            string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
-            Trace.WriteLine($"[InlineData({level}, 0x{sz:x}, \"{result}\")]");
+            ulong result = XXHash64.Compute(compressed, 0, sz);
+            Trace.WriteLine($"[InlineData({level}, 0x{sz:x}, \"{result:x16}\")]");
 
             Assert.Equal(size, sz);
-            Assert.Equal(expected, result);
+            Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
 
             byte[] decompressed = new byte[_data64KiB.Length * 2];
             sz = ZLib.Uncompress2(decompressed, 0, decompressed.Length, compressed, 0, sz, version);
 
             Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB).ToHexString(), XXHash64.Compute(decompressed, 0, sz).ToHexString());
-
+            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
         }
 
         [Theory]
@@ -348,28 +373,19 @@ namespace GrindCore.Tests
             CompressionVersion version = CompressionVersion.Create(CompressionAlgorithm.ZLibNg, ""); //latestng
             byte[] compressed = new byte[_data64KiB.Length * 2];
             int sz = ZLib.Compress2(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, version);
-            string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
-            Trace.WriteLine($"[InlineData({level}, 0x{sz:x}, \"{result}\")]");
+            ulong result = XXHash64.Compute(compressed, 0, sz);
+            Trace.WriteLine($"[InlineData({level}, 0x{sz:x}, \"{result:x16}\")]");
 
             Assert.Equal(size, sz);
-            Assert.Equal(expected, result);
+            Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
 
             byte[] decompressed = new byte[_data64KiB.Length * 2];
             sz = ZLib.Uncompress2(decompressed, 0, decompressed.Length, compressed, 0, sz, version);
 
             Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB).ToHexString(), XXHash64.Compute(decompressed, 0, sz).ToHexString());
-
+            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="level">zlib level 0 to 9</param>
-        /// <param name="strategy">0=Normal, 1=Filtered, 2=Huffman, 3=RLE</param>
-        /// <param name="header"></param>
-        /// <param name="size">Expect compressed size</param>
-        /// <param name="expected">Expected xxhash64</param>
         [Theory]
         [InlineData(1, 0, false, 0x3cd, "eefbb1f99743a612")] //Normal
         [InlineData(1, 0, true, 0x3d3, "faf781046fb77de8")] //Normal
@@ -451,28 +467,20 @@ namespace GrindCore.Tests
             int windowBits = header ? Interop.ZLib.ZLib_DefaultWindowBits : Interop.ZLib.Deflate_DefaultWindowBits;
             byte[] compressed = new byte[_data64KiB.Length * 2];
             int sz = ZLib.Compress3(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, windowBits, strategy, version);
-            string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
+            ulong result = XXHash64.Compute(compressed, 0, sz);
             Assert.Equal(size, sz);
-            Assert.Equal(expected, result);
+            Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
 
-            Trace.WriteLine($"[InlineData({level}, {strategy}, {header.ToString().ToLower()}, 0x{sz:x}, \"{result}\")] //{(new string[] { "Normal", "Filtered", "Huffman", "RLE" }[strategy])}");
+            Trace.WriteLine($"[InlineData({level}, {strategy}, {header.ToString().ToLower()}, 0x{sz:x}, \"{result}:x16\")] //{(new string[] { "Normal", "Filtered", "Huffman", "RLE" }[strategy])}");
 
             byte[] decompressed = new byte[_data64KiB.Length * 2];
             sz = ZLib.Uncompress3(decompressed, 0, decompressed.Length, compressed, 0, sz, windowBits, version);
 
             Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB).ToHexString(), XXHash64.Compute(decompressed, 0, sz).ToHexString());
+            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="level">zlib level 0 to 9</param>
-        /// <param name="strategy">0=Normal, 1=Filtered, 2=Huffman, 3=RLE</param>
-        /// <param name="header"></param>
-        /// <param name="size">Expect compressed size</param>
-        /// <param name="expected">Expected xxhash64</param>
         [Theory]
         [InlineData(0, 0, false, 0x1000a, "23dad93a68ae7c89")] //Normal
         [InlineData(0, 0, true, 0x10010, "c42aa68d0ed670fd")] //Normal
@@ -563,19 +571,51 @@ namespace GrindCore.Tests
             int windowBits = header ? Interop.ZLib.ZLib_DefaultWindowBits : Interop.ZLib.Deflate_DefaultWindowBits;
             byte[] compressed = new byte[_data64KiB.Length * 2];
             int sz = ZLib.Compress3(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, windowBits, strategy, version);
-            string result = XXHash64.Compute(compressed, 0, sz).ToHexString();
+            ulong result = XXHash64.Compute(compressed, 0, sz);
 
-            Trace.WriteLine($"[InlineData({level}, {strategy}, {header.ToString().ToLower()}, 0x{sz:x}, \"{result}\")] //{(new string[] { "Normal", "Filtered", "Huffman", "RLE" }[strategy])}");
+            Trace.WriteLine($"[InlineData({level}, {strategy}, {header.ToString().ToLower()}, 0x{sz:x}, \"{result}:x16\")] //{(new string[] { "Normal", "Filtered", "Huffman", "RLE" }[strategy])}");
             Assert.Equal(size, sz);
-            Assert.Equal(expected, result);
+            Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
 
             byte[] decompressed = new byte[_data64KiB.Length * 2];
             sz = ZLib.Uncompress3(decompressed, 0, decompressed.Length, compressed, 0, sz, windowBits, version);
 
             Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB).ToHexString(), XXHash64.Compute(decompressed, 0, sz).ToHexString());
+            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
 
         }
 
+        [Theory]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest)]
+        [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest)]
+        public void OversizedDecompressBuffer_DoesNotError_ReturnsCorrectSize(CompressionAlgorithm algorithm, CompressionType type)
+        {
+            var data = _data64KiB;
+            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, data.Length, false, CompressionVersion.Create(algorithm)))
+            {
+                byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
+                int compressedLength = compressed.Length;
+                var compressResult = block.Compress(data, 0, data.Length, compressed, 0, ref compressedLength);
+                Assert.Equal(CompressionResultCode.Success, compressResult);
+
+                // Oversized buffer: 2x original size
+                byte[] decompressed = BufferPool.Rent(data.Length * 2);
+                int decompressedLength = decompressed.Length;
+                var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
+                Assert.Equal(CompressionResultCode.Success, decompressResult);
+                Assert.Equal(data.Length, decompressedLength);
+                Assert.Equal(XXHash64.Compute(data, 0, data.Length), XXHash64.Compute(decompressed, 0, decompressedLength));
+                BufferPool.Return(compressed);
+                BufferPool.Return(decompressed);
+            }
+        }
     }
 }

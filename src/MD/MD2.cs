@@ -9,7 +9,7 @@ namespace Nanook.GrindCore.MD
     /// <summary>
     /// Provides implementation of the MD2 hashing algorithm.
     /// </summary>
-    public unsafe class MD2 : HashAlgorithm
+    public unsafe class MD2 : HashAlgorithmGC
     {
         private const int _hashSizeBytes = 16;
         private Interop.MD2_CTX _ctx;

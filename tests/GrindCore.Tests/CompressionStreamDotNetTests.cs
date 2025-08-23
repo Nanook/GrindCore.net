@@ -99,9 +99,9 @@ namespace GrindCore.Tests
         public void Data_ByteArray64KiB(CompressionAlgorithm algorithm, CompressionLevel level, int compressedSize, string xxh64)
         {
             var compressed = Process(algorithm, _data64KiB, true, level);
-            Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionLevel.{level}, 0x{compressed.Length:x}, \"{XXHash64.Compute(compressed).ToHexString()}\")]");
+            Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionLevel.{level}, 0x{compressed.Length:x}, \"{XXHash64.Compute(compressed):x16}\")]");
             Assert.Equal(compressedSize, compressed.Length);
-            Assert.Equal(xxh64, XXHash64.Compute(compressed).ToHexString());
+            Assert.Equal(ulong.Parse(xxh64, System.Globalization.NumberStyles.HexNumber), XXHash64.Compute(compressed));
             var decompressed = Process(algorithm, compressed, false, level);
             Assert.Equal(_data64KiB, decompressed);
         }

@@ -7,7 +7,7 @@
 		<AssemblyName>Nanook.GrindCore</AssemblyName>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-		<Version>0.3.0</Version>
+		<Version>0.4.0</Version>
 		<RootNamespace>Nanook.GrindCore</RootNamespace>
 		<Configurations>Debug;Release;ReleaseTest</Configurations>
 		<RuntimeIdentifiers>win-x64;win-x86;win-arm64;linux-x64;linux-x86;linux-arm64;linux-arm;osx-x64;osx-arm64</RuntimeIdentifiers>
@@ -28,6 +28,11 @@
 
 	<PropertyGroup>
 		<DocumentationFile>Nanook.GrindCore.net.xml</DocumentationFile>
+	</PropertyGroup>
+
+	<!-- Hide a warning that appears when built with the tests as it defaults to x64 -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net35'">
+		<ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
 	</PropertyGroup>
 
 	<!-- CLASSIC will switch to net framework StreamBase and DataBlock for debugging -->

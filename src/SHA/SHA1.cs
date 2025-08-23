@@ -7,7 +7,7 @@ namespace Nanook.GrindCore.SHA
     /// <summary>
     /// Represents the SHA1 hashing algorithm.
     /// </summary>
-    public unsafe class SHA1 : HashAlgorithm
+    public unsafe class SHA1 : HashAlgorithmGC
     {
         private const int _hashSizeBytes = 20;
         private Interop.CSha1 _ctx;

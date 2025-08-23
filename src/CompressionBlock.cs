@@ -75,16 +75,18 @@ namespace Nanook.GrindCore
         /// </summary>
         /// <param name="srcData">The source data block.</param>
         /// <param name="dstData">The destination data block.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        internal abstract int OnCompress(DataBlock srcData, DataBlock dstData);
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal abstract CompressionResultCode OnCompress(DataBlock srcData, DataBlock dstData, ref int dstCount);
 
         /// <summary>
         /// Decompresses data from the source block into the destination block.
         /// </summary>
         /// <param name="srcData">The source data block.</param>
         /// <param name="dstData">The destination data block.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        internal abstract int OnDecompress(DataBlock srcData, DataBlock dstData);
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal abstract CompressionResultCode OnDecompress(DataBlock srcData, DataBlock dstData, ref int dstCount);
 
         /// <summary>
         /// Performs custom cleanup for managed resources.
@@ -99,12 +101,12 @@ namespace Nanook.GrindCore
         /// <param name="srcCount">The number of bytes to decompress from the source buffer.</param>
         /// <param name="dstBuffer">The destination buffer.</param>
         /// <param name="dstOffset">The offset in the destination buffer.</param>
-        /// <param name="dstCount">The maximum number of bytes available in the destination buffer.</param>
-        /// <returns>The number of bytes written to the destination buffer.</returns>
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="srcBuffer"/> or <paramref name="dstBuffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown if any offset or count is negative.</exception>
         /// <exception cref="ArgumentException">Thrown if the sum of offset and count exceeds the buffer length.</exception>
-        public virtual int Decompress(byte[] srcBuffer, int srcOffset, int srcCount, byte[] dstBuffer, int dstOffset, int dstCount)
+        public virtual CompressionResultCode Decompress(byte[] srcBuffer, int srcOffset, int srcCount, byte[] dstBuffer, int dstOffset, ref int dstCount)
         {
             if (srcBuffer == null)
                 throw new ArgumentNullException(nameof(srcBuffer));
@@ -123,9 +125,9 @@ namespace Nanook.GrindCore
             if (dstBuffer.Length - dstOffset < dstCount)
                 throw new ArgumentException("The sum of dstOffset and dstCount is greater than the destination buffer length.");
 
-            DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount); // Use DataBlock for internal logic
-            DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount); // Use DataBlock for internal logic
-            return OnDecompress(srcDataBlock, dstDataBlock); // Use framework independent data container
+            DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount);
+            DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount);
+            return OnDecompress(srcDataBlock, dstDataBlock, ref dstCount);
         }
 
         /// <summary>
@@ -136,12 +138,12 @@ namespace Nanook.GrindCore
         /// <param name="srcCount">The number of bytes to compress from the source buffer.</param>
         /// <param name="dstBuffer">The destination buffer.</param>
         /// <param name="dstOffset">The offset in the destination buffer.</param>
-        /// <param name="dstCount">The maximum number of bytes available in the destination buffer.</param>
-        /// <returns>The number of bytes written to the destination buffer.</returns>
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="srcBuffer"/> or <paramref name="dstBuffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown if any offset or count is negative.</exception>
         /// <exception cref="ArgumentException">Thrown if the sum of offset and count exceeds the buffer length.</exception>
-        public int Compress(byte[] srcBuffer, int srcOffset, int srcCount, byte[] dstBuffer, int dstOffset, int dstCount)
+        public CompressionResultCode Compress(byte[] srcBuffer, int srcOffset, int srcCount, byte[] dstBuffer, int dstOffset, ref int dstCount)
         {
             if (srcBuffer == null)
                 throw new ArgumentNullException(nameof(srcBuffer));
@@ -160,9 +162,9 @@ namespace Nanook.GrindCore
             if (dstBuffer.Length - dstOffset < dstCount)
                 throw new ArgumentException("The sum of dstOffset and dstCount is greater than the destination buffer length.");
 
-            DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount); // Use DataBlock for internal logic
-            DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount); // Use DataBlock for internal logic
-            return OnCompress(srcDataBlock, dstDataBlock); // Use framework independent data container
+            DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount);
+            DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount);
+            return OnCompress(srcDataBlock, dstDataBlock, ref dstCount);
         }
 
         /// <summary>
@@ -189,177 +191,6 @@ namespace Nanook.GrindCore
             GC.SuppressFinalize(this);
         }
 
-#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
-        /// <summary>
-        /// Asynchronously decompresses data from a source memory region to a destination memory region.
-        /// </summary>
-        /// <param name="src">The source memory region.</param>
-        /// <param name="dst">The destination memory region.</param>
-        /// <returns>A task that represents the asynchronous decompress operation. The value of the result parameter contains the total number of bytes written to the destination.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="src"/> or <paramref name="dst"/> length is negative.</exception>
-        public virtual async ValueTask<int> DecompressAsync(ReadOnlyMemory<byte> src, Memory<byte> dst)
-        {
-            if (src.Length < 0)
-                throw new ArgumentOutOfRangeException(nameof(src), "Source length must be non-negative.");
-            if (dst.Length < 0)
-                throw new ArgumentOutOfRangeException(nameof(dst), "Destination length must be non-negative.");
 
-            if (SynchronizationContext.Current == null)
-            {
-                DataBlock srcDataBlock = new DataBlock(src.Span, 0, src.Length); // Use DataBlock for internal logic
-                DataBlock dstDataBlock = new DataBlock(dst.Span, 0, src.Length); // Use DataBlock for internal logic
-                return OnDecompress(srcDataBlock, dstDataBlock); // Use framework independent data container
-            }
-
-            return await Task.Run(() =>
-            {
-                DataBlock srcDataBlock = new DataBlock(src.Span, 0, src.Length); // Use DataBlock for internal logic
-                DataBlock dstDataBlock = new DataBlock(dst.Span, 0, src.Length); // Use DataBlock for internal logic
-                return OnDecompress(srcDataBlock, dstDataBlock); // Use framework independent data container
-            }).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Asynchronously compresses data from a source memory region to a destination memory region.
-        /// </summary>
-        /// <param name="src">The source memory region.</param>
-        /// <param name="dst">The destination memory region.</param>
-        /// <returns>A task that represents the asynchronous compress operation. The value of the result parameter contains the total number of bytes written to the destination.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="src"/> or <paramref name="dst"/> length is negative.</exception>
-        public virtual async ValueTask<int> CompressAsync(ReadOnlyMemory<byte> src, Memory<byte> dst)
-        {
-            if (src.Length < 0)
-                throw new ArgumentOutOfRangeException(nameof(src), "Source length must be non-negative.");
-            if (dst.Length < 0)
-                throw new ArgumentOutOfRangeException(nameof(dst), "Destination length must be non-negative.");
-
-            if (SynchronizationContext.Current == null)
-            {
-                DataBlock srcDataBlock = new DataBlock(src.Span, 0, src.Length); // Use DataBlock for internal logic
-                DataBlock dstDataBlock = new DataBlock(dst.Span, 0, src.Length); // Use DataBlock for internal logic
-                return OnCompress(srcDataBlock, dstDataBlock); // Use framework independent data container
-            }
-
-            return await Task.Run(() =>
-            {
-                DataBlock srcDataBlock = new DataBlock(src.Span, 0, src.Length); // Use DataBlock for internal logic
-                DataBlock dstDataBlock = new DataBlock(dst.Span, 0, src.Length); // Use DataBlock for internal logic
-                return OnCompress(srcDataBlock, dstDataBlock); // Use framework independent data container
-            }).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Asynchronously releases all resources used by the <see cref="CompressionBlock"/>.
-        /// </summary>
-        public async ValueTask DisposeAsync()
-        {
-            if (SynchronizationContext.Current == null)
-            {
-                Dispose(true);
-                return;
-            }
-            await Task.Run(() =>
-            {
-                Dispose(true);
-            }).ConfigureAwait(false);
-        }
-#endif
-
-#if CLASSIC || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP
-        /// <summary>
-        /// Asynchronously decompresses data from a source buffer to a destination buffer.
-        /// </summary>
-        /// <param name="srcBuffer">The source buffer.</param>
-        /// <param name="srcOffset">The offset in the source buffer.</param>
-        /// <param name="srcCount">The number of bytes to decompress from the source buffer.</param>
-        /// <param name="dstBuffer">The destination buffer.</param>
-        /// <param name="dstOffset">The offset in the destination buffer.</param>
-        /// <param name="dstCount">The maximum number of bytes available in the destination buffer.</param>
-        /// <returns>A task that represents the asynchronous decompress operation. The value of the result parameter contains the total number of bytes written to the destination buffer.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="srcBuffer"/> or <paramref name="dstBuffer"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if any offset or count is negative.</exception>
-        /// <exception cref="ArgumentException">Thrown if the sum of offset and count exceeds the buffer length.</exception>
-        public virtual async Task<int> DecompressAsync(byte[] srcBuffer, int srcOffset, int srcCount, byte[] dstBuffer, int dstOffset, int dstCount)
-        {
-            if (srcBuffer == null)
-                throw new ArgumentNullException(nameof(srcBuffer));
-            if (dstBuffer == null)
-                throw new ArgumentNullException(nameof(dstBuffer));
-            if (srcOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(srcOffset), "Source offset must be non-negative.");
-            if (srcCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(srcCount), "Source count must be non-negative.");
-            if (dstOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(dstOffset), "Destination offset must be non-negative.");
-            if (dstCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(dstCount), "Destination count must be non-negative.");
-            if (srcBuffer.Length - srcOffset < srcCount)
-                throw new ArgumentException("The sum of srcOffset and srcCount is greater than the source buffer length.");
-            if (dstBuffer.Length - dstOffset < dstCount)
-                throw new ArgumentException("The sum of dstOffset and dstCount is greater than the destination buffer length.");
-
-            if (SynchronizationContext.Current == null)
-            {
-                DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount); // Use DataBlock for internal logic
-                DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount); // Use DataBlock for internal logic
-                return OnDecompress(srcDataBlock, dstDataBlock); // Use framework independent data container
-            }
-
-            return await Task.Run(() =>
-            {
-                DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount); // Use DataBlock for internal logic
-                DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount); // Use DataBlock for internal logic
-                return OnDecompress(srcDataBlock, dstDataBlock); // Use framework independent data container
-            }).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Asynchronously compresses data from a source buffer to a destination buffer.
-        /// </summary>
-        /// <param name="srcBuffer">The source buffer.</param>
-        /// <param name="srcOffset">The offset in the source buffer.</param>
-        /// <param name="srcCount">The number of bytes to compress from the source buffer.</param>
-        /// <param name="dstBuffer">The destination buffer.</param>
-        /// <param name="dstOffset">The offset in the destination buffer.</param>
-        /// <param name="dstCount">The maximum number of bytes available in the destination buffer.</param>
-        /// <returns>A task that represents the asynchronous compress operation. The value of the result parameter contains the total number of bytes written to the destination buffer.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="srcBuffer"/> or <paramref name="dstBuffer"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if any offset or count is negative.</exception>
-        /// <exception cref="ArgumentException">Thrown if the sum of offset and count exceeds the buffer length.</exception>
-        public virtual async Task<int> CompressAsync(byte[] srcBuffer, int srcOffset, int srcCount, byte[] dstBuffer, int dstOffset, int dstCount)
-        {
-            if (srcBuffer == null)
-                throw new ArgumentNullException(nameof(srcBuffer));
-            if (dstBuffer == null)
-                throw new ArgumentNullException(nameof(dstBuffer));
-            if (srcOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(srcOffset), "Source offset must be non-negative.");
-            if (srcCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(srcCount), "Source count must be non-negative.");
-            if (dstOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(dstOffset), "Destination offset must be non-negative.");
-            if (dstCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(dstCount), "Destination count must be non-negative.");
-            if (srcBuffer.Length - srcOffset < srcCount)
-                throw new ArgumentException("The sum of srcOffset and srcCount is greater than the source buffer length.");
-            if (dstBuffer.Length - dstOffset < dstCount)
-                throw new ArgumentException("The sum of dstOffset and dstCount is greater than the destination buffer length.");
-
-            if (SynchronizationContext.Current == null)
-            {
-                DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount); // Use DataBlock for internal logic
-                DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount); // Use DataBlock for internal logic
-                return OnCompress(srcDataBlock, dstDataBlock); // Use framework independent data container
-            }
-
-            return await Task.Run(() =>
-            {
-                DataBlock srcDataBlock = new DataBlock(srcBuffer, srcOffset, srcCount); // Use DataBlock for internal logic
-                DataBlock dstDataBlock = new DataBlock(dstBuffer, dstOffset, dstCount); // Use DataBlock for internal logic
-                return OnCompress(srcDataBlock, dstDataBlock); // Use framework independent data container
-            }).ConfigureAwait(false);
-        }
-
-#endif
     }
 }

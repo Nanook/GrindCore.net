@@ -359,10 +359,10 @@ namespace GrindCore.Tests
                     result = Blake3.Compute(_data64KiB);
                     break;
                 case HashType.XXHash32:
-                    result = XXHash32.Compute(_data64KiB);
+                    result = XXHash32.ComputeBytes(_data64KiB);
                     break;
                 case HashType.XXHash64:
-                    result = XXHash64.Compute(_data64KiB);
+                    result = XXHash64.ComputeBytes(_data64KiB);
                     break;
                 case HashType.MD2:
                     result = MD2.Compute(_data64KiB);
@@ -436,10 +436,10 @@ namespace GrindCore.Tests
                     result = Blake3.Compute(_data64KiB, 8, 6);
                     break;
                 case HashType.XXHash32:
-                    result = XXHash32.Compute(_data64KiB, 8, 6);
+                    result = XXHash32.ComputeBytes(_data64KiB, 8, 6);
                     break;
                 case HashType.XXHash64:
-                    result = XXHash64.Compute(_data64KiB, 8, 6);
+                    result = XXHash64.ComputeBytes(_data64KiB, 8, 6);
                     break;
                 case HashType.MD2:
                     result = MD2.Compute(_data64KiB, 8, 6);

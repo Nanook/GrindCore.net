@@ -7,7 +7,7 @@ namespace Nanook.GrindCore.SHA
     /// <summary>
     /// Represents the SHA2_384 hashing algorithm.
     /// </summary>
-    public unsafe class SHA2_384 : HashAlgorithm
+    public unsafe class SHA2_384 : HashAlgorithmGC
     {
         private const int _hashSizeBytes = 48;
         private Interop.SHA384_CTX _ctx;

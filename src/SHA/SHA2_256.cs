@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 
 namespace Nanook.GrindCore.SHA
 {
-    public unsafe class SHA2_256 : HashAlgorithm
+    public unsafe class SHA2_256 : HashAlgorithmGC
     {
         private const int _hashSizeBytes = 32;
         private Interop.CSha256 _ctx;
