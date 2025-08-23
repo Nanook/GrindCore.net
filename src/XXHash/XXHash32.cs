@@ -8,10 +8,11 @@ namespace Nanook.GrindCore.XXHash
     /// <summary>
     /// Represents the XXHash32 hashing algorithm.
     /// </summary>
-    public unsafe class XXHash32 : HashAlgorithm
+    public unsafe class XXHash32 : HashAlgorithmGC
     {
         private XXH32_CTX _ctx;
         private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
+        private uint _finalHash;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XXHash32"/> class.
@@ -24,12 +25,13 @@ namespace Nanook.GrindCore.XXHash
         }
 
         /// <summary>
-        /// Computes the hash value for the specified byte array.
+        /// Computes the XXHash32 value for the specified byte array and returns it as a uint.
         /// </summary>
         /// <param name="data">The input data to compute the hash code for.</param>
-        /// <returns>The computed hash code.</returns>
+        /// <returns>The computed hash code as a uint.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="data"/> is null.</exception>
-        public static byte[] Compute(byte[] data)
+        [CLSCompliant(false)]
+        public static uint Compute(byte[] data)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -37,16 +39,17 @@ namespace Nanook.GrindCore.XXHash
         }
 
         /// <summary>
-        /// Computes the hash value for the specified region of the byte array.
+        /// Computes the XXHash32 value for the specified region of the byte array and returns it as a uint.
         /// </summary>
         /// <param name="data">The input data to compute the hash code for.</param>
         /// <param name="offset">The offset in the byte array to start at.</param>
         /// <param name="length">The number of bytes to process.</param>
-        /// <returns>The computed hash code.</returns>
+        /// <returns>The computed hash code as a uint.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="data"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
         /// <exception cref="ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="length"/> is greater than the buffer length.</exception>
-        public static byte[] Compute(byte[] data, int offset, int length)
+        [CLSCompliant(false)]
+        public static uint Compute(byte[] data, int offset, int length)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -58,16 +61,38 @@ namespace Nanook.GrindCore.XXHash
                 throw new ArgumentException("The sum of offset and length is greater than the buffer length.");
 
             XXH32_CTX ctx = new XXH32_CTX();
-            // Pin the data array in memory to obtain a pointer
             fixed (byte* dataPtr = data)
             {
                 XXHash.SZ_XXH32_Reset(&ctx);
-                // Process the data in 256 MiB chunks
                 processData(dataPtr, offset, length, &ctx);
-                // Compute and return the final hash
-                return XXHash.SZ_XXH32_Digest(&ctx).ToByteArray();
+                return XXHash.SZ_XXH32_Digest(&ctx);
             }
         }
+
+        /// <summary>
+        /// Computes the XXHash32 value for the specified byte array and returns it as a byte array.
+        /// </summary>
+        public static byte[] ComputeBytes(byte[] data)
+        {
+            return ComputeBytes(data, 0, data.Length);
+        }
+
+        /// <summary>
+        /// Computes the XXHash32 value for the specified region of the byte array and returns it as a byte array.
+        /// </summary>
+        public static byte[] ComputeBytes(byte[] data, int offset, int length)
+        {
+            uint val = Compute(data, offset, length);
+            if (BitConverter.IsLittleEndian)
+            {
+                val = ((val & 0x000000FFU) << 24) |
+                      ((val & 0x0000FF00U) << 8) |
+                      ((val & 0x00FF0000U) >> 8) |
+                      ((val & 0xFF000000U) >> 24);
+            }
+            return BitConverter.GetBytes(val);
+        }
+
 
         /// <summary>
         /// Processes the specified region of the byte array in 256 MiB chunks.
@@ -129,7 +154,41 @@ namespace Nanook.GrindCore.XXHash
         {
             // Compute and return the final hash
             fixed (XXH32_CTX* ctxPtr = &_ctx)
-                return XXHash.SZ_XXH32_Digest(ctxPtr).ToByteArray();
+            {
+                _finalHash = XXHash.SZ_XXH32_Digest(ctxPtr);
+                return _finalHash.ToByteArray();
+            }
+        }
+
+        /// <summary>
+        /// Returns the finalized hash value as the specified type.
+        /// For numeric types (<see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>), this method returns the cached
+        /// <c>_finalHash</c> value directly, avoiding unnecessary byte conversions. For all other types (such as <see cref="byte"/>),
+        /// the base implementation is used.
+        /// <para>
+        /// Throws <see cref="InvalidOperationException"/> if the hash has not been finalized.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">The type to return the hash as. Supported: <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="byte"/>.</typeparam>
+        /// <returns>The hash value as the specified type.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the hash has not been finalized.</exception>
+        /// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> is not supported.</exception>
+        public override T HashAsType<T>()
+        {
+            // Ensure the hash is finalized
+            if (State != 0)
+                throw new InvalidOperationException("Hash not finalized.");
+
+            // Use the cached _finalHash for numeric types
+            if (typeof(T) == typeof(uint))
+                return (T)(object)_finalHash;
+            if (typeof(T) == typeof(long))
+                return (T)(object)(long)_finalHash;
+            if (typeof(T) == typeof(ulong))
+                return (T)(object)(ulong)_finalHash;
+
+            // Fallback to base for other types (e.g., byte[])
+            return base.HashAsType<T>();
         }
     }
 }

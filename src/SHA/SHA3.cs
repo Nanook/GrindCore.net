@@ -8,7 +8,7 @@ namespace Nanook.GrindCore.SHA
     /// <summary>
     /// Represents the SHA3 hashing algorithm.
     /// </summary>
-    public unsafe class SHA3 : HashAlgorithm
+    public unsafe class SHA3 : HashAlgorithmGC
     {
         private int _hashSizeBytes;
         private Interop.SHA3_CTX _ctx;

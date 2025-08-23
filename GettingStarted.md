@@ -93,31 +93,77 @@ GrindCore provides high-performance block compression classes for one-shot compr
   - `ThreadCount`: For multi-threaded block algorithms (e.g., LZMA2, FastLzma2).
   - `Version`: Pin to a specific algorithm version for reproducible output.
 - **Methods**:
-  - `Compress(...)`: Compresses a buffer in one call.
-  - `Decompress(...)`: Decompresses a buffer in one call.
+  - `Compress(...)`: Compresses a buffer in one call. Returns a `CompressionResultCode` and updates the compressed size via a `ref int` parameter.
+  - `Decompress(...)`: Decompresses a buffer in one call. Returns a `CompressionResultCode` and updates the decompressed size via a `ref int` parameter.
   - Async variants: `CompressAsync(...)`, `DecompressAsync(...)` for high-performance scenarios.
   - `RequiredCompressOutputSize`: Get the recommended output buffer size for compression.
 
 > **Note:** With block compression, the sizes of blocks must be known and allocated by the consumer. Always allocate more space than the input when compressing, as compression can increase the size of the data.
 
+### CompressionResultCode
+
+All block compression and decompression methods return a `CompressionResultCode` value, which can be one of:
+
+- `Success`: The operation completed successfully.
+- `Error`: The operation failed due to an unknown or generic error.
+- `InsufficientBuffer`: The destination buffer is too small.
+- `InvalidData`: The source data is corrupted or invalid.
+- `InvalidParameter`: Invalid parameters were provided.
+- `NotSupported`: The operation is not supported.
+
+Check the return value to determine the result of the operation, and use the updated size from the `ref int` parameter.
+
 ### Example: Block Compression
 
 ```csharp
-// Direct instantiation
-using var lz4 = new Lz4Block(new CompressionOptions 
-{ 
-  Type = CompressionType.Optimal, 
-  BlockSize = 65536 
+// Direct instantiation using
+var lz4 = new Lz4Block(new CompressionOptions
+{
+  Type = CompressionType.Optimal, BlockSize = 65536
 });
 
-// Factory approach
-using var compressor = CompressionBlockFactory.Create(
-  CompressionAlgorithm.ZStd, CompressionType.Fastest, blockSize: 65536);
+// Factory approach using
+var compressor = CompressionBlockFactory.Create(CompressionAlgorithm.ZStd, CompressionType.Fastest, blockSize: 65536);
 
 // Consistent API regardless of creation method
 byte[] input = GetData();
 byte[] output = new byte[compressor.RequiredCompressOutputSize];
-int compressedSize = compressor.Compress(input, 0, input.Length, output, 0, output.Length);
+int compressedSize = output.Length;
+
+// Compress: returns CompressionResultCode, updates compressedSize via ref CompressionResultCode
+compressResult = compressor.Compress( input, 0, input.Length, output, 0, ref compressedSize);
+if (compressResult != CompressionResultCode.Success)
+  throw new InvalidOperationException($"Compression failed: {compressResult}");
+
+// Decompress: returns CompressionResultCode, updates decompressedSize via ref
+byte[] decompressed = new byte[input.Length];
+int decompressedSize = decompressed.Length;
+CompressionResultCode decompressResult = compressor.Decompress(output, 0, compressedSize, decompressed, 0, ref decompressedSize);
+if (decompressResult != CompressionResultCode.Success)
+  throw new InvalidOperationException($"Decompression failed: {decompressResult}");
+
+// Validate round-trip
+Debug.Assert(decompressedSize == input.Length);
+Debug.Assert(input.AsSpan(0, input.Length).SequenceEqual(decompressed.AsSpan(0, decompressedSize)));
+```
+
+### Example: Handling Return Codes
+
+```csharp
+int compressedSize = output.Length;
+var result = compressor.Compress(input, 0, input.Length, output, 0, ref compressedSize);
+
+switch (result)
+{
+  case CompressionResultCode.Success: // Use compressedSize
+    break;
+  case CompressionResultCode.InsufficientBuffer: // Increase output buffer and retry
+    break;
+  case CompressionResultCode.InvalidData: // Handle invalid input
+    break;
+  default: // Handle other errors
+    break;
+}
 ```
 
 ## Hashing Architecture
@@ -138,8 +184,7 @@ GrindCore provides a set of high-performance, .NET-compliant hashing algorithms,
 - **Streaming Support**: Hashes can be computed incrementally using streams, supporting large data sets efficiently.
 - **Disposal and Reuse**: Hash objects are disposable and can be reused for multiple computations.
 - **Factory Usage**: The `HashFactory` class provides a unified API for creating and computing hashes.
-
-> **Planned Feature:** Hashes will soon support generic value access for supported types, e.g. `.Value<uint>()` for CRC32 and `.Value<ulong>()` for XXHash64.
+- **Hash .HashAsType<T>** Hashes support generic value access for supported types, e.g. `.HashAsType<ulong>()` for XXHash64. This allows you to retrieve the hash result directly as a native type (such as `uint`, `ulong`) without byte conversion, also supporting `byte[]`.
 
 ### Example: Hashing
 
@@ -166,7 +211,14 @@ byte[] directHash = blake3.ComputeHash(data);
 byte[] data = System.Text.Encoding.UTF8.GetBytes("Hello, World! This is a longer string for demonstration purposes.");
 int offset = 7;
 int length = 5; // Hash "World"
+
 byte[] hashBytes = HashFactory.Compute(HashType.SHA2_256, data, offset, length);
+
+// Compute XXHash64 as a ulong using the generic value accessor
+using var xxh64 = HashFactory.Create(HashType.XXHash64);
+xxh64.TransformBlock(data, offset, length, data, offset); // Hash "World"
+xxh64.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+ulong hashValue = xxh64.HashAsType<ulong>();
 ```
 
 

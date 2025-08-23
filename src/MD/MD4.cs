@@ -9,7 +9,7 @@ namespace Nanook.GrindCore.MD
     /// <summary>
     /// Provides implementation of the MD4 hashing algorithm.
     /// </summary>
-    public unsafe class MD4 : HashAlgorithm
+    public unsafe class MD4 : HashAlgorithmGC
     {
         private const int _hashSizeBytes = 16;
         private Interop.MD4_CTX _ctx;

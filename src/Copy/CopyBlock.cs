@@ -34,11 +34,19 @@ namespace Nanook.GrindCore.Copy
         /// </summary>
         /// <param name="srcData">The source data block.</param>
         /// <param name="dstData">The destination data block.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        internal override int OnCompress(DataBlock srcData, DataBlock dstData)
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal override CompressionResultCode OnCompress(DataBlock srcData, DataBlock dstData, ref int dstCount)
         {
+            if (dstCount < srcData.Length)
+            {
+                dstCount = 0;
+                return CompressionResultCode.InsufficientBuffer;
+            }
+            
             srcData.CopyTo(dstData, srcData.Offset, 0, srcData.Length);
-            return srcData.Length;
+            dstCount = srcData.Length;
+            return CompressionResultCode.Success;
         }
 
         /// <summary>
@@ -46,11 +54,19 @@ namespace Nanook.GrindCore.Copy
         /// </summary>
         /// <param name="srcData">The source data block.</param>
         /// <param name="dstData">The destination data block.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        internal unsafe override int OnDecompress(DataBlock srcData, DataBlock dstData)
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal override CompressionResultCode OnDecompress(DataBlock srcData, DataBlock dstData, ref int dstCount)
         {
+            if (dstCount < srcData.Length)
+            {
+                dstCount = 0;
+                return CompressionResultCode.InsufficientBuffer;
+            }
+            
             srcData.CopyTo(dstData, srcData.Offset, 0, srcData.Length);
-            return srcData.Length;
+            dstCount = srcData.Length;
+            return CompressionResultCode.Success;
         }
 
         /// <summary>

@@ -7,7 +7,7 @@ namespace Nanook.GrindCore.Blake
     /// <summary>
     /// Represents the Blake2sp hashing algorithm.
     /// </summary>
-    public unsafe class Blake2sp : HashAlgorithm
+    public unsafe class Blake2sp : HashAlgorithmGC
     {
         private const int _hashSizeBytes = 32;
         private Interop.CBlake2sp _state;
@@ -135,6 +135,7 @@ namespace Nanook.GrindCore.Blake
                 Interop.Blake.SZ_Blake2sp_Final(statePtr, resultPtr);
             return result;
         }
+
     }
 }
 

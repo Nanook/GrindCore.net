@@ -53,9 +53,9 @@ namespace Nanook.GrindCore.FastLzma2
         /// </summary>
         /// <param name="srcData">The source data block to compress.</param>
         /// <param name="dstData">The destination data block to write compressed data to.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if compression fails.</exception>
-        internal unsafe override int OnCompress(DataBlock srcData, DataBlock dstData)
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal unsafe override CompressionResultCode OnCompress(DataBlock srcData, DataBlock dstData, ref int dstCount)
         {
             fixed (byte* srcPtr = srcData.Data)
             fixed (byte* dstPtr = dstData.Data)
@@ -63,14 +63,18 @@ namespace Nanook.GrindCore.FastLzma2
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                nuint compressedSize = (nuint)dstData.Length;
+                nuint compressedSize = (nuint)dstCount;
                 nuint result = FL2_compressCCtx(
                     _compressCtx, dstPtr, compressedSize, srcPtr, (nuint)srcData.Length, (int)this.CompressionType);
 
-                if (result == 0)
-                    throw new InvalidOperationException("Fast-LZMA2 Block Compression failed.");
+                if (result < 0)
+                {
+                    dstCount = 0;
+                    return mapResult((int)result);
+                }
 
-                return (int)result;
+                dstCount = (int)result;
+                return CompressionResultCode.Success;
             }
         }
 
@@ -79,9 +83,9 @@ namespace Nanook.GrindCore.FastLzma2
         /// </summary>
         /// <param name="srcData">The source data block to decompress.</param>
         /// <param name="dstData">The destination data block to write decompressed data to.</param>
-        /// <returns>The number of bytes written to the destination block.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if decompression fails or the compressed data is invalid.</exception>
-        internal unsafe override int OnDecompress(DataBlock srcData, DataBlock dstData)
+        /// <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+        /// <returns>The compression result code.</returns>
+        internal unsafe override CompressionResultCode OnDecompress(DataBlock srcData, DataBlock dstData, ref int dstCount)
         {
             fixed (byte* srcPtr = srcData.Data)
             fixed (byte* dstPtr = dstData.Data)
@@ -92,16 +96,23 @@ namespace Nanook.GrindCore.FastLzma2
                 // Ensure correct decompression size
                 nuint decompressedSize = FL2_findDecompressedSize(srcPtr, (nuint)srcData.Length);
                 if (decompressedSize == (nuint)uint.MaxValue)
-                    throw new InvalidOperationException("Invalid compressed data detected.");
+                {
+                    dstCount = 0;
+                    return CompressionResultCode.InvalidData;
+                }
 
                 FL2_initDCtx(_decompressCtx, srcData.Data[0]); // Use property byte from compressed data
 
                 nuint result = FL2_decompressMt(dstPtr, decompressedSize, srcPtr, (nuint)srcData.Length, (uint)(this.Options.ThreadCount ?? 1));
 
                 if (result < 0 || result == (nuint)uint.MaxValue)
-                    throw new InvalidOperationException($"Fast-LZMA2 Multi-Threaded Block Decompression failed. Error code: {result}");
+                {
+                    dstCount = 0;
+                    return mapResult((int)result);
+                }
 
-                return (int)result;
+                dstCount = (int)result;
+                return CompressionResultCode.Success;
             }
         }
 
@@ -112,6 +123,40 @@ namespace Nanook.GrindCore.FastLzma2
         {
             FL2_freeCCtx(_compressCtx);
             FL2_freeDCtx(_decompressCtx);
+        }
+
+        private static CompressionResultCode mapResult(int code)
+        {
+            // 0 is success, >0 is error (see FL2Exception for details)
+            switch (code)
+            {
+                case 0:  // FL2_error_no_error
+                    return CompressionResultCode.Success;
+                case -1:  // FL2_error_GENERIC
+                case -2:  // FL2_error_internal
+                case -9:  // FL2_error_init_missing
+                case -13: // FL2_error_canceled
+                case -14: // FL2_error_buffer
+                case -15: // FL2_error_timedOut
+                    return CompressionResultCode.Error;
+                case -3:  // FL2_error_corruption_detected
+                case -4:  // FL2_error_checksum_wrong
+                case -12: // FL2_error_srcSize_wrong
+                    return CompressionResultCode.InvalidData;
+                case -5:  // FL2_error_parameter_unsupported
+                    return CompressionResultCode.NotSupported;
+                case -6:  // FL2_error_parameter_outOfBound
+                case -7:  // FL2_error_lclpMax_exceeded
+                case -8:  // FL2_error_stage_wrong
+                    return CompressionResultCode.InvalidParameter;
+                case 10: // FL2_error_memory_allocation
+                    return CompressionResultCode.Error;
+                case 11: // FL2_error_dstSize_tooSmall
+                    return CompressionResultCode.InsufficientBuffer;
+                // -20 (maxCode) should never be used directly
+                default:
+                    return CompressionResultCode.Error;
+            }
         }
     }
 }

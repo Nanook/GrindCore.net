@@ -8,7 +8,7 @@ namespace Nanook.GrindCore.MD
     /// <summary>
     /// Represents the MD5 hashing algorithm.
     /// </summary>
-    public unsafe class MD5 : HashAlgorithm
+    public unsafe class MD5 : HashAlgorithmGC
     {
         private const int _hashSizeBytes = 16;
         private Interop.MD5_CTX _ctx;

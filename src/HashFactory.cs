@@ -1,5 +1,4 @@
 using System;
-using HashAlgorithm = System.Security.Cryptography.HashAlgorithm;
 using Nanook.GrindCore.MD;
 using Nanook.GrindCore.SHA;
 using Nanook.GrindCore.Blake;
@@ -13,7 +12,7 @@ namespace Nanook.GrindCore
     /// </summary>
     public class HashFactory
     {
-        private static readonly Dictionary<HashType, Func<HashAlgorithm>> hashCreators = new Dictionary<HashType, Func<HashAlgorithm>>()
+        private static readonly Dictionary<HashType, Func<HashAlgorithmGC>> hashCreators = new Dictionary<HashType, Func<HashAlgorithmGC>>()
         {
             { HashType.Blake2sp, () => Blake2sp.Create() },
             { HashType.Blake3, () => Blake3.Create() },
@@ -33,12 +32,12 @@ namespace Nanook.GrindCore
         };
 
         /// <summary>
-        /// Creates a new <see cref="HashAlgorithm"/> instance for the specified <see cref="HashType"/>.
+        /// Creates a new HashAlgorithm instance for the specified <see cref="HashType"/>.
         /// </summary>
         /// <param name="type">The hash algorithm type to create.</param>
-        /// <returns>A new <see cref="HashAlgorithm"/> instance.</returns>
+        /// <returns>A new HashAlgorithm/> instance.</returns>
         /// <exception cref="ArgumentException">Thrown if the specified hash type is not supported.</exception>
-        public static HashAlgorithm Create(HashType type)
+        public static HashAlgorithmGC Create(HashType type)
         {
             if (hashCreators.TryGetValue(type, out var creator))
                 return creator();
