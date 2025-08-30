@@ -73,7 +73,7 @@ namespace Nanook.GrindCore.Lzma
             if (res != 0)
                 throw new Exception($"Failed to set LZMA2 encoder config {res}");
 
-            this.BlockSize = (int)bufferSize;
+            this.BlockSize = (int)dictSize;
             bufferSize += 0x8; // only needs 1 extra byte to ensure the end is not reached. Just align to 8
 
             _inBuffer = BufferPool.Rent((int)bufferSize);
@@ -109,7 +109,7 @@ namespace Nanook.GrindCore.Lzma
             ulong outSz = 0;
             int outTotal = 0;
 
-            while (inData.AvailableRead != 0 || (final && !finalfinal))
+            while (inData.AvailableRead != 0 || final || _toFlush != 0)
             {
                 cancel.ThrowIfCancellationRequested();
 
@@ -132,14 +132,14 @@ namespace Nanook.GrindCore.Lzma
 
                 if (!final && _inStream.remaining < (ulong)this.BlockSize)
                     break;
-                finalfinal = final && inData.AvailableRead == 0 && _toFlush == 0;
+                finalfinal = final && inData.AvailableRead + _toFlush < this.BlockSize;
 
                 outSz = (ulong)(outData.AvailableWrite);
 
                 fixed (byte* outPtr = outData.Data)
                 {
                     *&outPtr += outData.Size; // writePos is Size
-                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
+                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, finalfinal ? 0 : this.BlockSize, &available, finalfinal ? 1 : 0);
                     outTotal += (int)outSz;
                 }
                 _toFlush = available;
@@ -147,6 +147,9 @@ namespace Nanook.GrindCore.Lzma
 
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
+
+                if (final)
+                    break;
             }
 
             return outTotal;

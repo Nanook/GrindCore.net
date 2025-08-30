@@ -36,7 +36,7 @@ namespace Nanook.GrindCore.Lzma
         {
             if (IsCompress)
             {
-                _encoder = new LzmaEncoder((int)CompressionType, (uint)dictionarySize, 0);
+                _encoder = new LzmaEncoder((int)CompressionType, dictionarySize != 0 ? (uint)dictionarySize : (uint)(options.BufferSize ?? this.BufferSizeInput), 0);
                 Properties = _encoder.Properties;
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 1) + 0x10;
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);

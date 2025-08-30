@@ -219,6 +219,9 @@ namespace Nanook.GrindCore.Lzma
 
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
+
+                if (final)
+                    break;
             }
 
             return outTotal;
