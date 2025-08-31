@@ -36,6 +36,8 @@ namespace Nanook.GrindCore.Lzma
         /// <exception cref="Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
         public LzmaEncoder(int level = 5, uint dictSize = 0, int wordSize = 0)
         {
+            _toFlush = 0;
+
             CLzmaEncProps props = new CLzmaEncProps();
 
             SZ_Lzma_v25_01_EncProps_Init(ref props);
@@ -111,9 +113,6 @@ namespace Nanook.GrindCore.Lzma
 
             while (inData.AvailableRead != 0 || final)
             {
-                if (final)
-                {
-                }
                 cancel.ThrowIfCancellationRequested();
 
                 if (_inStream.pos == _inStream.size)
@@ -135,14 +134,14 @@ namespace Nanook.GrindCore.Lzma
 
                 if (!final && _inStream.remaining < (ulong)this.BlockSize)
                     break;
-                finalfinal = final && inData.AvailableRead + _toFlush <= this.BlockSize;
+                finalfinal = final && inData.AvailableRead == 0 && _inStream.remaining == 0;
 
                 outSz = (ulong)(outData.AvailableWrite);
 
                 fixed (byte* outPtr = outData.Data)
                 {
                     *&outPtr += outData.Size; // writePos is Size
-                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
+                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, finalfinal ? 0 : this.BlockSize, &available, finalfinal ? 1 : 0);
                     outTotal += (int)outSz;
                 }
                 _toFlush = available;
@@ -151,7 +150,7 @@ namespace Nanook.GrindCore.Lzma
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
 
-                if (final)
+                if (finalfinal)
                     break;
             }
 

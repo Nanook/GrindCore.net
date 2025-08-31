@@ -53,21 +53,27 @@ namespace Nanook.GrindCore.Lzma
                 IntPtr encoder = SZ_Lzma_v25_01_Enc_Create();
                 SZ_Lzma_v25_01_Enc_SetProps(encoder, ref _props);
                 SZ_Lzma_v25_01_Enc_SetDataSize(encoder, (ulong)srcData.Length);
+                int result;
 
                 // Retrieve encoded properties
                 byte[] p = BufferPool.Rent(0x10);
-                ulong sz = (ulong)p.Length;
-
-                fixed (byte* inPtr = p)
-                    SZ_Lzma_v25_01_Enc_WriteProperties(encoder, inPtr, &sz);
-                this.Properties = p.Take((int)sz).ToArray();
-                BufferPool.Return(p);
-
                 ulong compressedSize = (ulong)dstCount;
-                int result = SZ_Lzma_v25_01_Enc_MemEncode(
-                    encoder, dstPtr, &compressedSize, srcPtr, (ulong)srcData.Length, 0, IntPtr.Zero);
+                try
+                {
+                    ulong sz = (ulong)p.Length;
 
-                SZ_Lzma_v25_01_Enc_Destroy(encoder);
+                    fixed (byte* inPtr = p)
+                        SZ_Lzma_v25_01_Enc_WriteProperties(encoder, inPtr, &sz);
+                    this.Properties = p.Take((int)sz).ToArray();
+
+                    result = SZ_Lzma_v25_01_Enc_MemEncode(
+                        encoder, dstPtr, &compressedSize, srcPtr, (ulong)srcData.Length, 0, IntPtr.Zero);
+                }
+                finally
+                {
+                    BufferPool.Return(p);
+                    SZ_Lzma_v25_01_Enc_Destroy(encoder);
+                }
 
                 if (result != 0)
                 {
