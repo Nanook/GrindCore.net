@@ -170,12 +170,14 @@ namespace Nanook.GrindCore.Lzma
             bytesWrittenToStream = 0;
             if (IsCompress)
             {
-                cancel.ThrowIfCancellationRequested();
-                long size = _encoder.EncodeData(data, _buffer, true, cancel);
-                if (size > 0)
+                while (true)
                 {
+                    cancel.ThrowIfCancellationRequested();
+                    long size = _encoder.EncodeData(data, _buffer, true, cancel);
+                    if (size == 0)
+                        break;
                     BaseWrite(_buffer, _buffer.AvailableRead);
-                    bytesWrittenToStream = (int)size;
+                    bytesWrittenToStream += (int)size;
                 }
                 if (complete)
                 {

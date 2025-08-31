@@ -109,8 +109,11 @@ namespace Nanook.GrindCore.Lzma
             ulong outSz = 0;
             int outTotal = 0;
 
-            while (inData.AvailableRead != 0 || final || _toFlush != 0)
+            while (inData.AvailableRead != 0 || final)
             {
+                if (final)
+                {
+                }
                 cancel.ThrowIfCancellationRequested();
 
                 if (_inStream.pos == _inStream.size)
@@ -132,14 +135,14 @@ namespace Nanook.GrindCore.Lzma
 
                 if (!final && _inStream.remaining < (ulong)this.BlockSize)
                     break;
-                finalfinal = final && inData.AvailableRead + _toFlush < this.BlockSize;
+                finalfinal = final && inData.AvailableRead + _toFlush <= this.BlockSize;
 
                 outSz = (ulong)(outData.AvailableWrite);
 
                 fixed (byte* outPtr = outData.Data)
                 {
                     *&outPtr += outData.Size; // writePos is Size
-                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, finalfinal ? 0 : this.BlockSize, &available, finalfinal ? 1 : 0);
+                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, this.BlockSize, &available, finalfinal ? 1 : 0);
                     outTotal += (int)outSz;
                 }
                 _toFlush = available;
