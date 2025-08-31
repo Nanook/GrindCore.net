@@ -848,6 +848,20 @@
             <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
             <exception cref="T:System.ArgumentException">Thrown if <paramref name="data"/> is not null and the sum of <paramref name="offset"/> and <paramref name="length"/> is greater than the array length.</exception>
         </member>
+        <member name="M:Nanook.GrindCore.CompressionBuffer.Read(System.Span{System.Byte})">
+            <summary>
+            Reads data from the buffer into the specified span and advances the position.
+            </summary>
+            <param name="data">The destination span.</param>
+            <returns>The number of bytes actually read.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionBuffer.Write(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Writes data from the specified span to the buffer and advances the size.
+            </summary>
+            <param name="data">The source span.</param>
+            <returns>The number of bytes actually written.</returns>
+        </member>
         <member name="T:Nanook.GrindCore.CompressionDefaults">
             <summary>
             Provides default compression levels and version information for a given <see cref="T:Nanook.GrindCore.CompressionAlgorithm"/>.
@@ -1203,6 +1217,34 @@
             Releases the unmanaged resources used by the <see cref="T:Nanook.GrindCore.CompressionStream"/> and optionally releases the managed resources.
             </summary>
             <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.ReadAsync(System.Memory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
+            </summary>
+            <param name="buffer">The region of memory to write the data into.</param>
+            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+            <returns>A task that represents the asynchronous read operation. The value of the result parameter contains the total number of bytes read into the buffer.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="buffer"/> length is negative.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.WriteAsync(System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
+            </summary>
+            <param name="buffer">The region of memory to write data from.</param>
+            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+            <returns>A task that represents the asynchronous write operation.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="buffer"/> length is negative.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.CompleteAsync">
+            <summary>
+            Asynchronously completes the compression or decompression operation, flushing all buffers and finalizing the stream without disposing anything.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.DisposeAsync">
+            <summary>
+            Asynchronously releases the unmanaged resources used by the <see cref="T:Nanook.GrindCore.CompressionStream"/> and optionally releases the managed resources.
+            </summary>
         </member>
         <member name="M:Nanook.GrindCore.CompressionStream.ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
             <summary>
@@ -1627,42 +1669,57 @@
         </member>
         <member name="T:Nanook.GrindCore.DataBlock">
             <summary>
-            Represents a block of data for compression or decompression operations, using arrays for compatibility.
+            Represents a block of data for compression or decompression operations compatible with span and all versions of dotnet, using spans for efficient memory access.
             </summary>
         </member>
         <member name="F:Nanook.GrindCore.DataBlock.Data">
             <summary>
-            Gets the underlying data array.
+            Gets the readonly memory span for this data block.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor">
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.ReadOnlySpan{System.Byte},System.Int32,System.Int32)">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct as an empty block.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.ReadOnlySpan`1"/>.
             </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Byte[],System.Int32,System.Int32)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a byte array, offset, and length.
-            </summary>
-            <param name="data">The source array.</param>
-            <param name="offset">The offset within the array.</param>
+            <param name="span">The source span.</param>
+            <param name="offset">The offset within the span.</param>
             <param name="length">The length of the data block.</param>
         </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Byte[])">
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.ReadOnlySpan{System.Byte})">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a byte array covering the entire array.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.ReadOnlySpan`1"/> covering the entire span.
             </summary>
-            <param name="data">The source array.</param>
+            <param name="span">The source span.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Span{System.Byte},System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.Span`1"/>.
+            </summary>
+            <param name="span">The source span.</param>
+            <param name="offset">The offset within the span.</param>
+            <param name="length">The length of the data block.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Span{System.Byte})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.Span`1"/> covering the entire span.
+            </summary>
+            <param name="span">The source span.</param>
         </member>
         <member name="P:Nanook.GrindCore.DataBlock.Offset">
             <summary>
-            Gets the offset within the underlying array.
+            Gets the offset within the underlying span or array.
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.DataBlock.Length">
             <summary>
             Gets the length of the data block.
             </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.DataBlock.AsWritableSpan">
+            <summary>
+            Exposes the mutable span for writing, if available.
+            </summary>
+            <returns>The writable <see cref="T:System.Span`1"/>.</returns>
         </member>
         <member name="M:Nanook.GrindCore.DataBlock.Read(System.Int32,System.Byte[],System.Int32,System.Int32)">
             <summary>
@@ -1690,6 +1747,7 @@
             <param name="sourceOffset">The offset within this block to start writing to.</param>
             <param name="buffer">The source <see cref="T:Nanook.GrindCore.CompressionBuffer"/>.</param>
             <param name="length">The number of bytes to write.</param>
+            <exception cref="T:System.NotSupportedException">Thrown if this block is not writable.</exception>
             <exception cref="T:System.ArgumentOutOfRangeException">Thrown if the source range is out of bounds.</exception>
         </member>
         <member name="M:Nanook.GrindCore.DataBlock.CopyTo(Nanook.GrindCore.DataBlock,System.Int32,System.Int32,System.Int32)">
@@ -5658,68 +5716,6 @@
             This stream will always use <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoder"/> and <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> as its internal types.
             If an older version (e.g., 1.5.2) is requested, the version-specific implementation is used but cast to the base type,
             making versioning transparent to consumers.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.ZStd.ZStdStream.BufferSizeInput">
-            <summary>
-            Gets the input buffer size for ZStd operations.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.ZStd.ZStdStream.BufferSizeOutput">
-            <summary>
-            Gets the output buffer size for ZStd operations.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdStream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdStream"/> class with the specified stream and options.
-            </summary>
-            <param name="stream">The underlying stream to read from or write to.</param>
-            <param name="options">The compression options to use.</param>
-        </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdStream.OnRead(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Int32)">
-            <summary>
-            Reads data from the stream and decompresses it using ZStd.
-            Updates the position with the running total of bytes processed from the source stream.
-            </summary>
-            <param name="data">The buffer to read decompressed data into.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
-            <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
-            <returns>The number of bytes written to the buffer.</returns>
-            <exception cref="T:System.NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdStream.OnWrite(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@)">
-            <summary>
-            Compresses data using ZStd and writes it to the stream.
-            Updates the position with the running total of bytes processed from the source stream.
-            </summary>
-            <param name="data">The buffer containing data to compress and write.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
-            <exception cref="T:System.NotSupportedException">Thrown if the stream is not in compression mode.</exception>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdStream.OnFlush(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Boolean,System.Boolean)">
-            <summary>
-            Flushes any remaining compressed data to the stream and finalizes the compression if requested.
-            </summary>
-            <param name="data">The buffer containing data to flush.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
-            <param name="flush">Indicates if this is a flush operation.</param>
-            <param name="complete">Indicates that there is no more data to compress.</param>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdStream.OnDispose">
-            <summary>
-            Disposes the <see cref="T:Nanook.GrindCore.ZStd.ZStdStream"/> and its resources.
-            </summary>
-        </member>
-    </members>
-</doc>
-to consumers.
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.ZStd.ZStdStream.BufferSizeInput">
