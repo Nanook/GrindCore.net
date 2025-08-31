@@ -205,7 +205,7 @@ namespace Nanook.GrindCore.Lzma
                         res = SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u, _blockComplete ? 1u : 0u);
                         outTotal += (int)outSz;
                         outData.Write((int)outSz);
-                    } while (outSz != 0 && (finalfinal || blkFinal));
+                    } while (res == 0 && outSz != 0 && (finalfinal || blkFinal));
 
                     if (blkFinal && !finalfinal)
                     {
@@ -219,6 +219,9 @@ namespace Nanook.GrindCore.Lzma
 
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
+
+                if (final)
+                    break;
             }
 
             return outTotal;

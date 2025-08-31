@@ -30,7 +30,7 @@ namespace GrindCore.Tests
         private static byte[]? _dataHalfGiB;
 
         /// <summary>
-        /// Test and demonstrate an instance of a hashing algorithm, processing one 512GiB array of data.
+        /// Test and demonstrate an instance of a hashing algorithm, processing one 512MiB array of data.
         /// The hasher is set to type HashAlgorith, this allows it to be used with other classes in the framework.
         /// </summary>
         [Theory]
@@ -49,7 +49,7 @@ namespace GrindCore.Tests
         [InlineData(HashType.SHA3_512, DataStreamHashConstants.HashResult512MiBSHA3_512)]
         [InlineData(HashType.XXHash32, DataStreamHashConstants.HashResult512MiBXXHash32)]
         [InlineData(HashType.XXHash64, DataStreamHashConstants.HashResult512MiBXXHash64)]
-        public void Hash_ByteArray512GiB(HashType type, string expectedResult)
+        public void Hash_ByteArray512MiB(HashType type, string expectedResult)
         {
             if (_dataHalfGiB == null)
                 _dataHalfGiB = TestDataStream.Create(512 * 1024 * 1024);
