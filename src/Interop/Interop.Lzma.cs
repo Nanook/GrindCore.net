@@ -33,7 +33,7 @@ namespace Nanook.GrindCore
             public ulong processed;   // Total bytes processed (running total)
             public int finished;
             public int count;
-            public ulong lastSize;
+            public UIntPtr lastSize;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -65,17 +65,17 @@ namespace Nanook.GrindCore
             public ulong affinityInGroup;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        public struct CLzma2Enc
-        {
-            public byte propEncoded;
-            public CLzma2EncProps props;
-            public ulong expectedDataSize;
-            public IntPtr tempBufLzma; // Byte pointer
-            public IntPtr alloc; // ISzAllocPtr
-            public IntPtr allocBig; // ISzAllocPtr
-                                    // Other members omitted for simplicity
-        }
+        //[StructLayout(LayoutKind.Sequential)]
+        //public struct CLzma2Enc
+        //{
+        //    public byte propEncoded;
+        //    public CLzma2EncProps props;
+        //    public ulong expectedDataSize;
+        //    public IntPtr tempBufLzma; // Byte pointer
+        //    public IntPtr alloc; // ISzAllocPtr
+        //    public IntPtr allocBig; // ISzAllocPtr
+        //                            // Other members omitted for simplicity
+        //}
 
         [StructLayout(LayoutKind.Sequential)]
         public struct CLzma2Dec

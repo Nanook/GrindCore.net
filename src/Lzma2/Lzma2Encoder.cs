@@ -232,7 +232,7 @@ namespace Nanook.GrindCore.Lzma
         /// </summary>
         public void Dispose()
         {
-            if (!_blockComplete)
+            if (!_blockComplete && _solid) //ONLY finalise SOLID mode!!!
             {
                 byte[] dummy = new byte[0];
                 ulong zero = 0;
