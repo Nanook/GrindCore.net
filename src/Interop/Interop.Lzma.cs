@@ -33,7 +33,7 @@ namespace Nanook.GrindCore
             public ulong processed;   // Total bytes processed (running total)
             public int finished;
             public int count;
-            public ulong lastSize;
+            public UIntPtr lastSize;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -65,17 +65,17 @@ namespace Nanook.GrindCore
             public ulong affinityInGroup;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        public struct CLzma2Enc
-        {
-            public byte propEncoded;
-            public CLzma2EncProps props;
-            public ulong expectedDataSize;
-            public IntPtr tempBufLzma; // Byte pointer
-            public IntPtr alloc; // ISzAllocPtr
-            public IntPtr allocBig; // ISzAllocPtr
-                                    // Other members omitted for simplicity
-        }
+        //[StructLayout(LayoutKind.Sequential)]
+        //public struct CLzma2Enc
+        //{
+        //    public byte propEncoded;
+        //    public CLzma2EncProps props;
+        //    public ulong expectedDataSize;
+        //    public IntPtr tempBufLzma; // Byte pointer
+        //    public IntPtr alloc; // ISzAllocPtr
+        //    public IntPtr allocBig; // ISzAllocPtr
+        //                            // Other members omitted for simplicity
+        //}
 
         [StructLayout(LayoutKind.Sequential)]
         public struct CLzma2Dec
@@ -185,7 +185,7 @@ namespace Nanook.GrindCore
             public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCallPrepare(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, uint init, uint final);
+            public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, uint init);
 
 
 
