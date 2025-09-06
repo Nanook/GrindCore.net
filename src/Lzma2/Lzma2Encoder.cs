@@ -18,6 +18,7 @@ namespace Nanook.GrindCore.Lzma
         private bool _solid;
         private long _blkTotal;
         private bool _blockComplete;
+        private bool _needsInit = false;
 
         /// <summary>
         /// Gets the LZMA2 property byte used for encoding.
@@ -121,6 +122,13 @@ namespace Nanook.GrindCore.Lzma
             if (outData.Size != 0)
                 throw new ArgumentException($"outData should have a Size of 0");
 
+            // Lazy preparation: only prepare if we need to AND have data to process
+            if (_needsInit && (inData.AvailableRead > 0 || final))
+            {
+                SZ_Lzma2_v25_01_Enc_EncodeMultiCallPrepare(_encoder);
+                _needsInit = false;
+            }
+
             if (_solid)
                 return encodeDataSolid(inData, outData, final, cancel);
             else
@@ -202,15 +210,15 @@ namespace Nanook.GrindCore.Lzma
                         outSz = (ulong)outData.AvailableWrite;
                         byte* outPtr2 = *&outPtr + outData.Size;
                         _blockComplete = finalfinal || blkFinal;
-                        res = SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u, _blockComplete ? 1u : 0u);
+                        res = SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u);
                         outTotal += (int)outSz;
                         outData.Write((int)outSz);
                     } while (res == 0 && outSz != 0 && (finalfinal || blkFinal));
 
                     if (blkFinal && !finalfinal)
                     {
-                        SZ_Lzma2_v25_01_Enc_EncodeMultiCallPrepare(_encoder);
                         _blkTotal = 0;
+                        _needsInit = true;
                     }
                 }
 
@@ -234,15 +242,22 @@ namespace Nanook.GrindCore.Lzma
         {
             if (!_blockComplete && _solid) //ONLY finalise SOLID mode!!!
             {
-                byte[] dummy = new byte[0];
-                ulong zero = 0;
-                //fixed (byte* d = dummy)
-                //    SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, d, &zero, ref _inStream, 0u, 1u);
+                if (_needsInit)
+                {
+                    SZ_Lzma2_v25_01_Enc_EncodeMultiCallPrepare(_encoder);
+                    _needsInit = false;
+                }
 
+                byte[] dummy = new byte[1]; // Ensure we have space for EOF marker
+                ulong outSize = 1;
                 fixed (byte* d = dummy)
-                    SZ_Lzma2_v25_01_Enc_EncodeMultiCallFinalize(_encoder, d, &zero);
-
+                {
+                    int res = SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, d, &outSize, ref _inStream, 0u);
+                    if (res == 0) // Only set to complete if finalization succeeded
+                        _blockComplete = true;
+                }
             }
+
             if (_encoder != IntPtr.Zero)
             {
                 SZ_Lzma2_v25_01_Enc_Destroy(_encoder);
