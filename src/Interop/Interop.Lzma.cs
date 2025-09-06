@@ -260,6 +260,9 @@ namespace Nanook.GrindCore
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, int limit,uint* availableBytes, int final);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCallFinalize(IntPtr encoder, byte* outBuf, ulong* outBufSize);
         }
     }
 }

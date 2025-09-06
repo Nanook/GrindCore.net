@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<SelfContained>false</SelfContained>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>false</IsTestProject>
+
+		<RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">win-x64</RuntimeIdentifier>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'osx-x64' ">x64</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'linux-arm64' or  '$(RuntimeIdentifier)' == 'osx-arm64' ">arm64</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-x86' ">x86</PlatformTarget>
+		<PlatformTarget Condition=" '$(RuntimeIdentifier)' == 'linux-arm' ">arm</PlatformTarget>
+		<RuntimeIdentifiers>$(RuntimeIdentifier)</RuntimeIdentifiers>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\GrindCore.net.csproj" />
+	</ItemGroup>
+
+	<Target Name="CopyNativeLibraries" AfterTargets="Build">
+		<ItemGroup>
+			<NativeLibraries Include="$(OutputPath)runtimes\$(RuntimeIdentifier)\native\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(NativeLibraries)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+	</Target>
+</Project>

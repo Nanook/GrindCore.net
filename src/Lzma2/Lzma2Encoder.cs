@@ -236,8 +236,12 @@ namespace Nanook.GrindCore.Lzma
             {
                 byte[] dummy = new byte[0];
                 ulong zero = 0;
+                //fixed (byte* d = dummy)
+                //    SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, d, &zero, ref _inStream, 0u, 1u);
+
                 fixed (byte* d = dummy)
-                    SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, d, &zero, ref _inStream, 0u, 1u);
+                    SZ_Lzma2_v25_01_Enc_EncodeMultiCallFinalize(_encoder, d, &zero);
+
             }
             if (_encoder != IntPtr.Zero)
             {
