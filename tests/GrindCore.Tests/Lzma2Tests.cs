@@ -66,6 +66,6 @@ namespace GrindCore.Tests
                 Assert.Equal(r.InHash, r.OutHash); //test IN and decompressed data hashes match
             }
         }
-#endif
     }
+#endif
 }
