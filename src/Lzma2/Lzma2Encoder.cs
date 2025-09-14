@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using static Nanook.GrindCore.Interop.Lzma;
 using static Nanook.GrindCore.Interop;
+using Nanook.GrindCore;
 
 namespace Nanook.GrindCore.Lzma
 {
@@ -32,15 +33,16 @@ namespace Nanook.GrindCore.Lzma
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lzma2Encoder"/> class with the specified compression parameters.
+        /// Accepts optional <see cref="CompressionDictionaryOptions"/>; any LZMA tuning fields set on that object
+        /// will be applied and unset fields will be left for the native normalizer to choose.
         /// </summary>
         /// <param name="level">The compression level to use (default is 5).</param>
         /// <param name="threads">The number of threads to use (default is 1).</param>
         /// <param name="blockSize">The block size to use for compression (-1 for solid mode, 0 for auto, default is -1).</param>
-        /// <param name="dictSize">The dictionary size to use (default is 0).</param>
-        /// <param name="wordSize">The word size to use (default is 0).</param>
+        /// <param name="dictOptions">Optional dictionary / tuning options (dict size, fb, lc/lp/pb, etc.).</param>
         /// <param name="minBufferSize">The minimum buffer size to use (default is 0).</param>
         /// <exception cref="Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
-        public Lzma2Encoder(int level = 5, int threads = 1, long blockSize = -1, int dictSize = 0, int wordSize = 0, int minBufferSize = 0)
+        public Lzma2Encoder(int level = 5, int threads = 1, long blockSize = -1, CompressionDictionaryOptions? dictOptions = null, int minBufferSize = 0)
         {
             if (threads <= 0)
                 threads = 1;
@@ -52,7 +54,7 @@ namespace Nanook.GrindCore.Lzma
             // encoder already has props, replace them. Blank lc, lp etc to ensure they're recalculated from the level
             CLzma2EncProps props = new CLzma2EncProps();
 
-            //init
+            // init
             props.lzmaProps.level = 5;
             props.lzmaProps.dictSize = props.lzmaProps.mc = 0;
             props.lzmaProps.reduceSize = ulong.MaxValue;
@@ -65,14 +67,63 @@ namespace Nanook.GrindCore.Lzma
             props.numBlockThreads_Reduced = -1;
             props.numTotalThreads = -1;
 
-            //config
+            // config base
             props.lzmaProps.level = level;
             props.lzmaProps.numThreads = -1;
             props.numBlockThreads_Max = threads;
             props.numBlockThreads_Reduced = -1;
             props.numTotalThreads = threads;
-            props.numThreadGroups = 0; //new for 25.01
+            props.numThreadGroups = 0; // new for 25.01
 
+            // Apply dictionary options (dict size & LZMA tuning) if provided
+            if (dictOptions != null)
+            {
+                // Dictionary size
+                if (dictOptions.DictionarySize.HasValue && dictOptions.DictionarySize.Value != 0)
+                {
+                    long ds = dictOptions.DictionarySize.Value;
+                    if (ds < 0 || ds > uint.MaxValue)
+                        throw new ArgumentOutOfRangeException(nameof(dictOptions.DictionarySize), $"DictionarySize must be between 0 and {uint.MaxValue} (fits in uint).");
+                    props.lzmaProps.dictSize = (uint)ds;
+                    // mc uses a uint; keep previous heuristic but it's not critical
+                    props.lzmaProps.mc = (uint)Math.Min(ds, int.MaxValue);
+                }
+
+                // LZMA fine tuning: apply fields only when set, leave others -1 so native normalize() chooses defaults
+                if (dictOptions.LiteralContextBits.HasValue) props.lzmaProps.lc = Clamp(dictOptions.LiteralContextBits.Value, 0, 8);
+                if (dictOptions.LiteralPositionBits.HasValue) props.lzmaProps.lp = Clamp(dictOptions.LiteralPositionBits.Value, 0, 4);
+                if (dictOptions.PositionBits.HasValue) props.lzmaProps.pb = Clamp(dictOptions.PositionBits.Value, 0, 4);
+                if (dictOptions.Algorithm.HasValue) props.lzmaProps.algo = Clamp(dictOptions.Algorithm.Value, 0, 1);
+
+                if (dictOptions.FastBytes.HasValue)
+                    props.lzmaProps.fb = Clamp(dictOptions.FastBytes.Value, 5, 273);
+                // else leave props.lzmaProps.fb = -1 so native normalize chooses default
+
+                if (dictOptions.BinaryTreeMode.HasValue) props.lzmaProps.btMode = Clamp(dictOptions.BinaryTreeMode.Value, 0, 1);
+                if (dictOptions.HashBytes.HasValue) props.lzmaProps.numHashBytes = Clamp(dictOptions.HashBytes.Value, 2, 4);
+                if (dictOptions.MatchCycles.HasValue)
+                {
+                    // match cycles minimum 1, clamp to reasonable upper bound
+                    int mc = Clamp(dictOptions.MatchCycles.Value, 1, 1 << 30);
+                    props.lzmaProps.mc = (uint)mc;
+                }
+                if (dictOptions.WriteEndMarker.HasValue) props.lzmaProps.writeEndMark = dictOptions.WriteEndMarker.Value ? 1u : 0u;
+
+                // Ensure lc + lp is within native acceptable limits. Some native versions reject combinations where lc+lp is too large.
+                // If both lc and lp were explicitly set and their sum exceeds 4, reduce lc so lc+lp == 4 to avoid SZ_ERROR_PARAM.
+                if (props.lzmaProps.lc >= 0 && props.lzmaProps.lp >= 0)
+                {
+                    int sum = (int)props.lzmaProps.lc + (int)props.lzmaProps.lp;
+                    if (sum > 4)
+                    {
+                        int newLc = Math.Max(0, 4 - (int)props.lzmaProps.lp);
+                        props.lzmaProps.lc = newLc;
+                    }
+                }
+            }
+            // else: no dictOptions — keep fb and dictSize unset (-1/0) so native defaults apply
+
+            // Determine LZMA2 blockSize behavior (unchanged): props.blockSize set relative to threads & blockSize param
             if (threads == 1 || blockSize == -1)
                 props.blockSize = ulong.MaxValue;
             else if (blockSize == 0 && minBufferSize > 0)
@@ -83,11 +134,18 @@ namespace Nanook.GrindCore.Lzma
             _solid = props.blockSize == ulong.MaxValue;
             this.BlockSize = _solid && blockSize == 0 ? -1 : blockSize;
 
-            // Use a fixed statement to pass the struct to the function
-            int res = SZ_Lzma2_v25_01_Enc_SetProps(_encoder, ref props);
-
-            if (res != 0)
-                throw new Exception($"Failed to set LZMA2 encoder config {res}");
+            // Validate and dump props on failure to help identify invalid parameter (SZ_ERROR_PARAM)
+            try
+            {
+                int res = SZ_Lzma2_v25_01_Enc_SetProps(_encoder, ref props);
+                if (res != 0)
+                    throw new Exception($"Failed to set LZMA2 encoder config {res}. Props: {PropsToString(ref props)}");
+            }
+            catch (Exception ex)
+            {
+                // If native call itself throws or returns error, include prop dump
+                throw new Exception($"SZ_Lzma2_v25_01_Enc_SetProps failed. {ex.Message}\nProps: {PropsToString(ref props)}", ex);
+            }
 
             this.Properties = SZ_Lzma2_v25_01_Enc_WriteProperties(_encoder);
 
@@ -100,6 +158,14 @@ namespace Nanook.GrindCore.Lzma
             _blkTotal = 0;
 
             SZ_Lzma2_v25_01_Enc_EncodeMultiCallPrepare(_encoder);
+        }
+
+        private static int Clamp(int v, int min, int max) => v < min ? min : (v > max ? max : v);
+
+        private static string PropsToString(ref CLzma2EncProps p)
+        {
+            // Build a concise representation of the important fields that can cause SZ_ERROR_PARAM
+            return $"lzmaProps.level={p.lzmaProps.level}, dictSize={p.lzmaProps.dictSize}, lc={p.lzmaProps.lc}, lp={p.lzmaProps.lp}, pb={p.lzmaProps.pb}, algo={p.lzmaProps.algo}, fb={p.lzmaProps.fb}, btMode={p.lzmaProps.btMode}, numHashBytes={p.lzmaProps.numHashBytes}, mc={p.lzmaProps.mc}, writeEndMark={p.lzmaProps.writeEndMark}, blockSize={p.blockSize}, numBlockThreads_Max={p.numBlockThreads_Max}, numTotalThreads={p.numTotalThreads}";
         }
 
         /// <summary>
@@ -135,9 +201,6 @@ namespace Nanook.GrindCore.Lzma
                 return encodeDataMt(inData, outData, final, cancel);
         }
 
-        /// <summary>
-        /// Encodes data using multi-threaded block mode.
-        /// </summary>
         private int encodeDataMt(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             ulong outSz = (ulong)outData.AvailableWrite;
@@ -161,9 +224,6 @@ namespace Nanook.GrindCore.Lzma
             return (int)outSz;
         }
 
-        /// <summary>
-        /// Encodes data using pseudo-solid mode.
-        /// </summary>
         private int encodeDataSolid(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             long inTotal = 0;

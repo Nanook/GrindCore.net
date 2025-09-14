@@ -35,16 +35,39 @@ namespace Nanook.GrindCore.Lz4
         public Lz4Stream(Stream stream, CompressionOptions options)
             : base(true, stream, CompressionAlgorithm.Lz4, options)
         {
+            // Determine an encoder/decoder block size and compression level using Dictionary settings when provided.
+            // Defaults preserve existing behavior (BufferThreshold for block size and this.CompressionType for level).
+            int resolvedBlockSize = BufferThreshold;
+            int resolvedCompressionLevel = (int)this.CompressionType;
+
+            if (options?.Dictionary != null)
+            {
+                if (options.Dictionary.DictionarySize.HasValue && options.Dictionary.DictionarySize.Value > 0)
+                {
+                    // Clamp dictionary size into int range; prefer provided dictionary size for LZ4 block sizing.
+                    long ds = options.Dictionary.DictionarySize.Value;
+                    if (ds > int.MaxValue)
+                        ds = int.MaxValue;
+                    resolvedBlockSize = (int)ds;
+                }
+
+                if (options.Dictionary.Strategy.HasValue) // For LZ4 we map Strategy (when supplied) to the encoder compression level.
+                    resolvedCompressionLevel = options.Dictionary.Strategy.Value;
+            }
+
             if (IsCompress)
             {
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold / 255) + 0x10 + 1;
-                _encoder = new Lz4Encoder(BufferThreshold, (int)this.CompressionType);
+                _encoder = new Lz4Encoder(resolvedBlockSize, resolvedCompressionLevel);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
             {
                 this.BufferSizeOutput = BufferThreshold;
-                _decoder = new Lz4Decoder(this.BufferSizeOutput);
+
+                // Decoder block size: prefer dictionary size if provided, otherwise use BufferSizeOutput.
+                int decoderBlockSize = resolvedBlockSize > 0 ? resolvedBlockSize : this.BufferSizeOutput;
+                _decoder = new Lz4Decoder(decoderBlockSize);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }

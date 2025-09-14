@@ -34,8 +34,10 @@ namespace Nanook.GrindCore.Brotli
         {
             if (IsCompress)
             {
-                _encoder.SetQuality(CompressionType);
-                _encoder.SetWindow();
+                // Use the resolved CompressionStream.CompressionType (which respects defaults)
+                // and read window bits from options.Dictionary when present.
+                int windowBits = options?.Dictionary?.WindowBits ?? 22; // default = 22
+                _encoder = new BrotliEncoder(this.CompressionType, windowBits, options?.Version);
             }
 
             _buffer = new CompressionBuffer(this.BufferSizeOutput);
@@ -154,7 +156,7 @@ namespace Nanook.GrindCore.Brotli
         /// <summary>
         /// Writes compressed data from the provided buffer to the underlying stream, with an option to indicate the final block.
         /// </summary>
-        /// <param name="data">The buffer containing data to write.</param>
+        /// <param name="data">The buffer containing data to write to the stream.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>
         /// <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
         /// <param name="isFinalBlock">Indicates whether this is the final block of data.</param>

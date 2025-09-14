@@ -15,6 +15,9 @@ namespace Nanook.GrindCore.Lz4
     /// </summary>
     public class Lz4Block : CompressionBlock
     {
+        private readonly int _blockSize;
+        private readonly int _compressionLevel;     
+
         /// <summary>
         /// Gets the required output buffer size for compression, as determined by the LZ4 algorithm.
         /// </summary>
@@ -26,8 +29,27 @@ namespace Nanook.GrindCore.Lz4
         /// <param name="options">The compression options to use.</param>
         public Lz4Block(CompressionOptions options) : base(CompressionAlgorithm.Lz4, options)
         {
-            int isize = (int)options.BlockSize!;
-            RequiredCompressOutputSize = isize + (isize / 255) + 16;
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            // Resolve block size: prefer Dictionary.DictionarySize when provided, otherwise use options.BlockSize.
+            // Be tolerant for small or missing values in tests: fall back to 1 if nothing sensible provided.
+            long bs = options.Dictionary?.DictionarySize ?? options.BlockSize ?? 0L;
+            if (bs <= 0)
+            {
+                // Fall back to the provided BlockSize if any, otherwise minimally 1
+                bs = options.BlockSize ?? 1L;
+                if (bs <= 0)
+                    bs = 1L;
+            }
+            if (bs > int.MaxValue)
+                bs = int.MaxValue;
+            _blockSize = (int)bs;
+
+            // Determine compression level: prefer Dictionary.Strategy when provided; otherwise use CompressionType resolved by base.
+            _compressionLevel = options.Dictionary?.Strategy ?? (int)this.CompressionType;
+
+            RequiredCompressOutputSize = _blockSize + (_blockSize / 255) + 16;
         }
 
         /// <summary>
@@ -47,20 +69,22 @@ namespace Nanook.GrindCore.Lz4
 
                 int compressedSize;
 
-                if ((int)this.CompressionType >= 3) // Use HC compression for level 3 or higher
+                if (_compressionLevel >= 3) // Use HC compression for level 3 or higher
                 {
                     compressedSize = Interop.Lz4.SZ_Lz4_v1_10_0_CompressHC(
                         srcPtr, (IntPtr)dstPtr,
                         srcData.Length, dstCount,
-                        (int)this.CompressionType); // Pass HC compression level
+                        _compressionLevel); // Pass HC compression level
                 }
                 else
                 {
                     SZ_Lz4_v1_10_0_Stream stream = new SZ_Lz4_v1_10_0_Stream();
                     SZ_Lz4_v1_10_0_Init(ref stream);
 
+                    int accel = _compressionLevel == 1 ? 1 : 0;
+
                     compressedSize = SZ_Lz4_v1_10_0_CompressFastContinue(
-                        ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstCount, this.CompressionType == CompressionType.Level1 ? 1 : 0);
+                        ref stream, srcPtr, (IntPtr)dstPtr, srcData.Length, dstCount, accel);
 
                     SZ_Lz4_v1_10_0_End(ref stream);
                 }

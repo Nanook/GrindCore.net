@@ -38,7 +38,14 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <param name="stream">The underlying stream to read from or write to.</param>
         /// <param name="options">The compression options to use.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
-        public DeflateStream(Stream stream, CompressionOptions options) : this(stream, CompressionAlgorithm.DeflateNg, options, Interop.ZLib.Deflate_DefaultWindowBits)
+        public DeflateStream(Stream stream, CompressionOptions options)
+            : this(
+                  stream,
+                  CompressionAlgorithm.DeflateNg,
+                  options,
+                  options?.Dictionary?.WindowBits ?? Interop.ZLib.Deflate_DefaultWindowBits,
+                  options?.Dictionary?.MemoryLevel ?? Interop.ZLib.Deflate_DefaultMemLevel,
+                  (Interop.ZLib.CompressionStrategy?)(options?.Dictionary?.Strategy) ?? Interop.ZLib.CompressionStrategy.DefaultStrategy)
         {
         }
 
@@ -49,23 +56,25 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <param name="defaultAlgorithm">The default algorithm, used when options.Version is not set to override it.</param>
         /// <param name="options">The compression options to use.</param>
         /// <param name="windowBits">The window bits to use for Deflate.</param>
+        /// <param name="memLevel">The memory level to use for Deflate.</param>
+        /// <param name="strategy">The compression strategy to use for Deflate.</param>
         /// <param name="uncompressedSize">The expected uncompressed size, or -1 if unknown.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
-        internal DeflateStream(Stream stream, CompressionAlgorithm defaultAlgorithm, CompressionOptions options, int windowBits, long uncompressedSize = -1) : base(true, stream, defaultAlgorithm, options)
-        {
-            if (!IsCompress)
-            {
-                this.BufferSizeOutput = 8192;
-                _buffer = new CompressionBuffer(this.BufferSizeOutput);
-                _inflater = new DeflateDecoder(base.Version, windowBits, uncompressedSize);
-            }
-            else
-            {
-                this.BufferSizeOutput = this.BufferThreshold;
-                _buffer = new CompressionBuffer(this.BufferSizeOutput);
-                _deflater = new DeflateEncoder(base.Version, CompressionType, windowBits);
-            }
-        }
+        internal DeflateStream(Stream stream, CompressionAlgorithm defaultAlgorithm, CompressionOptions options, int windowBits, int memLevel = Interop.ZLib.Deflate_DefaultMemLevel, Interop.ZLib.CompressionStrategy strategy = Interop.ZLib.CompressionStrategy.DefaultStrategy, long uncompressedSize = -1) : base(true, stream, defaultAlgorithm, options)
+         {
+             if (!IsCompress)
+             {
+                 this.BufferSizeOutput = 8192;
+                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
+                 _inflater = new DeflateDecoder(base.Version, windowBits, uncompressedSize);
+             }
+             else
+             {
+                 this.BufferSizeOutput = this.BufferThreshold;
+                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
+                _deflater = new DeflateEncoder(base.Version, CompressionType, windowBits, memLevel, strategy);
+             }
+         }
 
         /// <summary>
         /// Reads and decompresses data from the underlying stream into the provided buffer.

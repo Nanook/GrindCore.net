@@ -95,7 +95,7 @@ namespace GrindCore.Tests
                 BufferPool.Return(compressed);
                 BufferPool.Return(decompressed);
 
-                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, 0x{sz:x}, \"{compHash:x16}\")]");
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, {type}, {(version == null ? "null" : $"\"{version}\"")}, 0x{sz:x}, \"{compHash:x16}\")]");
                 Assert.Equal(size, sz);
                 Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), compHash);
                 Assert.Equal(_data64KiB.Length, dsz);
@@ -107,12 +107,12 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x10004, "edc3f0815cf95397")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x10004, "edc3f0815cf95397")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0x10004, "edc3f0815cf95397")]
-        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x1000a, "f4a2740735a848e5")]
-        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x1000a, "602832ca2a11542c")]
-        [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0x1000a, "602832ca2a11542c")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x10014, "93a692e53106a748")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x10014, "768a235a84e86ec0")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0x10014, "768a235a84e86ec0")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x10e0a, "0b264682a2203a5b")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x10030, "7a65952ac6da5760")]
-        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x1000a, "f4a2740735a848e5")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x10016, "d42359fc430a83c8")]
+        [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.SmallestSize, 0x10014, "93a692e53106a748")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x1000c, "b2cee4d81324c0e2")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1000c, "03b1e2cafe441952")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x1000c, "03b1e2cafe441952")]
@@ -125,12 +125,12 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x10007, "c93c02419eed314c")]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x10007, "8a3d45bab1e3772d")]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x10007, "8a3d45bab1e3772d")]
-        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x10010, "306fb18b107697be")]
-        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x10010, "e6f25d701c2ebb19")]
-        [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0x10010, "cf6bcf32107b4790")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x1001a, "211ab6d6eed4a4f5")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x1001a, "82bce3f0208e94dc")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0x1001a, "bfa6ab6e1a530cf4")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x10e10, "c62e8521f3170356")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x10036, "dc209cb9c92041db")]
-        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0x10010, "ae8890c171895efb")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x1001c, "fef7f5ad6953bc0e")]
+        [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0x1001a, "8bf050366b26ba45")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x1000a, "4b9f7d6be30a4eca")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x1000a, "4b9f7d6be30a4eca")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x1000a, "4b9f7d6be30a4eca")]
@@ -168,7 +168,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, null, 0x84d, "25be05c704cb5995")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, null, 0x5d1, "2b444156a4305ae3")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, null, 0x4fa, "bd7a15fc895f1b65")]
-        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, null, 0x2006, "d0acb11d8edcb72b")]
+        [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, null, 0x1db4, "2464d64063e022ba")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, null, 0xcc2, "88b181dc28558433")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, null, 0xb9b, "080ef351410b77ac")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, null, 0x264b, "1a218597f77b77b5")]
@@ -186,7 +186,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, null, 0x636, "eca2b056732b6c26")]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, null, 0x605, "9ac9ca397bdbf54b")]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, null, 0x647, "1b1484110fe9391a")]
-        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, null, 0x200c, "c43831d20deadb6b")]
+        [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, null, 0x1dba, "bdd8b43a296a44ad")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, null, 0xcc8, "aa99d2252c2f6606")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, null, 0xba1, "2b9ecf7dce8e81ce")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, null, 0x2651, "8b0b438386b0c1f5")]
