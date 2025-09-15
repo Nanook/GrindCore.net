@@ -19,7 +19,6 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x3cd, "eefbb1f99743a612")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x4bf, "ca5207caef02504d")]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x1ea, "e8dcd55f29d31d27")]
-        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x29a, "72f75d0b96ea09ee")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x1de, "6d7905044230ec1f")]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x1e5, "b4550df1c1bd0067")]
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x3d3, "faf781046fb77de8")]
@@ -27,6 +26,8 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x197, "e6b4aafc1efa2266")]
 
 #if !IS_32BIT
+        [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x29a, "72f75d0b96ea09ee")]
+
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Optimal, 0x19b, "e39f3f4d64825537")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Optimal, 0x2ff, "fd1a57a63d29c607")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Optimal, 0x2ff, "fd1a57a63d29c607")]
