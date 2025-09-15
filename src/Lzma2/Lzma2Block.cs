@@ -29,9 +29,12 @@ namespace Nanook.GrindCore.Lzma
             int level = (int)this.CompressionType;
             int threads = options.ThreadCount ?? 1;
             this.Properties = options.InitProperties;
+
+            // Initialize props struct
             CLzma2EncProps props = new CLzma2EncProps();
-            SZ_Lzma2_v25_01_Enc_Construct(ref _props);
-            //init
+            SZ_Lzma2_v25_01_Enc_Construct(ref props);
+
+            // init
             props.lzmaProps.level = 5;
             props.lzmaProps.dictSize = props.lzmaProps.mc = 0;
             props.lzmaProps.reduceSize = ulong.MaxValue;
@@ -44,16 +47,54 @@ namespace Nanook.GrindCore.Lzma
             props.numBlockThreads_Reduced = -1;
             props.numTotalThreads = -1;
 
-            //config
+            // config
             props.lzmaProps.level = level;
             props.lzmaProps.numThreads = -1;
             props.numBlockThreads_Max = threads;
             props.numBlockThreads_Reduced = -1;
             props.numTotalThreads = threads;
 
+            // Apply dictionary options if present (dict size, fb, lc/lp/pb, algo, btMode, hashBytes, match cycles, writeEndMarker)
+            var d = options.Dictionary;
+            if (d != null)
+            {
+                if (d.DictionarySize.HasValue && d.DictionarySize.Value != 0)
+                {
+                    long ds = d.DictionarySize.Value;
+                    if (ds < 0 || ds > uint.MaxValue)
+                        throw new ArgumentOutOfRangeException(nameof(options.Dictionary.DictionarySize), $"DictionarySize must be between 0 and {uint.MaxValue}.");
+                    props.lzmaProps.dictSize = (uint)ds;
+                    // preserve mc fallback to something reasonable if provided
+                    props.lzmaProps.mc = (uint)Math.Min(ds, int.MaxValue);
+                }
+
+                if (d.LiteralContextBits.HasValue)
+                    props.lzmaProps.lc = d.LiteralContextBits.Value;
+                if (d.LiteralPositionBits.HasValue)
+                    props.lzmaProps.lp = d.LiteralPositionBits.Value;
+                if (d.PositionBits.HasValue)
+                    props.lzmaProps.pb = d.PositionBits.Value;
+                if (d.Algorithm.HasValue)
+                    props.lzmaProps.algo = d.Algorithm.Value;
+
+                if (d.FastBytes.HasValue)
+                    props.lzmaProps.fb = d.FastBytes.Value;
+                // else leave fb as -1 so native normalize picks default
+
+                if (d.BinaryTreeMode.HasValue)
+                    props.lzmaProps.btMode = d.BinaryTreeMode.Value;
+                if (d.HashBytes.HasValue)
+                    props.lzmaProps.numHashBytes = d.HashBytes.Value;
+                if (d.MatchCycles.HasValue)
+                    props.lzmaProps.mc = (uint)d.MatchCycles.Value;
+                if (d.WriteEndMarker.HasValue)
+                    props.lzmaProps.writeEndMark = d.WriteEndMarker.Value ? 1u : 0u;
+            }
+
+            // Normalize properties so native code fills sensible defaults for unset fields
+            SZ_Lzma2_v25_01_Enc_Normalize(ref props);
+
             _props = props;
-            // Normalize properties
-            SZ_Lzma2_v25_01_Enc_Normalize(ref _props);
 
             RequiredCompressOutputSize = blockSize + (blockSize >> 1) + 0x20; // Adjust for overhead
         }

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Nanook.GrindCore;
 
 namespace Nanook.GrindCore.Lzma
 {
@@ -25,21 +26,59 @@ namespace Nanook.GrindCore.Lzma
         internal override int BufferSizeOutput { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LzmaStream"/> class with the specified stream, options, and optional dictionary size.
+        /// Initializes a new instance of the <see cref="LzmaStream"/> class with the specified stream and options.
+        /// Dictionary size is taken from <see cref="CompressionDictionaryOptions.DictionarySize"/>, then <see cref="CompressionOptions.BufferSize"/>,
+        /// and finally falls back to the stream default <see cref="BufferSizeInput"/>.
         /// </summary>
         /// <param name="stream">The underlying stream to read from or write to.</param>
         /// <param name="options">The compression options to use.</param>
-        /// <param name="dictionarySize">The dictionary size to use for compression (default is 0).</param>
         /// <exception cref="Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
-        private LzmaStream(Stream stream, CompressionOptions options, int dictionarySize = 0)
+        public LzmaStream(Stream stream, CompressionOptions options)
             : base(true, stream, CompressionAlgorithm.Lzma, options)
         {
             if (IsCompress)
             {
-                _encoder = new LzmaEncoder((int)CompressionType, dictionarySize != 0 ? (uint)dictionarySize : (uint)(options.BufferSize ?? this.BufferSizeInput), 0);
+                // Determine dictionary size using the new CompressionOptions.Dictionary property first,
+                // then options.BufferSize, then default input buffer size.
+                uint dictSizeToUse;
+                long? dictOptSize = options?.Dictionary?.DictionarySize;
+                if (dictOptSize.HasValue && dictOptSize.Value != 0)
+                {
+                    if (dictOptSize.Value < 0 || dictOptSize.Value > uint.MaxValue)
+                        throw new ArgumentOutOfRangeException(nameof(options.Dictionary.DictionarySize), $"DictionarySize must be between 0 and {uint.MaxValue}.");
+                    dictSizeToUse = (uint)dictOptSize.Value;
+                }
+                else if (options?.BufferSize is int bs && bs > 0)
+                    dictSizeToUse = (uint)bs;
+                else
+                    dictSizeToUse = (uint)this.BufferSizeInput;
+
+                // Build merged dictionary options so encoder can read dictSize and fast-bytes from it.
+                CompressionDictionaryOptions mergedDict = options?.Dictionary != null
+                    ? new CompressionDictionaryOptions
+                    {
+                        DictionarySize = options.Dictionary.DictionarySize ?? dictSizeToUse,
+                        FastBytes = options.Dictionary.FastBytes,
+                        LiteralContextBits = options.Dictionary.LiteralContextBits,
+                        LiteralPositionBits = options.Dictionary.LiteralPositionBits,
+                        PositionBits = options.Dictionary.PositionBits,
+                        Algorithm = options.Dictionary.Algorithm,
+                        BinaryTreeMode = options.Dictionary.BinaryTreeMode,
+                        HashBytes = options.Dictionary.HashBytes,
+                        MatchCycles = options.Dictionary.MatchCycles,
+                        WriteEndMarker = options.Dictionary.WriteEndMarker
+                    }
+                    : new CompressionDictionaryOptions { DictionarySize = dictSizeToUse };
+
+                // Ensure FastBytes fallback is set if not provided
+                if (!mergedDict.FastBytes.HasValue)
+                    mergedDict.FastBytes = options?.Dictionary?.FastBytes ?? 0;
+
+                // Pass merged dictionary options and thread count into encoder. Provide compression level as fallback.
+                _encoder = new LzmaEncoder(mergedDict, options?.ThreadCount, (int)CompressionType);
                 Properties = _encoder.Properties;
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 1) + 0x10;
-                _buffer = new CompressionBuffer(this.BufferSizeOutput);
+                _buffer = new CompressionBuffer((int)Math.Max(dictSizeToUse, this.BufferSizeOutput));
             }
             else
             {
@@ -50,16 +89,6 @@ namespace Nanook.GrindCore.Lzma
                 _decoder = new LzmaDecoder(options.InitProperties);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LzmaStream"/> class for compression or decompression.
-        /// </summary>
-        /// <param name="stream">The underlying stream to read from or write to.</param>
-        /// <param name="options">The compression options to use.</param>
-        public LzmaStream(Stream stream, CompressionOptions options)
-            : this(stream, options, 0)
-        {
         }
 
         /// <summary>

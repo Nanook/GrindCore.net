@@ -29,12 +29,13 @@ namespace Nanook.GrindCore.Lzma
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LzmaEncoder"/> class with the specified compression parameters.
+        /// Dictionary size, fast-bytes (word size) and other tuning are taken from <paramref name="dictOptions"/> when provided.
         /// </summary>
-        /// <param name="level">The compression level to use (default is 5).</param>
-        /// <param name="dictSize">The dictionary size to use (default is 0).</param>
-        /// <param name="wordSize">The word size to use (default is 0).</param>
+        /// <param name="dictOptions">Dictionary and tuning options. When a field is set it will be applied to the native props.</param>
+        /// <param name="threadCount">Optional thread count override.</param>
+        /// <param name="level">Compression level fallback (used when dictOptions does not provide an explicit level). Default: 5.</param>
         /// <exception cref="Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
-        public LzmaEncoder(int level = 5, uint dictSize = 0, int wordSize = 0)
+        public LzmaEncoder(CompressionDictionaryOptions? dictOptions = null, int? threadCount = null, int level = 5)
         {
             _toFlush = 0;
 
@@ -42,23 +43,73 @@ namespace Nanook.GrindCore.Lzma
 
             SZ_Lzma_v25_01_EncProps_Init(ref props);
 
+            // level: prefer value coming from dictOptions if somebody added it there; fallback to supplied level
+            // (CompressionDictionaryOptions currently doesn't define a Level property in this snapshot,
+            // so we use the provided level fallback).
             props.level = level;
+
+            // Determine dictSize from dictOptions.DictionarySize when present, otherwise leave 0 so native defaults apply.
+            uint dictSize = 0;
+            if (dictOptions?.DictionarySize is long ds && ds != 0)
+            {
+                if (ds < 0 || ds > uint.MaxValue)
+                    throw new ArgumentOutOfRangeException(nameof(dictOptions.DictionarySize), $"DictionarySize must be between 0 and {uint.MaxValue}.");
+                dictSize = (uint)ds;
+            }
             props.dictSize = props.mc = dictSize;
+
+            // Mark unspecified so native normalize() can fill defaults for values we don't set.
             props.lc = props.lp = props.pb = props.algo = props.fb = props.btMode = props.numHashBytes = props.numThreads = -1;
+
+            // Provide safe defaults for a few fields that we might rely on
             props.numHashBytes = 0;
-            props.writeEndMark = 0; // BytesFullSize == 0 ? 0u : 1u;
+            props.writeEndMark = 0; // default no end marker
             props.affinity = 0;
             props.numThreads = 1;
 
-            props.fb = wordSize; // default is 32 in UI
+            // Apply dictionary options when provided (only override when set)
+            if (dictOptions != null)
+            {
+                if (dictOptions.LiteralContextBits.HasValue)
+                    props.lc = dictOptions.LiteralContextBits.Value;
+                if (dictOptions.LiteralPositionBits.HasValue)
+                    props.lp = dictOptions.LiteralPositionBits.Value;
+                if (dictOptions.PositionBits.HasValue)
+                    props.pb = dictOptions.PositionBits.Value;
+                if (dictOptions.Algorithm.HasValue)
+                    props.algo = dictOptions.Algorithm.Value;
 
+                // fast-bytes (fb) / word size
+                if (dictOptions.FastBytes.HasValue)
+                    props.fb = dictOptions.FastBytes.Value;
+
+                if (dictOptions.BinaryTreeMode.HasValue)
+                    props.btMode = dictOptions.BinaryTreeMode.Value;
+                if (dictOptions.HashBytes.HasValue)
+                    props.numHashBytes = dictOptions.HashBytes.Value;
+
+                if (dictOptions.MatchCycles.HasValue)
+                    props.mc = (uint)dictOptions.MatchCycles.Value;
+
+                if (dictOptions.WriteEndMarker.HasValue)
+                    props.writeEndMark = dictOptions.WriteEndMarker.Value ? 1u : 0u;
+            }
+
+            // Thread count: explicit override wins, otherwise use whatever was set or native default via -1
+            if (threadCount.HasValue)
+                props.numThreads = threadCount.Value;
+
+            // Ensure at least 1 thread for our managed wrapper defaults
+            props.numThreads = Math.Max(1, props.numThreads);
+
+            props.affinity = 0;
             props.reduceSize = ulong.MaxValue; // -1 means set to blocksize if blocksize not -1(solid)|0(auto) && blocksize<filesize
 
             _encoder = SZ_Lzma_v25_01_Enc_Create();
 
             int res = SZ_Lzma_v25_01_Enc_SetProps(_encoder, ref props); // normalizes properties
             if (res != 0)
-                throw new Exception($"Failed to set LZMA2 encoder config {res}");
+                throw new Exception($"Failed to set LZMA encoder config {res}");
 
             byte[] p = BufferPool.Rent(0x10);
             ulong sz = (ulong)p.Length;
@@ -73,10 +124,10 @@ namespace Nanook.GrindCore.Lzma
 
             res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCallPrepare(_encoder, &bufferSize, &dSize, 0);
             if (res != 0)
-                throw new Exception($"Failed to set LZMA2 encoder config {res}");
+                throw new Exception($"Failed to prepare LZMA encoder {res}");
 
             this.BlockSize = (int)dictSize;
-            bufferSize += 0x8; // only needs 1 extra byte to ensure the end is not reached. Just align to 8
+            bufferSize += 0x8; // align/safety byte
 
             _inBuffer = BufferPool.Rent((int)bufferSize);
             _inBufferPinned = GCHandle.Alloc(_inBuffer, GCHandleType.Pinned);

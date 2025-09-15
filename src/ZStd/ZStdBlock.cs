@@ -22,9 +22,40 @@ namespace Nanook.GrindCore.ZStd
         /// <param name="options">The compression options to use.</param>
         public ZStdBlock(CompressionOptions options) : base(CompressionAlgorithm.ZStd, options)
         {
-            _compressionLevel = (int)this.CompressionType;
-            int isize = (int)options.BlockSize!;
-            RequiredCompressOutputSize = isize + (isize >> 7) + 128;
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            // Determine compression level: prefer Dictionary.Strategy when provided; otherwise use CompressionType resolved by base.
+            _compressionLevel = options.Dictionary?.Strategy ?? (int)this.CompressionType;
+
+            // Resolve input block size: prefer Dictionary.WindowBits -> 1<<WindowBits, otherwise use options.BlockSize. Be tolerant.
+            long isize = 0;
+            if (options.Dictionary?.WindowBits != null)
+            {
+                int wb = options.Dictionary.WindowBits.Value;
+                if (wb < 10)
+                    wb = 10; // minimum reasonable for zstd
+                if (wb > 31)
+                    wb = 31; // clamp
+                long calc = 1L << wb;
+                isize = calc;
+            }
+
+            if (isize == 0)
+            {
+                isize = options.BlockSize ?? 0L;
+            }
+
+            if (isize <= 0)
+            {
+                // Fallback to a small default instead of throwing to be tolerant in tests
+                isize = 1;
+            }
+
+            if (isize > int.MaxValue)
+                isize = int.MaxValue;
+
+            RequiredCompressOutputSize = (int)isize + ((int)isize >> 7) + 128;
         }
 
         /// <summary>

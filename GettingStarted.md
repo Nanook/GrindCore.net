@@ -46,10 +46,51 @@ All stream classes in GrindCore follow a standardized pattern, making them easy 
   - `LeaveOpen`: Leave the base/source stream open on dispose.
   - `PositionLimit` / `PositionFullSizeLimit`: Built-in limits to prevent overreading/overwriting without additional wrapper streams.
   - Algorithm-specific options (e.g., `BlockSize` for LZMA2).
+  - Compression tuning: many encoders expose fine-grained tuning via `CompressionOptions.Dictionary` (see note below).
 - **Synchronous and Asynchronous Methods**: Both blocking and async APIs are provided.
 - Static factory classes support stream creation, returning as CompressionStream and exposing all the above functionality
 
 > **Technical Note**: LZMA and LZMA2 C implementations have been carefully modified with minimal changes to support .NET's streaming pattern of multiple read/write calls, rather than requiring single-buffer or dual-stream approaches.
+
+### CompressionOptions.Dictionary (tuning)
+
+For algorithms that support detailed tuning (notably the LZMA family: LZMA, LZMA2 and Fast?LZMA2), use `CompressionOptions.Dictionary` to provide encoder-specific settings. The Dictionary object is intentionally algorithm-agnostic; encoders map the relevant fields to native parameters.
+
+Common useful fields for the LZMA family:
+- `DictionarySize` — dictionary size in bytes (most impactful for ratio/memory).
+- `FastBytes` — encoder lookahead / fast-match length.
+- `LiteralContextBits`, `LiteralPositionBits`, `PositionBits` — map to LZMA's lc/lp/pb settings.
+- `Algorithm`, `BinaryTreeMode`, `HashBytes`, `MatchCycles`, `SearchDepth` — various match-finder and algorithm-mode knobs.
+- `Strategy` — used by some wrappers to indicate compression level/variant for hybrid encoders (Fast?LZMA2 maps Strategy ? compression level).
+- `ThreadCount` (on `CompressionOptions`) — used where the native encoder supports multithreading (e.g., Fast?LZMA2, block-based LZMA2).
+
+Note: CompressionOptions.Dictionary is also used for tuning other algorithms — for example WindowBits/WindowLog (ZStd, Brotli, ZLib), MemoryLevel and Strategy (ZLib/Deflate/GZip), Quality (Brotli), and WindowBits/DictionarySize/Strategy for ZStd and LZ4. Each encoder maps relevant fields for its algorithm/version.
+
+Best practice:
+- Set tuning via `CompressionOptions.WithLzmaDictionary(...)`, `WithLzma2Dictionary(...)` or `WithFastLzma2Dictionary(...)` helpers where provided.
+- After compression, persist `CompressionStream.Properties` (encoder runtime properties like LZMA property byte) alongside compressed data. When decompressing, set `CompressionOptions.InitProperties = savedProperties` so the decoder is initialized identically.
+- Encoders clone dictionary options before mutating and validate/clamp ranges; follow the same pattern in your code if you mutate the input object.
+
+Short example:
+
+```csharp
+// Compress with LZMA2, tuned dictionary and threads
+var opts = CompressionOptions.DefaultCompressOptimal()
+    .WithLzma2Dictionary(dictionarySize: 64 * 1024 * 1024, fastBytes: 64);
+opts.ThreadCount = 4; // enable multithreaded encoder when supported
+
+using (var s = new Lzma2Stream(output, opts))
+{
+    // ... write data ...
+    s.Complete();
+    var props = s.Properties; // store with archive metadata
+}
+
+// Decompress later
+var dOpts = CompressionOptions.DefaultDecompress();
+dOpts.InitProperties = props; // ensure decoder uses exact encoder settings
+using var ds = new Lzma2Stream(input, dOpts);
+```
 
 ### Stream Creation
 
@@ -205,6 +246,7 @@ byte[] result = hasher.Hash;
 using var blake3 = Blake3.Create();
 byte[] directHash = blake3.ComputeHash(data);
 ```
+
 ### Example: Hashing a Byte Array with Offset in oneshot
 
 ```csharp

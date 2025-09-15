@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Nanook.GrindCore;
 
 namespace Nanook.GrindCore.Lzma
 {
@@ -31,13 +32,13 @@ namespace Nanook.GrindCore.Lzma
         internal override int BufferSizeOutput { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Lzma2Stream"/> class with the specified stream, options, and optional dictionary size.
+        /// Initializes a new instance of the <see cref="Lzma2Stream"/> class with the specified stream and options.
+        /// Dictionary size and fast-bytes are read from <see cref="CompressionOptions.Dictionary"/> when present.
         /// </summary>
         /// <param name="stream">The underlying stream to read from or write to.</param>
         /// <param name="options">The compression options to use.</param>
-        /// <param name="dictSize">The dictionary size to use for compression (default is 0).</param>
         /// <exception cref="Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
-        public Lzma2Stream(Stream stream, CompressionOptions options, int dictSize = 0)
+        public Lzma2Stream(Stream stream, CompressionOptions options)
             : base(true, stream, CompressionAlgorithm.Lzma2, options)
         {
             _ended = false;
@@ -48,30 +49,51 @@ namespace Nanook.GrindCore.Lzma
                 if (this.BufferSizeOutput > int.MaxValue)
                     this.BufferSizeOutput = int.MaxValue;
 
-                _encoder = new Lzma2Encoder((int)CompressionType, options.ThreadCount ?? -1, options.BlockSize ?? -1, dictSize, 0, options.BufferSize ?? 0);
+                // Build merged dict options so encoder can read dictSize and fast-bytes from it.
+                CompressionDictionaryOptions? merged = null;
+                var dictOpt = options?.Dictionary;
+                if (dictOpt != null)
+                {
+                    // clone to ensure DictionarySize fallback can be applied without mutating caller object
+                    merged = new CompressionDictionaryOptions
+                    {
+                        DictionarySize = dictOpt.DictionarySize,
+                        FastBytes = dictOpt.FastBytes,
+                        LiteralContextBits = dictOpt.LiteralContextBits,
+                        LiteralPositionBits = dictOpt.LiteralPositionBits,
+                        PositionBits = dictOpt.PositionBits,
+                        Algorithm = dictOpt.Algorithm,
+                        BinaryTreeMode = dictOpt.BinaryTreeMode,
+                        HashBytes = dictOpt.HashBytes,
+                        MatchCycles = dictOpt.MatchCycles,
+                        WriteEndMarker = dictOpt.WriteEndMarker
+                    };
+                }
+                else if (options?.BufferSize is int bs && bs > 0)
+                {
+                    merged = new CompressionDictionaryOptions { DictionarySize = bs };
+                }
+
+                // If merged exists but has no DictionarySize, try BufferSize / fallback
+                if (merged != null && !merged.DictionarySize.HasValue && options?.BufferSize is int bsf && bsf > 0)
+                    merged.DictionarySize = bsf;
+
+                // Pass merged dictionary options and thread/block settings into encoder.
+                _encoder = new Lzma2Encoder((int)CompressionType, options.ThreadCount ?? -1, options.BlockSize ?? -1, merged, options.BufferSize ?? 0);
+
                 this.Properties = new byte[] { _encoder.Properties };
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else
             {
                 if (options.InitProperties == null)
-                    throw new Exception("LZMA requires CompressionOptions.InitProperties to be set to an array when decompressing");
+                    throw new Exception("LZMA2 requires CompressionOptions.InitProperties to be set to an array when decompressing");
 
                 this.Properties = options.InitProperties;
                 _decoder = new Lzma2Decoder(options.InitProperties[0]);
                 this.BufferSizeOutput = BufferThreshold;
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Lzma2Stream"/> class for compression or decompression.
-        /// </summary>
-        /// <param name="stream">The underlying stream to read from or write to.</param>
-        /// <param name="options">The compression options to use.</param>
-        public Lzma2Stream(Stream stream, CompressionOptions options)
-            : this(stream, options, 0)
-        {
         }
 
         /// <summary>

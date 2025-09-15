@@ -387,7 +387,7 @@
             <summary>
             Writes compressed data from the provided buffer to the underlying stream, with an option to indicate the final block.
             </summary>
-            <param name="data">The buffer containing data to write.</param>
+            <param name="data">The buffer containing data to write to the stream.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
             <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
             <param name="isFinalBlock">Indicates whether this is the final block of data.</param>
@@ -848,6 +848,20 @@
             <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
             <exception cref="T:System.ArgumentException">Thrown if <paramref name="data"/> is not null and the sum of <paramref name="offset"/> and <paramref name="length"/> is greater than the array length.</exception>
         </member>
+        <member name="M:Nanook.GrindCore.CompressionBuffer.Read(System.Span{System.Byte})">
+            <summary>
+            Reads data from the buffer into the specified span and advances the position.
+            </summary>
+            <param name="data">The destination span.</param>
+            <returns>The number of bytes actually read.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionBuffer.Write(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Writes data from the specified span to the buffer and advances the size.
+            </summary>
+            <param name="data">The source span.</param>
+            <returns>The number of bytes actually written.</returns>
+        </member>
         <member name="T:Nanook.GrindCore.CompressionDefaults">
             <summary>
             Provides default compression levels and version information for a given <see cref="T:Nanook.GrindCore.CompressionAlgorithm"/>.
@@ -941,6 +955,11 @@
             Useful when using <see cref="M:System.IO.Stream.WriteByte(System.Byte)"/> etc. This is the maximum size of the output buffer and will be used where possible.
             </summary>
         </member>
+        <member name="P:Nanook.GrindCore.CompressionOptions.Dictionary">
+            <summary>
+            Gets or sets dictionary and advanced compression options for algorithms that support fine-tuning.
+            </summary>
+        </member>
         <member name="M:Nanook.GrindCore.CompressionOptions.DefaultDecompress">
             <summary>
             Returns a <see cref="T:Nanook.GrindCore.CompressionOptions"/> instance configured for decompression.
@@ -949,6 +968,351 @@
         <member name="M:Nanook.GrindCore.CompressionOptions.DefaultCompressOptimal">
             <summary>
             Returns a <see cref="T:Nanook.GrindCore.CompressionOptions"/> instance configured for optimal compression.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithLzmaDictionary(System.Nullable{System.Int64},System.Nullable{System.Int32})">
+            <summary>
+            Configures this instance with LZMA dictionary settings.
+            </summary>
+            <param name="dictionarySize">Dictionary size in bytes (default: 16MB).</param>
+            <param name="fastBytes">Fast bytes lookahead (default: 32).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithLzmaMaxDictionary">
+            <summary>
+            Configures this instance with maximum LZMA dictionary settings for best compression.
+            </summary>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithLzmaFastDictionary">
+            <summary>
+            Configures this instance with fast LZMA dictionary settings for speed.
+            </summary>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithLzma2Dictionary(System.Nullable{System.Int64},System.Nullable{System.Int32})">
+            <summary>
+            Configures this instance with LZMA2 dictionary settings.
+            Tailored for LZMA2 usage (sensible dictionary, fast-bytes and block behaviour).
+            Sets BlockSize to -1 (solid) by default to match typical 7-Zip settings; caller can override ThreadCount/BlockSize afterwards.
+            </summary>
+            <param name="dictionarySize">Dictionary size in bytes (default: 16MB).</param>
+            <param name="fastBytes">Fast bytes lookahead (default: 64).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithLzma2MaxDictionary">
+            <summary>
+            Configures this instance with maximum LZMA2 dictionary settings for best compression.
+            Sets BlockSize to -1 (solid) so the encoder operates in solid mode by default.
+            </summary>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithZStdWindow(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Configures this instance with ZStd window settings.
+            </summary>
+            <param name="windowBits">Window size as power of 2 (default: 23 = 8MB).</param>
+            <param name="strategy">Compression strategy (default: 7 = btopt).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithZStdFastWindow">
+            <summary>
+            Configures this instance with fast ZStd window settings for speed.
+            </summary>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithBrotliWindow(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Configures this instance with Brotli window settings.
+            </summary>
+            <param name="windowBits">Window size as power of 2, 10-24 (default: 22 = 4MB).</param>
+            <param name="quality">Brotli quality level, 0-11 (default: 6).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithBrotliMaxWindow">
+            <summary>
+            Configures this instance with maximum Brotli window settings for best compression.
+            </summary>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithZLib(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Configure ZLib (zlib header) mode with optional memory level and strategy.
+            Streams/blocks choose the window bits for zlib header form.
+            </summary>
+            <param name="memoryLevel">Memory level 1..9 (defaults to zlib default).</param>
+            <param name="strategy">Compression strategy (defaults to 0 = DefaultStrategy).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithZLibMax(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Configure ZLib with settings optimized for best compression (higher mem level).
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithDeflate(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Configure raw Deflate (no zlib/gzip header) mode with optional memory level and strategy.
+            Streams/blocks choose the window bits for raw deflate form.
+            </summary>
+            <param name="memoryLevel">Memory level 1..9 (defaults to zlib default).</param>
+            <param name="strategy">Compression strategy (defaults to 0 = DefaultStrategy).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithDeflateMax(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Configure raw Deflate with settings optimized for best compression (higher mem level).
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithGZip(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Configure GZip (gzip header) mode with optional memory level and strategy.
+            Streams/blocks choose the window bits for gzip header form.
+            </summary>
+            <param name="memoryLevel">Memory level 1..9 (defaults to zlib default).</param>
+            <param name="strategy">Compression strategy (defaults to 0 = DefaultStrategy).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithGZipMax(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Configure GZip with settings optimized for best compression (higher mem level).
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithFastLzma2Dictionary(System.Nullable{System.Int64},System.Nullable{System.Int32})">
+            <summary>
+            Configures this instance with Fast-LZMA2 dictionary settings.
+            </summary>
+            <param name="dictionarySize">Dictionary size in bytes (default: 64MB).</param>
+            <param name="strategy">Strategy: 1=fast, 2=optimized, 3=ultra (default: 3).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithLz4Dictionary(System.Nullable{System.Int64})">
+            <summary>
+            Configures this instance with LZ4 dictionary settings.
+            </summary>
+            <param name="dictionarySize">Dictionary size for dictionary mode (default: 1MB).</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithDictionarySize(System.Int64)">
+            <summary>
+            Configures this instance with custom dictionary size (algorithm-agnostic).
+            </summary>
+            <param name="dictionarySize">Dictionary size in bytes.</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionOptions.WithWindowBits(System.Int32)">
+            <summary>
+            Configures this instance with custom window bits (algorithm-agnostic).
+            </summary>
+            <param name="windowBits">Window size as power of 2.</param>
+            <returns>This instance for method chaining.</returns>
+        </member>
+        <member name="T:Nanook.GrindCore.CompressionDictionaryOptions">
+            <summary>
+            Represents dictionary and advanced compression options for algorithms that support fine-tuning.
+            These options provide control over memory usage, compression ratio, and performance characteristics.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.DictionarySize">
+            <summary>
+            Gets or sets the dictionary size in bytes for algorithms that support it.
+            This is the most impactful setting for compression ratio vs memory usage.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> Range: (1 &lt;&lt; 12) to (1 &lt;&lt; 27) = 4KB to 128MB (32-bit), up to (3 &lt;&lt; 29) = 1.5GB (64-bit). Default: 16MB</para>
+            <para>• <strong>Fast-LZMA2:</strong> Explicit dictionary size in bytes. Default: 64MB</para>
+            <para>• <strong>LZ4:</strong> Used when dictionary mode is enabled for compression/decompression</para>
+            <para>• <strong>ZStd:</strong> Implicitly controlled via WindowBits (2^WindowBits = dictionary size)</para>
+            <para><strong>Impact:</strong> Larger values provide better compression but use more memory and may be slower.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.WindowBits">
+            <summary>
+            Gets or sets the window size as a power of 2 (log2 value) for algorithms that use logarithmic sizing.
+            Alternative to DictionarySize for algorithms that prefer logarithmic parameters.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Default: 23 (8MB). Dictionary size = 2^WindowBits</para>
+            <para>• <strong>Brotli:</strong> Window bits range: 10-24. Default: 22 (4MB). Larger = better compression</para>
+            <para>• <strong>ZLib/Deflate/GZip:</strong> Range: 8-15 (256B-32KB), or negative (-8 to -15) for raw deflate without headers</para>
+            <para><strong>Impact:</strong> Higher values increase memory usage but improve compression for large files.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.LiteralContextBits">
+            <summary>
+            Gets or sets the number of literal context bits for LZMA family algorithms.
+            Controls how many bits of context are used when encoding literal (unmatched) bytes.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> Range: 0-8, default: 3. Higher values improve text compression</para>
+            <para>• <strong>Fast-LZMA2:</strong> Range: 0-8, default: 3. Used in LZMA2 encoder settings</para>
+            <para><strong>Impact:</strong> Higher values significantly improve compression of text/source code but increase memory usage exponentially.</para>
+            <para><strong>Memory:</strong> Memory usage increases by 2^(lc+lp) factor.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.LiteralPositionBits">
+            <summary>
+            Gets or sets the number of literal position bits for LZMA family algorithms.
+            Controls position-dependent context for literal byte encoding.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> Range: 0-4, default: 0. Helps with position-sensitive data patterns</para>
+            <para>• <strong>Fast-LZMA2:</strong> Range: 0-4, default: 0. Used in LZMA2 encoder settings</para>
+            <para><strong>Impact:</strong> Useful for data with alignment patterns or structured layouts (e.g., executable files).</para>
+            <para><strong>Memory:</strong> Memory usage increases by 2^(lc+lp) factor.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.PositionBits">
+            <summary>
+            Gets or sets the number of position bits for LZMA family algorithms.
+            Controls position-dependent context for match distance encoding.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> Range: 0-4, default: 2. Optimizes for data alignment patterns</para>
+            <para>• <strong>Fast-LZMA2:</strong> Range: 0-4, default: 2. Used in LZMA2 encoder settings</para>
+            <para><strong>Impact:</strong> Higher values help with binary data that has specific alignment requirements.</para>
+            <para><strong>Memory:</strong> Memory usage increases by 2^pb factor for some internal structures.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.FastBytes">
+            <summary>
+            Gets or sets the number of fast bytes (lookahead) for LZMA family algorithms.
+            Controls how far ahead the encoder looks for better matches.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> Range: 5-273, default: 32. This is often the second most impactful setting after dictionary size</para>
+            <para>• <strong>Fast-LZMA2:</strong> Similar concept as FastLength parameter (default: 48)</para>
+            <para><strong>Impact:</strong> Higher values provide better compression but significantly slower encoding. Diminishing returns above 64-128.</para>
+            <para><strong>Performance:</strong> Values above 100 can dramatically slow compression with minimal ratio improvement.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.Strategy">
+            <summary>
+            Gets or sets the compression strategy/algorithm variant for different algorithms.
+            Each algorithm interprets this value differently to optimize for specific data patterns.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> 0=fast algorithm, 1=normal algorithm (default). Normal provides better compression</para>
+            <para>• <strong>ZStd:</strong> 1=fast, 2=dfast, 3=greedy, 4=lazy, 5=lazy2, 6=btlazy2, 7=btopt, 8=btultra, 9=btultra2</para>
+            <para>• <strong>ZLib/Deflate:</strong> 0=default, 1=filtered, 2=huffman_only, 3=rle, 4=fixed</para>
+            <para>• <strong>Brotli:</strong> Maps to quality level (0-11)</para>
+            <para>• <strong>Fast-LZMA2:</strong> 1=fast, 2=optimized, 3=ultra (hybrid mode)</para>
+            <para><strong>Impact:</strong> Algorithm-specific optimizations for different data types and speed/ratio trade-offs.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.Algorithm">
+            <summary>
+            Gets or sets the algorithm/mode selection for LZMA family algorithms.
+            Controls the fundamental compression algorithm used.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> 0=fast algorithm, 1=normal algorithm (default)</para>
+            <para><strong>Impact:</strong> Fast algorithm trades compression ratio for speed. Normal algorithm provides better compression.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.BinaryTreeMode">
+            <summary>
+            Gets or sets the binary tree mode for LZMA family match finding.
+            Controls the data structure used for finding matches during compression.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> 0=hash chain mode, 1=binary tree mode (default)</para>
+            <para><strong>Impact:</strong> Binary tree mode generally provides better compression ratios but uses more CPU and memory.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.HashBytes">
+            <summary>
+            Gets or sets hash table configuration for various algorithms.
+            Controls the size or type of hash tables used for match finding.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> Hash bytes (2, 3, or 4, default: 4). Number of bytes used for hash calculation</para>
+            <para>• <strong>ZStd:</strong> HashLog (6-26), controls hash table size as 2^HashLog entries</para>
+            <para><strong>Impact:</strong> Higher values improve compression but increase memory usage and may affect speed.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.SearchDepth">
+            <summary>
+            Gets or sets the match search depth/thoroughness for compression algorithms.
+            Controls how extensively the algorithm searches for optimal matches.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> Match cycles (1 to 1&lt;&lt;30, default: 32). Maximum search iterations for matches</para>
+            <para>• <strong>ZStd:</strong> SearchLog (1-26), controls search length as 2^SearchLog</para>
+            <para>• <strong>Fast-LZMA2:</strong> SearchDepth (default: 42), maximum match finder search depth</para>
+            <para><strong>Impact:</strong> Higher values can improve compression ratio but significantly slow encoding. Diminishing returns.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.MatchCycles">
+            <summary>
+            Gets or sets the match cycles for LZMA family algorithms.
+            Controls the maximum number of search iterations when looking for matches.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> Range: 1 to (1&lt;&lt;30), default: 32</para>
+            <para><strong>Impact:</strong> Higher values can improve compression but may significantly slow encoding with diminishing returns.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.MemoryLevel">
+            <summary>
+            Gets or sets the memory usage level for ZLib family algorithms.
+            Controls the trade-off between memory usage and compression performance.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>ZLib/Deflate/GZip:</strong> Range: 1-9, default: 8. Higher = more memory, better compression</para>
+            <para><strong>Impact:</strong> Level 1 uses minimum memory but is slow and reduces compression ratio.</para>
+            <para>Level 9 uses maximum memory for optimal speed. Recommended: 7 for no compression, 8 for compression.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.WriteEndMarker">
+            <summary>
+            Gets or sets whether to write end marker for LZMA compression.
+            Controls whether a stream termination marker is written to the compressed data.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>LZMA/LZMA2:</strong> 0=no end marker, 1=write EOPM, default = 0</para>
+            <para><strong>Impact:</strong> End markers are useful when the uncompressed size is unknown during decompression.</para>
+            <para>They add a small overhead but provide better error detection and stream validation.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.HashLog">
+            <summary>
+            Gets or sets the hash log for ZStd compression.
+            Controls the size of the hash table used for match finding.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>ZStd:</strong> Range: 6-26, hash table size = 2^HashLog entries</para>
+            <para><strong>Impact:</strong> Larger hash tables can improve compression ratio but use more memory.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.ChainLog">
+            <summary>
+            Gets or sets the chain log for ZStd compression.
+            Controls the size of the match chain table.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>ZStd:</strong> Range: 6-30, chain table size = 2^ChainLog entries</para>
+            <para><strong>Impact:</strong> Larger chain tables can improve compression ratio but use more memory and CPU.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.SearchLog">
+            <summary>
+            Gets or sets the search log for ZStd compression.
+            Controls the search length for match finding.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>ZStd:</strong> Range: 1-26, search length = 2^SearchLog</para>
+            <para><strong>Impact:</strong> Longer searches can improve compression ratio but slow encoding.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.MinMatch">
+            <summary>
+            Gets or sets the minimum match length for ZStd compression.
+            Controls the shortest allowable match length.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>ZStd:</strong> Range: 3-7, default varies by level</para>
+            <para><strong>Impact:</strong> Shorter minimum matches can improve compression of repetitive data.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.TargetLength">
+            <summary>
+            Gets or sets the target match length for ZStd compression.
+            Controls the desired match length that the algorithm aims for.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>ZStd:</strong> Range: 0-999, default varies by level</para>
+            <para><strong>Impact:</strong> Longer target lengths can improve compression ratio but may slow encoding.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.Quality">
+            <summary>
+            Gets or sets the quality level for Brotli compression.
+            Alternative interface to Brotli's compression level.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>Brotli:</strong> Range: 0-11, default: 6. Higher = better compression, slower speed</para>
+            <para><strong>Impact:</strong> Level 0 provides minimal compression but fastest speed.</para>
+            <para>Level 11 provides maximum compression but slowest speed.</para>
             </summary>
         </member>
         <member name="T:Nanook.GrindCore.CompressionResultCode">
@@ -1203,6 +1567,34 @@
             Releases the unmanaged resources used by the <see cref="T:Nanook.GrindCore.CompressionStream"/> and optionally releases the managed resources.
             </summary>
             <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.ReadAsync(System.Memory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
+            </summary>
+            <param name="buffer">The region of memory to write the data into.</param>
+            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+            <returns>A task that represents the asynchronous read operation. The value of the result parameter contains the total number of bytes read into the buffer.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="buffer"/> length is negative.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.WriteAsync(System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
+            </summary>
+            <param name="buffer">The region of memory to write data from.</param>
+            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+            <returns>A task that represents the asynchronous write operation.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="buffer"/> length is negative.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.CompleteAsync">
+            <summary>
+            Asynchronously completes the compression or decompression operation, flushing all buffers and finalizing the stream without disposing anything.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.DisposeAsync">
+            <summary>
+            Asynchronously releases the unmanaged resources used by the <see cref="T:Nanook.GrindCore.CompressionStream"/> and optionally releases the managed resources.
+            </summary>
         </member>
         <member name="M:Nanook.GrindCore.CompressionStream.ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
             <summary>
@@ -1627,42 +2019,57 @@
         </member>
         <member name="T:Nanook.GrindCore.DataBlock">
             <summary>
-            Represents a block of data for compression or decompression operations, using arrays for compatibility.
+            Represents a block of data for compression or decompression operations compatible with span and all versions of dotnet, using spans for efficient memory access.
             </summary>
         </member>
         <member name="F:Nanook.GrindCore.DataBlock.Data">
             <summary>
-            Gets the underlying data array.
+            Gets the readonly memory span for this data block.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor">
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.ReadOnlySpan{System.Byte},System.Int32,System.Int32)">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct as an empty block.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.ReadOnlySpan`1"/>.
             </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Byte[],System.Int32,System.Int32)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a byte array, offset, and length.
-            </summary>
-            <param name="data">The source array.</param>
-            <param name="offset">The offset within the array.</param>
+            <param name="span">The source span.</param>
+            <param name="offset">The offset within the span.</param>
             <param name="length">The length of the data block.</param>
         </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Byte[])">
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.ReadOnlySpan{System.Byte})">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a byte array covering the entire array.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.ReadOnlySpan`1"/> covering the entire span.
             </summary>
-            <param name="data">The source array.</param>
+            <param name="span">The source span.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Span{System.Byte},System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.Span`1"/>.
+            </summary>
+            <param name="span">The source span.</param>
+            <param name="offset">The offset within the span.</param>
+            <param name="length">The length of the data block.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Span{System.Byte})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.Span`1"/> covering the entire span.
+            </summary>
+            <param name="span">The source span.</param>
         </member>
         <member name="P:Nanook.GrindCore.DataBlock.Offset">
             <summary>
-            Gets the offset within the underlying array.
+            Gets the offset within the underlying span or array.
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.DataBlock.Length">
             <summary>
             Gets the length of the data block.
             </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.DataBlock.AsWritableSpan">
+            <summary>
+            Exposes the mutable span for writing, if available.
+            </summary>
+            <returns>The writable <see cref="T:System.Span`1"/>.</returns>
         </member>
         <member name="M:Nanook.GrindCore.DataBlock.Read(System.Int32,System.Byte[],System.Int32,System.Int32)">
             <summary>
@@ -1690,6 +2097,7 @@
             <param name="sourceOffset">The offset within this block to start writing to.</param>
             <param name="buffer">The source <see cref="T:Nanook.GrindCore.CompressionBuffer"/>.</param>
             <param name="length">The number of bytes to write.</param>
+            <exception cref="T:System.NotSupportedException">Thrown if this block is not writable.</exception>
             <exception cref="T:System.ArgumentOutOfRangeException">Thrown if the source range is out of bounds.</exception>
         </member>
         <member name="M:Nanook.GrindCore.DataBlock.CopyTo(Nanook.GrindCore.DataBlock,System.Int32,System.Int32,System.Int32)">
@@ -1720,13 +2128,23 @@
             <param name="options">The compression options to use.</param>
             <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="options"/> or <c>options.BlockSize</c> is null.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateBlock.#ctor(Nanook.GrindCore.CompressionAlgorithm,Nanook.GrindCore.CompressionOptions,System.Int32)">
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateBlock.#ctor(Nanook.GrindCore.CompressionAlgorithm,Nanook.GrindCore.CompressionOptions,System.Int32,System.Int32,System.Int32)">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DeflateZLib.DeflateBlock"/> class with the specified algorithm, options, and window bits.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DeflateZLib.DeflateBlock"/> class with the specified algorithm, options, and low-level zlib parameters.
             </summary>
-            <param name="defaultAlgorithm">The default compression algorithm.</param>
-            <param name="options">The compression options to use.</param>
-            <param name="windowBits">The window bits to use for Deflate.</param>
+            <param name="defaultAlgorithm">The default compression algorithm to use when <see cref="P:Nanook.GrindCore.CompressionOptions.Version"/> does not override it.</param>
+            <param name="options">The compression options that supply block size and optional dictionary settings. <c>options.BlockSize</c> must be non-null.</param>
+            <param name="windowBits">
+            The window bits parameter passed to native deflate APIs. Positive values select zlib/gzip header forms,
+            negative values select raw deflate (no header). Valid range is -15..31; values are clamped to that range.
+            </param>
+            <param name="memLevel">
+            ZLib memory level (1..9). Controls internal memory usage vs. compression behavior; values are clamped to 1..9.
+            </param>
+            <param name="strategy">
+            Compression strategy (algorithm-specific). For zlib/deflate this follows zlib's strategy codes:
+            0 = DefaultStrategy, 1 = Filtered, 2 = HuffmanOnly, 3 = RLE, 4 = Fixed. Values are normalized to non-negative.
+            </param>
             <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="options"/> or <c>options.BlockSize</c> is null.</exception>
         </member>
         <member name="M:Nanook.GrindCore.DeflateZLib.DeflateBlock.OnCompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock,System.Int32@)">
@@ -1901,13 +2319,15 @@
             Gets the number of bytes available for input from the underlying zlib stream.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateEncoder.#ctor(Nanook.GrindCore.CompressionVersion,Nanook.GrindCore.CompressionType,System.Int32)">
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateEncoder.#ctor(Nanook.GrindCore.CompressionVersion,Nanook.GrindCore.CompressionType,System.Int32,System.Int32,Nanook.GrindCore.Interop.ZLib.CompressionStrategy)">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DeflateZLib.DeflateEncoder"/> class with the specified version, compression level, and window bits.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DeflateZLib.DeflateEncoder"/> class with the specified version, compression level, window bits, memory level and strategy.
             </summary>
             <param name="version">The compression version to use.</param>
             <param name="compressionLevel">The compression level to use.</param>
             <param name="windowBits">The window bits parameter for the deflater.</param>
+            <param name="memLevel">Memory level for zlib (1-9).</param>
+            <param name="strategy">Compression strategy for zlib.</param>
             <exception cref="T:Nanook.GrindCore.DeflateZLib.ZLibException">Thrown if the underlying zlib stream cannot be created or initialized.</exception>
         </member>
         <member name="M:Nanook.GrindCore.DeflateZLib.DeflateEncoder.Finalize">
@@ -2017,7 +2437,7 @@
             <param name="options">The compression options to use.</param>
             <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateStream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionAlgorithm,Nanook.GrindCore.CompressionOptions,System.Int32,System.Int64)">
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateStream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionAlgorithm,Nanook.GrindCore.CompressionOptions,System.Int32,System.Int32,Nanook.GrindCore.Interop.ZLib.CompressionStrategy,System.Int64)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.DeflateZLib.DeflateStream"/> class with the specified stream, options, window bits, and optional uncompressed size.
             </summary>
@@ -2025,6 +2445,8 @@
             <param name="defaultAlgorithm">The default algorithm, used when options.Version is not set to override it.</param>
             <param name="options">The compression options to use.</param>
             <param name="windowBits">The window bits to use for Deflate.</param>
+            <param name="memLevel">The memory level to use for Deflate.</param>
+            <param name="strategy">The compression strategy to use for Deflate.</param>
             <param name="uncompressedSize">The expected uncompressed size, or -1 if unknown.</param>
             <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
         </member>
@@ -2450,7 +2872,7 @@
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.FastLzma2.FastLzma2Block"/> class with the specified compression options.
             </summary>
             <param name="options">The compression options to use.</param>
-            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="options"/> or <c>options.BlockSize</c> is null.</exception>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="options"/> is null.</exception>
         </member>
         <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Block.OnCompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock,System.Int32@)">
             <summary>
@@ -4237,15 +4659,16 @@
             Gets the block size used for compression.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.#ctor(System.Int32,System.Int32,System.Int64,System.Int32,System.Int32,System.Int32)">
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.#ctor(System.Int32,System.Int32,System.Int64,Nanook.GrindCore.CompressionDictionaryOptions,System.Int32)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.Lzma2Encoder"/> class with the specified compression parameters.
+            Accepts optional <see cref="T:Nanook.GrindCore.CompressionDictionaryOptions"/>; any LZMA tuning fields set on that object
+            will be applied and unset fields will be left for the native normalizer to choose.
             </summary>
             <param name="level">The compression level to use (default is 5).</param>
             <param name="threads">The number of threads to use (default is 1).</param>
             <param name="blockSize">The block size to use for compression (-1 for solid mode, 0 for auto, default is -1).</param>
-            <param name="dictSize">The dictionary size to use (default is 0).</param>
-            <param name="wordSize">The word size to use (default is 0).</param>
+            <param name="dictOptions">Optional dictionary / tuning options (dict size, fb, lc/lp/pb, etc.).</param>
             <param name="minBufferSize">The minimum buffer size to use (default is 0).</param>
             <exception cref="T:System.Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
         </member>
@@ -4260,16 +4683,6 @@
             <returns>The total number of bytes written to the output buffer.</returns>
             <exception cref="T:System.ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
             <exception cref="T:System.Exception">Thrown if compression fails.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.encodeDataMt(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
-            <summary>
-            Encodes data using multi-threaded block mode.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.encodeDataSolid(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
-            <summary>
-            Encodes data using pseudo-solid mode.
-            </summary>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.Dispose">
             <summary>
@@ -4293,21 +4706,14 @@
             Gets the output buffer size for LZMA2 operations.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions,System.Int32)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.Lzma2Stream"/> class with the specified stream, options, and optional dictionary size.
-            </summary>
-            <param name="stream">The underlying stream to read from or write to.</param>
-            <param name="options">The compression options to use.</param>
-            <param name="dictSize">The dictionary size to use for compression (default is 0).</param>
-            <exception cref="T:System.Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
-        </member>
         <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions)">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.Lzma2Stream"/> class for compression or decompression.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.Lzma2Stream"/> class with the specified stream and options.
+            Dictionary size and fast-bytes are read from <see cref="P:Nanook.GrindCore.CompressionOptions.Dictionary"/> when present.
             </summary>
             <param name="stream">The underlying stream to read from or write to.</param>
             <param name="options">The compression options to use.</param>
+            <exception cref="T:System.Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.OnRead(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Int32)">
             <summary>
@@ -4437,13 +4843,14 @@
             Gets the block size used for compression.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.#ctor(System.Int32,System.UInt32,System.Int32)">
+        <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.#ctor(Nanook.GrindCore.CompressionDictionaryOptions,System.Nullable{System.Int32},System.Int32)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaEncoder"/> class with the specified compression parameters.
+            Dictionary size, fast-bytes (word size) and other tuning are taken from <paramref name="dictOptions"/> when provided.
             </summary>
-            <param name="level">The compression level to use (default is 5).</param>
-            <param name="dictSize">The dictionary size to use (default is 0).</param>
-            <param name="wordSize">The word size to use (default is 0).</param>
+            <param name="dictOptions">Dictionary and tuning options. When a field is set it will be applied to the native props.</param>
+            <param name="threadCount">Optional thread count override.</param>
+            <param name="level">Compression level fallback (used when dictOptions does not provide an explicit level). Default: 5.</param>
             <exception cref="T:System.Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
@@ -4480,21 +4887,15 @@
             Gets the output buffer size for LZMA operations.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions,System.Int32)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaStream"/> class with the specified stream, options, and optional dictionary size.
-            </summary>
-            <param name="stream">The underlying stream to read from or write to.</param>
-            <param name="options">The compression options to use.</param>
-            <param name="dictionarySize">The dictionary size to use for compression (default is 0).</param>
-            <exception cref="T:System.Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
-        </member>
         <member name="M:Nanook.GrindCore.Lzma.LzmaStream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions)">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaStream"/> class for compression or decompression.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaStream"/> class with the specified stream and options.
+            Dictionary size is taken from <see cref="P:Nanook.GrindCore.CompressionDictionaryOptions.DictionarySize"/>, then <see cref="P:Nanook.GrindCore.CompressionOptions.BufferSize"/>,
+            and finally falls back to the stream default <see cref="P:Nanook.GrindCore.Lzma.LzmaStream.BufferSizeInput"/>.
             </summary>
             <param name="stream">The underlying stream to read from or write to.</param>
             <param name="options">The compression options to use.</param>
+            <exception cref="T:System.Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnRead(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Int32)">
             <summary>

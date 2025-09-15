@@ -42,13 +42,30 @@ namespace Nanook.GrindCore.ZStd
             // Determine if we need to use a legacy version
             bool useV152 = options.Version != null && options.Version.Index == 1; //1.5.2
 
+            // Resolve compression parameters from options.Dictionary when available
+            int resolvedCompressionLevel = options?.Dictionary?.Strategy ?? (int)this.CompressionType;
+
+            int resolvedBlockSize = BufferThreshold; // default
+            if (options?.Dictionary?.WindowBits != null)
+            {
+                int wb = options.Dictionary.WindowBits.Value;
+                // clamp reasonable zstd WindowLog range 10..31
+                if (wb < 10)
+                    wb = 10;
+                if (wb > 31)
+                    wb = 31;
+                long bs = 1L << wb;
+                if (bs > int.MaxValue) bs = int.MaxValue;
+                resolvedBlockSize = (int)bs;
+            }
+
             if (IsCompress)
             {
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 7) + 128;
                 if (useV152)
-                    _encoder = new ZStdEncoderV1_5_2(BufferThreshold, (int)this.CompressionType);
+                    _encoder = new ZStdEncoderV1_5_2(resolvedBlockSize, resolvedCompressionLevel);
                 else
-                    _encoder = new ZStdEncoder(BufferThreshold, (int)this.CompressionType);
+                    _encoder = new ZStdEncoder(resolvedBlockSize, resolvedCompressionLevel);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else

@@ -49,13 +49,45 @@ namespace Nanook.GrindCore.FastLzma2
             else
                 this.BufferSizeOutput = BufferThreshold;
 
+            // Build or override compression parameters from options.Dictionary when provided
+            int threads = options.ThreadCount ?? 0;
+            int dictSizeParam = 0;
+            int resolvedLevel = (int)CompressionType; // default level passed previously
+
+            if (options?.Dictionary != null)
+            {
+                if (options.Dictionary.DictionarySize.HasValue)
+                {
+                    long ds = options.Dictionary.DictionarySize.Value;
+                    if (ds < 0) ds = 0;
+                    if (ds > int.MaxValue) ds = int.MaxValue;
+                    dictSizeParam = (int)ds;
+                }
+
+                if (options.Dictionary.Strategy.HasValue)
+                    resolvedLevel = options.Dictionary.Strategy.Value; // map Strategy to FastLzma2 compression level
+            }
+
             if (compressParams == null)
-                compressParams = new CompressionParameters(options.ThreadCount ?? 0, 0);
+            {
+                compressParams = new CompressionParameters(threads, dictSizeParam);
+
+                // Map some dictionary fields into compression parameters when specified
+                if (options?.Dictionary != null)
+                {
+                    if (options.Dictionary.FastBytes.HasValue)
+                        compressParams.FastLength = options.Dictionary.FastBytes.Value;
+
+                    // Strategy already used as resolvedLevel; also expose as CompressionLevel param
+                    if (options.Dictionary.Strategy.HasValue)
+                        compressParams.CompressionLevel = options.Dictionary.Strategy.Value;
+                }
+            }
 
             if (IsCompress)
-                _encoder = new FastLzma2Encoder(this.BufferSizeOutput, (int)CompressionType, compressParams);
+                _encoder = new FastLzma2Encoder(this.BufferSizeOutput, resolvedLevel, compressParams);
             else
-                _decoder = new FastLzma2Decoder(base.BaseRead, BufferSizeOutput, base.BaseLength, (int)CompressionType, compressParams);
+                _decoder = new FastLzma2Decoder(base.BaseRead, BufferSizeOutput, base.BaseLength, resolvedLevel, compressParams);
         }
 
         /// <summary>

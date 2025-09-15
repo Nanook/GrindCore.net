@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System;
+using Nanook.GrindCore;
 
 namespace Nanook.GrindCore.Brotli
 {

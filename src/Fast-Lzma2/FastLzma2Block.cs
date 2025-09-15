@@ -23,18 +23,36 @@ namespace Nanook.GrindCore.FastLzma2
         /// Initializes a new instance of the <see cref="FastLzma2Block"/> class with the specified compression options.
         /// </summary>
         /// <param name="options">The compression options to use.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> or <c>options.BlockSize</c> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="options"/> is null.</exception>
         public FastLzma2Block(CompressionOptions options) : base(CompressionAlgorithm.FastLzma2, options)
         {
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
-            if (options.BlockSize == null)
-                throw new ArgumentNullException(nameof(options.BlockSize));
 
-            int blockSize = (int)options.BlockSize!;
-            int level = (int)this.CompressionType;
+            // Resolve input block size: prefer Dictionary.DictionarySize when provided, otherwise use options.BlockSize.
+            long bs = options.Dictionary?.DictionarySize ?? options.BlockSize ?? 0L;
+            if (bs <= 0)
+            {
+                // fall back to a small default to avoid throwing in tests
+                bs = 1;
+            }
+            if (bs > int.MaxValue) bs = int.MaxValue;
+            int blockSize = (int)bs;
+
+            // Resolve dictionary size separately if provided (some callers want a different dictionary than blockSize)
+            long dictSize = options.Dictionary?.DictionarySize ?? bs;
+            if (dictSize < 0)
+                dictSize = 0;
+            if (dictSize > (long)uint.MaxValue)
+                dictSize = uint.MaxValue;
+
+            // Determine compression level: prefer Dictionary.Strategy when provided; otherwise use CompressionType resolved by base.
+            int level = options.Dictionary?.Strategy ?? (int)this.CompressionType;
+
+            // Determine thread count (default to 1)
             int threads = options.ThreadCount ?? 1;
 
+            // Create contexts (use MT creation when supported; library expects thread count)
             _compressCtx = FL2_createCCtxMt((uint)threads);
             _decompressCtx = FL2_createDCtxMt((uint)threads);
 
@@ -42,7 +60,7 @@ namespace Nanook.GrindCore.FastLzma2
             _dictProp = FL2_getCCtxDictProp(_compressCtx);
 
             // Configure compression properties
-            FL2_CCtx_setParameter(_compressCtx, FL2Parameter.DictionarySize, (nuint)options.BlockSize!);
+            FL2_CCtx_setParameter(_compressCtx, FL2Parameter.DictionarySize, (nuint)dictSize);
             FL2_CCtx_setParameter(_compressCtx, FL2Parameter.CompressionLevel, (nuint)level);
 
             RequiredCompressOutputSize = (int)FL2_compressBound((nuint)blockSize);

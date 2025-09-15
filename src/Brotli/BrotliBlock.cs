@@ -14,7 +14,7 @@ namespace Nanook.GrindCore.Brotli
         private const int WindowBits_Default = 22;
         private const int WindowBits_Max = 24;
 
-        private SafeBrotliEncoderHandle _encoderState;
+        private readonly int _windowBits;
 
         /// <summary>
         /// Gets the required output buffer size for compression, including Brotli overhead.
@@ -35,12 +35,13 @@ namespace Nanook.GrindCore.Brotli
 
             int blockSize = (int)options.BlockSize!;
 
-            _encoderState = DN9_BRT_v1_1_0_BrotliEncoderCreateInstance(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            _encoderState.Version = this.Options.Version ?? this.Defaults.Version;
-
-            // Set compression parameters
-            DN9_BRT_v1_1_0_BrotliEncoderSetParameter(_encoderState, BrotliEncoderParameter.Quality, (uint)this.CompressionType);
-            DN9_BRT_v1_1_0_BrotliEncoderSetParameter(_encoderState, BrotliEncoderParameter.LGWin, (uint)this.Options.BlockSize!);
+            // Read window bits from options.Dictionary when present; clamp to valid Brotli range.
+            int wb = options?.Dictionary?.WindowBits ?? WindowBits_Default;
+            if (wb < WindowBits_Min)
+                wb = WindowBits_Min;
+            if (wb > WindowBits_Max)
+                wb = WindowBits_Max;
+            _windowBits = wb;
 
             RequiredCompressOutputSize = blockSize + (blockSize >> 1) + 0x10; // Adjust for overhead
         }
@@ -62,8 +63,8 @@ namespace Nanook.GrindCore.Brotli
 
                 UIntPtr compressedSize = (UIntPtr)dstCount;
                 BOOL success = DN9_BRT_v1_1_0_BrotliEncoderCompress(
-                    (int)this.CompressionType, //level
-                    WindowBits_Default,
+                    (int)this.CompressionType, // level (resolved by base/constructor)
+                    _windowBits,               // LGWin from options.Dictionary or default
                     0,
                     (UIntPtr)srcData.Length,
                     srcPtr,
@@ -118,7 +119,7 @@ namespace Nanook.GrindCore.Brotli
         /// </summary>
         internal override void OnDispose()
         {
-            _encoderState.Dispose();
+            // nothing to dispose at block-level now
         }
 
         private static CompressionResultCode mapResult(int code)

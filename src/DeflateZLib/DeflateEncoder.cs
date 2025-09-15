@@ -32,18 +32,19 @@ namespace Nanook.GrindCore.DeflateZLib
         public int AvailableInput => (int)_zlibStream.AvailIn;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DeflateEncoder"/> class with the specified version, compression level, and window bits.
+        /// Initializes a new instance of the <see cref="DeflateEncoder"/> class with the specified version, compression level, window bits, memory level and strategy.
         /// </summary>
         /// <param name="version">The compression version to use.</param>
         /// <param name="compressionLevel">The compression level to use.</param>
         /// <param name="windowBits">The window bits parameter for the deflater.</param>
+        /// <param name="memLevel">Memory level for zlib (1-9).</param>
+        /// <param name="strategy">Compression strategy for zlib.</param>
         /// <exception cref="ZLibException">Thrown if the underlying zlib stream cannot be created or initialized.</exception>
-        internal DeflateEncoder(CompressionVersion version, CompressionType compressionLevel, int windowBits)
+        internal DeflateEncoder(CompressionVersion version, CompressionType compressionLevel, int windowBits, int memLevel = Interop.ZLib.Deflate_DefaultMemLevel, Interop.ZLib.CompressionStrategy strategy = Interop.ZLib.CompressionStrategy.DefaultStrategy)
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
             _version = version;
             Interop.ZLib.CompressionLevel zlibCompressionLevel;
-            int memLevel = Interop.ZLib.Deflate_DefaultMemLevel;
 
             switch (compressionLevel)
             {
@@ -56,7 +57,7 @@ namespace Nanook.GrindCore.DeflateZLib
                     break;
                 case CompressionType.NoCompression:
                     zlibCompressionLevel = Interop.ZLib.CompressionLevel.NoCompression;
-                    memLevel = Interop.ZLib.Deflate_NoCompressionMemLevel;
+                    // For no compression the caller may have supplied a memLevel; keep it as provided.
                     break;
                 case CompressionType.SmallestSize:
                     zlibCompressionLevel = Interop.ZLib.CompressionLevel.BestCompression;
@@ -65,8 +66,6 @@ namespace Nanook.GrindCore.DeflateZLib
                     zlibCompressionLevel = (Interop.ZLib.CompressionLevel)compressionLevel; // raw level int
                     break;
             }
-
-            Interop.ZLib.CompressionStrategy strategy = Interop.ZLib.CompressionStrategy.DefaultStrategy;
 
             ZErrorCode errC;
             try
@@ -140,7 +139,7 @@ namespace Nanook.GrindCore.DeflateZLib
         internal unsafe void SetInput(byte* inputBufferPtr, int count)
         {
             if (_zlibStream.AvailIn != 0)
-                throw new ArgumentException($"_zlibStream should have a AvailIn of 0");
+                throw new ArgumentException("_zlibStream should have a AvailIn of 0");
 
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(inputBufferPtr != null);
@@ -210,7 +209,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <returns>True if the end of the stream was reached; otherwise, false.</returns>
         internal bool Finish(CompressionBuffer outData, out int bytesRead)
         {
-            Debug.Assert(null != outData, "Can't pass in a null output buffer!");
+            Debug.Assert(null != outData, "Can't pass in an empty output buffer!");
             Debug.Assert(outData.AvailableWrite > 0, "Can't pass in an empty output buffer!");
 
             ZErrorCode errC = readDeflateOutput(outData, ZFlushCode.Finish, out bytesRead);
@@ -225,7 +224,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <returns>True if there was something to flush; otherwise, false.</returns>
         internal bool Flush(CompressionBuffer outData, out int bytesRead)
         {
-            Debug.Assert(null != outData, "Can't pass in a null output buffer!");
+            Debug.Assert(null != outData, "Can't pass in an empty output buffer!");
             Debug.Assert(outData.AvailableWrite > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
 
