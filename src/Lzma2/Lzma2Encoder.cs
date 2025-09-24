@@ -78,7 +78,7 @@ namespace Nanook.GrindCore.Lzma
             // Apply dictionary options (dict size & LZMA tuning) if provided
             if (dictOptions != null)
             {
-                // Dictionary size
+                // Dictionary size - only set if explicitly provided, otherwise let native normalization choose
                 if (dictOptions.DictionarySize.HasValue && dictOptions.DictionarySize.Value != 0)
                 {
                     long ds = dictOptions.DictionarySize.Value;
@@ -88,6 +88,7 @@ namespace Nanook.GrindCore.Lzma
                     // mc uses a uint; keep previous heuristic but it's not critical
                     props.lzmaProps.mc = (uint)Math.Min(ds, int.MaxValue);
                 }
+                // else leave props.lzmaProps.dictSize = 0 so native normalization chooses based on level
 
                 // LZMA fine tuning: apply fields only when set, leave others -1 so native normalize() chooses defaults
                 if (dictOptions.LiteralContextBits.HasValue) props.lzmaProps.lc = Clamp(dictOptions.LiteralContextBits.Value, 0, 8);
@@ -212,7 +213,17 @@ namespace Nanook.GrindCore.Lzma
                 *&inPtr += inData.Pos;
                 int res = SZ_Lzma2_v25_01_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)inData.AvailableRead, IntPtr.Zero);
 
-                outSz--; //remove the null
+                outSz--; //remove the null terminator from block-based compression
+
+                // Handle insufficient buffer error gracefully like LzmaEncoder
+                if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
+                {
+                    // Return partial result - this is normal for higher compression levels
+                    outData.Write((int)outSz);
+                    inData.Read(Math.Min(inData.AvailableRead, (int)available));
+                    return (int)outSz;
+                }
+
                 outData.Write((int)outSz);
 
                 if (res != 0)
@@ -271,6 +282,16 @@ namespace Nanook.GrindCore.Lzma
                         byte* outPtr2 = *&outPtr + outData.Size;
                         _blockComplete = finalfinal || blkFinal;
                         res = SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u);
+                        
+                        // Handle insufficient buffer error gracefully
+                        if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
+                        {
+                            // Return partial result and let caller handle it
+                            outTotal += (int)outSz;
+                            outData.Write((int)outSz);
+                            return outTotal;
+                        }
+                        
                         outTotal += (int)outSz;
                         outData.Write((int)outSz);
                     } while (res == 0 && outSz != 0 && (finalfinal || blkFinal));

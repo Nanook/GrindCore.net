@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
+using Nanook.GrindCore;
 
 namespace Nanook.GrindCore.FastLzma2
 {
@@ -21,11 +22,38 @@ namespace Nanook.GrindCore.FastLzma2
         /// <param name="bufferSize">The buffer size to use for output.</param>
         /// <param name="level">The compression level (default is 6).</param>
         /// <param name="compressParams">Optional compression parameters for multi-threaded compression.</param>
+        /// <param name="dictOptions">Optional dictionary options for consistency with other encoders.</param>
         /// <exception cref="FL2Exception">Thrown if the encoder context cannot be initialized or a parameter cannot be set.</exception>
-        public FastLzma2Encoder(int bufferSize, int level = 6, CompressionParameters? compressParams = null)
+        public FastLzma2Encoder(int bufferSize, int level = 6, CompressionParameters? compressParams = null, CompressionDictionaryOptions? dictOptions = null)
         {
             if (compressParams == null)
                 compressParams = new CompressionParameters(0);
+
+            // Apply dictionary options to Fast-LZMA2 parameters if provided
+            if (dictOptions != null)
+            {
+                // Map common dictionary options to Fast-LZMA2 parameters
+                if (dictOptions.DictionarySize.HasValue && dictOptions.DictionarySize.Value > 0)
+                    compressParams.DictionarySize = (int)Math.Min(dictOptions.DictionarySize.Value, int.MaxValue);
+                    
+                if (dictOptions.LiteralContextBits.HasValue)
+                    compressParams.LiteralCtxBits = dictOptions.LiteralContextBits.Value;
+                    
+                if (dictOptions.LiteralPositionBits.HasValue)
+                    compressParams.LiteralPosBits = dictOptions.LiteralPositionBits.Value;
+                    
+                if (dictOptions.PositionBits.HasValue)
+                    compressParams.PosBits = dictOptions.PositionBits.Value;
+                    
+                if (dictOptions.FastBytes.HasValue)
+                    compressParams.FastLength = dictOptions.FastBytes.Value;
+                    
+                if (dictOptions.Algorithm.HasValue)
+                {
+                    // Map LZMA algorithm to Fast-LZMA2 strategy: 0=fast -> 1=fast, 1=normal -> 3=ultra
+                    compressParams.Strategy = dictOptions.Algorithm.Value == 0 ? 1 : 3;
+                }
+            }
 
             if (compressParams.Threads <= 1)
                 _context = Interop.FastLzma2.FL2_createCStream();

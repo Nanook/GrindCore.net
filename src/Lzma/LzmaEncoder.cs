@@ -56,16 +56,15 @@ namespace Nanook.GrindCore.Lzma
                     throw new ArgumentOutOfRangeException(nameof(dictOptions.DictionarySize), $"DictionarySize must be between 0 and {uint.MaxValue}.");
                 dictSize = (uint)ds;
             }
-            props.dictSize = props.mc = dictSize;
-
+            props.dictSize = dictSize;
+            props.mc = 0;
             // Mark unspecified so native normalize() can fill defaults for values we don't set.
             props.lc = props.lp = props.pb = props.algo = props.fb = props.btMode = props.numHashBytes = props.numThreads = -1;
 
-            // Provide safe defaults for a few fields that we might rely on
-            props.numHashBytes = 0;
+            // Fixed properties that we always want to set explicitly
             props.writeEndMark = 0; // default no end marker
             props.affinity = 0;
-            props.numThreads = 1;
+            props.reduceSize = ulong.MaxValue; // -1 means set to blocksize if blocksize not -1(solid)|0(auto) && blocksize<filesize
 
             // Apply dictionary options when provided (only override when set)
             if (dictOptions != null)
@@ -95,15 +94,9 @@ namespace Nanook.GrindCore.Lzma
                     props.writeEndMark = dictOptions.WriteEndMarker.Value ? 1u : 0u;
             }
 
-            // Thread count: explicit override wins, otherwise use whatever was set or native default via -1
-            if (threadCount.HasValue)
-                props.numThreads = threadCount.Value;
-
-            // Ensure at least 1 thread for our managed wrapper defaults
-            props.numThreads = Math.Max(1, props.numThreads);
-
-            props.affinity = 0;
-            props.reduceSize = ulong.MaxValue; // -1 means set to blocksize if blocksize not -1(solid)|0(auto) && blocksize<filesize
+            // Thread count: explicit override wins, otherwise force single-threaded for LZMA
+            // LZMA native code is compiled for single-threading only (LZMA2 is different and supports multithreading)
+            props.numThreads = 1; // Force single-threaded for all LZMA levels
 
             _encoder = SZ_Lzma_v25_01_Enc_Create();
 
@@ -126,7 +119,7 @@ namespace Nanook.GrindCore.Lzma
             if (res != 0)
                 throw new Exception($"Failed to prepare LZMA encoder {res}");
 
-            this.BlockSize = (int)dictSize;
+            this.BlockSize = (int)dSize; // Use the normalized dictionary size from native code instead of dictSize
             bufferSize += 0x8; // align/safety byte
 
             _inBuffer = BufferPool.Rent((int)bufferSize);
@@ -171,7 +164,7 @@ namespace Nanook.GrindCore.Lzma
 
                 int p = (int)((_inStream.pos + _inStream.remaining) % _inStream.size);
 
-                int sz = (int)Math.Min((ulong)inData.AvailableRead, Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize));
+                int sz = (int)Math.Min((ulong)inData.AvailableRead, _inStream.size - _inStream.remaining);
 
                 int endSz = (int)(_inStream.size - (ulong)p);
                 inData.Read(_inBuffer, (int)p, (int)Math.Min(sz, endSz));
@@ -183,16 +176,35 @@ namespace Nanook.GrindCore.Lzma
                 total += sz;
                 _inStream.remaining += (ulong)sz;
 
-                if (!final && _inStream.remaining < (ulong)this.BlockSize)
+                long remaining = (long)(_inStream.remaining + (ulong)_toFlush);
+
+                if (!final && remaining < (long)this.BlockSize)
                     break;
-                finalfinal = final && inData.AvailableRead == 0 && _inStream.remaining == 0;
+                finalfinal = final && remaining == 0;
 
                 outSz = (ulong)(outData.AvailableWrite);
 
                 fixed (byte* outPtr = outData.Data)
                 {
                     *&outPtr += outData.Size; // writePos is Size
-                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, finalfinal ? 0 : this.BlockSize, &available, finalfinal ? 1 : 0);
+
+                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, final ? 0 : this.BlockSize, &available, finalfinal ? 1 : 0);
+                    if (res != 0)
+                    {
+                        // Handle insufficient buffer error gracefully
+                        if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
+                        {
+                            // Output buffer too small - return partial result and let caller handle it
+                            outTotal += (int)outSz;
+                            _toFlush = available;
+                            outData.Write((int)outSz);
+                            return outTotal;
+                        }
+                        
+                        // For other errors, throw with minimal information
+                        throw new Exception($"Native LZMA call failed with error {res} (0x{res:X8})");
+                    }
+
                     outTotal += (int)outSz;
                 }
                 _toFlush = available;
@@ -201,7 +213,7 @@ namespace Nanook.GrindCore.Lzma
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
 
-                if (finalfinal)
+                if (final && (outSz != 0 || _toFlush == 0)) // the algo can return 0 bytes but still have data to flush
                     break;
             }
 

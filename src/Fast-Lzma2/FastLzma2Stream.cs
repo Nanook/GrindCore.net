@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Nanook.GrindCore;
 
 namespace Nanook.GrindCore.FastLzma2
 {
@@ -44,48 +45,61 @@ namespace Nanook.GrindCore.FastLzma2
         public FastLzma2Stream(Stream stream, CompressionOptions options, CompressionParameters? compressParams = null)
             : base(true, stream, CompressionAlgorithm.FastLzma2, options)
         {
+            // Build compression parameters with proper dictionary options handling
+            int threads = options?.ThreadCount ?? 1; // Default to single thread like other encoders
+            int resolvedLevel = (int)CompressionType;
+
             if (IsCompress)
                 this.BufferSizeOutput = BufferThreshold * 4;
             else
                 this.BufferSizeOutput = BufferThreshold;
 
-            // Build or override compression parameters from options.Dictionary when provided
-            int threads = options.ThreadCount ?? 0;
-            int dictSizeParam = 0;
-            int resolvedLevel = (int)CompressionType; // default level passed previously
-
-            if (options?.Dictionary != null)
-            {
-                if (options.Dictionary.DictionarySize.HasValue)
-                {
-                    long ds = options.Dictionary.DictionarySize.Value;
-                    if (ds < 0) ds = 0;
-                    if (ds > int.MaxValue) ds = int.MaxValue;
-                    dictSizeParam = (int)ds;
-                }
-
-                if (options.Dictionary.Strategy.HasValue)
-                    resolvedLevel = options.Dictionary.Strategy.Value; // map Strategy to FastLzma2 compression level
-            }
-
             if (compressParams == null)
             {
-                compressParams = new CompressionParameters(threads, dictSizeParam);
+                compressParams = new CompressionParameters(threads);
 
-                // Map some dictionary fields into compression parameters when specified
+                // Apply dictionary options directly to Fast-LZMA2 parameters when provided
                 if (options?.Dictionary != null)
                 {
+                    // Dictionary size - only set if explicitly provided
+                    if (options.Dictionary.DictionarySize.HasValue && options.Dictionary.DictionarySize.Value > 0)
+                    {
+                        long ds = options.Dictionary.DictionarySize.Value;
+                        compressParams.DictionarySize = (int)Math.Min(ds, int.MaxValue);
+                    }
+
+                    // Map other dictionary options to Fast-LZMA2 parameters
                     if (options.Dictionary.FastBytes.HasValue)
                         compressParams.FastLength = options.Dictionary.FastBytes.Value;
+                        
+                    if (options.Dictionary.LiteralContextBits.HasValue)
+                        compressParams.LiteralCtxBits = options.Dictionary.LiteralContextBits.Value;
+                        
+                    if (options.Dictionary.LiteralPositionBits.HasValue)
+                        compressParams.LiteralPosBits = options.Dictionary.LiteralPositionBits.Value;
+                        
+                    if (options.Dictionary.PositionBits.HasValue)
+                        compressParams.PosBits = options.Dictionary.PositionBits.Value;
+                        
+                    if (options.Dictionary.SearchDepth.HasValue)
+                        compressParams.SearchDepth = options.Dictionary.SearchDepth.Value;
 
-                    // Strategy already used as resolvedLevel; also expose as CompressionLevel param
+                    // Strategy handling - use Strategy from dictionary, then level as fallback
                     if (options.Dictionary.Strategy.HasValue)
-                        compressParams.CompressionLevel = options.Dictionary.Strategy.Value;
+                    {
+                        resolvedLevel = options.Dictionary.Strategy.Value;
+                        compressParams.Strategy = options.Dictionary.Strategy.Value;
+                    }
+                    // Algorithm mapping: 0=fast -> 1=fast, 1=normal -> 3=ultra
+                    else if (options.Dictionary.Algorithm.HasValue)
+                    {
+                        compressParams.Strategy = options.Dictionary.Algorithm.Value == 0 ? 1 : 3;
+                    }
                 }
             }
 
             if (IsCompress)
-                _encoder = new FastLzma2Encoder(this.BufferSizeOutput, resolvedLevel, compressParams);
+                _encoder = new FastLzma2Encoder(this.BufferSizeOutput, resolvedLevel, compressParams, options?.Dictionary);
             else
                 _decoder = new FastLzma2Decoder(base.BaseRead, BufferSizeOutput, base.BaseLength, resolvedLevel, compressParams);
         }

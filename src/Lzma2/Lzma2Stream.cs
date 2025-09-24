@@ -48,13 +48,18 @@ namespace Nanook.GrindCore.Lzma
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 1) + 0x20;
                 if (this.BufferSizeOutput > int.MaxValue)
                     this.BufferSizeOutput = int.MaxValue;
+                
+                this.BufferSizeOutput += 0x200;
+                if (this.BufferSizeOutput > int.MaxValue)
+                    this.BufferSizeOutput = int.MaxValue;
 
-                // Build merged dict options so encoder can read dictSize and fast-bytes from it.
+                // Build merged dict options - only pass explicit dictionary options when actually provided
                 CompressionDictionaryOptions? merged = null;
                 var dictOpt = options?.Dictionary;
-                if (dictOpt != null)
+                
+                if (dictOpt?.DictionarySize.HasValue == true && dictOpt.DictionarySize.Value != 0)
                 {
-                    // clone to ensure DictionarySize fallback can be applied without mutating caller object
+                    // User explicitly set a dictionary size - pass all their dictionary options
                     merged = new CompressionDictionaryOptions
                     {
                         DictionarySize = dictOpt.DictionarySize,
@@ -69,17 +74,31 @@ namespace Nanook.GrindCore.Lzma
                         WriteEndMarker = dictOpt.WriteEndMarker
                     };
                 }
-                else if (options?.BufferSize is int bs && bs > 0)
+                else
                 {
-                    merged = new CompressionDictionaryOptions { DictionarySize = bs };
+                    // No explicit dictionary size - let native normalization choose based on compression level
+                    // Only pass non-size-related dictionary options if they exist
+                    if (dictOpt != null)
+                    {
+                        merged = new CompressionDictionaryOptions
+                        {
+                            // Don't set DictionarySize - let native normalization choose
+                            FastBytes = dictOpt.FastBytes,
+                            LiteralContextBits = dictOpt.LiteralContextBits,
+                            LiteralPositionBits = dictOpt.LiteralPositionBits,
+                            PositionBits = dictOpt.PositionBits,
+                            Algorithm = dictOpt.Algorithm,
+                            BinaryTreeMode = dictOpt.BinaryTreeMode,
+                            HashBytes = dictOpt.HashBytes,
+                            MatchCycles = dictOpt.MatchCycles,
+                            WriteEndMarker = dictOpt.WriteEndMarker
+                        };
+                    }
+                    // else leave merged as null to use pure native defaults
                 }
 
-                // If merged exists but has no DictionarySize, try BufferSize / fallback
-                if (merged != null && !merged.DictionarySize.HasValue && options?.BufferSize is int bsf && bsf > 0)
-                    merged.DictionarySize = bsf;
-
                 // Pass merged dictionary options and thread/block settings into encoder.
-                _encoder = new Lzma2Encoder((int)CompressionType, options.ThreadCount ?? -1, options.BlockSize ?? -1, merged, options.BufferSize ?? 0);
+                _encoder = new Lzma2Encoder((int)CompressionType, options?.ThreadCount ?? 1, options?.BlockSize ?? -1, merged, options?.BufferSize ?? 0);
 
                 this.Properties = new byte[] { _encoder.Properties };
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
@@ -153,7 +172,7 @@ namespace Nanook.GrindCore.Lzma
 
         /// <summary>
         /// Compresses data using LZMA2 and writes it to the stream.
-        /// Updates the position with the running total of bytes processed from the source stream.
+        /// Updating the position with the running total of bytes processed from the source stream.
         /// </summary>
         /// <param name="data">The buffer containing data to compress and write.</param>
         /// <param name="cancel">A cancellable task for cooperative cancellation.</param>

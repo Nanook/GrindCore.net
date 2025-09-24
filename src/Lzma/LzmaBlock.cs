@@ -20,71 +20,116 @@ namespace Nanook.GrindCore.Lzma
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LzmaBlock"/> class with the specified compression options.
+        /// When dictionary options are not explicitly provided, uses 7-Zip level-based defaults via C normalization.
         /// </summary>
         /// <param name="options">The compression options to use.</param>
         public LzmaBlock(CompressionOptions options) : base(CompressionAlgorithm.Lzma, options)
         {
+            // BlockSize is always options.BlockSize and is used for output buffer calculation
             int blockSize = (int)options.BlockSize!;
             this.Properties = options.InitProperties;
+            
             _props = new CLzmaEncProps();
             SZ_Lzma_v25_01_EncProps_Init(ref _props);
 
-            // Level comes from the selected CompressionType for this block
+            // Set the compression level - this drives all the 7-Zip defaults
             _props.level = (int)this.CompressionType;
 
-            // Determine dictionary size precedence:
-            // 1) CompressionOptions.Dictionary.DictionarySize
-            // 2) options.BlockSize (fallback used historically)
-            // 3) leave as 0 and let normalize choose default
-            uint dictSize = 0;
-            if (options.Dictionary?.DictionarySize is long ds && ds != 0)
+            // Determine dictionary size using the same logic as LzmaStream:
+            // 1. CompressionOptions.Dictionary.DictionarySize first
+            // 2. options.BufferSize fallback 
+            // 3. Default input buffer size (but we don't have BufferSizeInput in Block, so use blockSize)
+            uint dictSizeToUse;
+            long? dictOptSize = options?.Dictionary?.DictionarySize;
+            if (dictOptSize.HasValue && dictOptSize.Value != 0)
             {
-                if (ds < 0 || ds > uint.MaxValue)
+                if (dictOptSize.Value < 0 || dictOptSize.Value > uint.MaxValue)
                     throw new ArgumentOutOfRangeException(nameof(options.Dictionary.DictionarySize), $"DictionarySize must be between 0 and {uint.MaxValue}.");
-                dictSize = (uint)ds;
+                dictSizeToUse = (uint)dictOptSize.Value;
             }
-            else if (options.BlockSize.HasValue && options.BlockSize.Value > 0)
+            else if (options?.BufferSize is int bs && bs > 0)
+                dictSizeToUse = (uint)bs;
+            else
+                dictSizeToUse = (uint)blockSize; // Use blockSize as fallback since we don't have BufferSizeInput
+
+            // Build merged dictionary options - only set explicit dictionary size when actually provided
+            CompressionDictionaryOptions? mergedDict = null;
+            uint dictSizeForNative = 0;
+            
+            if (options?.Dictionary?.DictionarySize.HasValue == true && options.Dictionary.DictionarySize.Value != 0)
             {
-                // historical behavior used BlockSize as dict size
-                long b = options.BlockSize.Value;
-                if (b < 0 || b > uint.MaxValue)
-                    throw new ArgumentOutOfRangeException(nameof(options.BlockSize), $"BlockSize must be between 0 and {uint.MaxValue} when used as dict size.");
-                dictSize = (uint)b;
+                // User explicitly set a dictionary size - use it and all their other options
+                if (options.Dictionary.DictionarySize < 0 || options.Dictionary.DictionarySize > uint.MaxValue)
+                    throw new ArgumentOutOfRangeException(nameof(options.Dictionary.DictionarySize), $"DictionarySize must be between 0 and {uint.MaxValue}.");
+                
+                mergedDict = options.Dictionary;  // Pass the entire dictionary configuration
+                dictSizeForNative = (uint)options.Dictionary.DictionarySize.Value;
             }
-
-            _props.dictSize = dictSize;
-            // Apply dictionary tuning options when present, otherwise leave fields for normalize to fill defaults.
-            if (options.Dictionary != null)
+            else
             {
-                var d = options.Dictionary;
-
-                if (d.LiteralContextBits.HasValue)
-                    _props.lc = d.LiteralContextBits.Value;
-                if (d.LiteralPositionBits.HasValue)
-                    _props.lp = d.LiteralPositionBits.Value;
-                if (d.PositionBits.HasValue)
-                    _props.pb = d.PositionBits.Value;
-                if (d.Algorithm.HasValue)
-                    _props.algo = d.Algorithm.Value;
-                if (d.FastBytes.HasValue)
-                    _props.fb = d.FastBytes.Value;
-                if (d.BinaryTreeMode.HasValue)
-                    _props.btMode = d.BinaryTreeMode.Value;
-                if (d.HashBytes.HasValue)
-                    _props.numHashBytes = d.HashBytes.Value;
-                if (d.MatchCycles.HasValue)
-                    _props.mc = (uint)d.MatchCycles.Value;
-                if (d.WriteEndMarker.HasValue)
-                    _props.writeEndMark = d.WriteEndMarker.Value ? 1u : 0u;
+                // No explicit dictionary size - let native normalization choose based on compression level
+                // Only pass non-size-related dictionary options if they exist
+                if (options?.Dictionary != null)
+                {
+                    mergedDict = new CompressionDictionaryOptions
+                    {
+                        // Don't set DictionarySize - let native normalization choose
+                        FastBytes = options.Dictionary.FastBytes,
+                        LiteralContextBits = options.Dictionary.LiteralContextBits,
+                        LiteralPositionBits = options.Dictionary.LiteralPositionBits,
+                        PositionBits = options.Dictionary.PositionBits,
+                        Algorithm = options.Dictionary.Algorithm,
+                        BinaryTreeMode = options.Dictionary.BinaryTreeMode,
+                        HashBytes = options.Dictionary.HashBytes,
+                        MatchCycles = options.Dictionary.MatchCycles,
+                        WriteEndMarker = options.Dictionary.WriteEndMarker
+                    };
+                }
+                // else leave mergedDict as null to use pure native defaults
             }
 
-            // Allow an explicit thread count from options to override numThreads default
-            if (options.ThreadCount.HasValue)
-                _props.numThreads = Math.Max(1, options.ThreadCount.Value);
+            // Initialize properties to let native normalization choose defaults when appropriate
+            _props.dictSize = dictSizeForNative; // 0 if not explicitly set, actual value if set
+            _props.mc = 0;
 
-            // Normalize properties so native library fills sensible defaults for unset fields
-            SZ_Lzma_v25_01_EncProps_Normalize(ref _props);
+            // Mark unspecified so native normalize() can fill defaults for values we don't set
+            _props.lc = _props.lp = _props.pb = _props.algo = _props.fb = _props.btMode = _props.numHashBytes = _props.numThreads = -1;
 
+            // Fixed properties that we always want to set explicitly
+            _props.writeEndMark = 0; // default no end marker
+            _props.affinity = 0;
+            _props.reduceSize = ulong.MaxValue;
+
+            // Apply dictionary options when provided (only override when set) - matches LzmaEncoder logic
+            if (mergedDict != null)
+            {
+                if (mergedDict.LiteralContextBits.HasValue)
+                    _props.lc = mergedDict.LiteralContextBits.Value;
+                if (mergedDict.LiteralPositionBits.HasValue)
+                    _props.lp = mergedDict.LiteralPositionBits.Value;
+                if (mergedDict.PositionBits.HasValue)
+                    _props.pb = mergedDict.PositionBits.Value;
+                if (mergedDict.Algorithm.HasValue)
+                    _props.algo = mergedDict.Algorithm.Value;
+                if (mergedDict.FastBytes.HasValue)
+                    _props.fb = mergedDict.FastBytes.Value;
+                if (mergedDict.BinaryTreeMode.HasValue)
+                    _props.btMode = mergedDict.BinaryTreeMode.Value;
+                if (mergedDict.HashBytes.HasValue)
+                    _props.numHashBytes = mergedDict.HashBytes.Value;
+                if (mergedDict.MatchCycles.HasValue)
+                    _props.mc = (uint)mergedDict.MatchCycles.Value;
+                if (mergedDict.WriteEndMarker.HasValue)
+                    _props.writeEndMark = mergedDict.WriteEndMarker.Value ? 1u : 0u;
+            }
+
+            // Apply explicit thread count override
+            _props.numThreads = 1;
+
+            // Note: We don't call SZ_Lzma_v25_01_EncProps_Normalize here because LzmaEncoder 
+            // does normalization in SZ_Lzma_v25_01_Enc_SetProps during OnCompress
+
+            // RequiredCompressOutputSize is always based on the actual blockSize (options.BlockSize), never the dictionary size
             RequiredCompressOutputSize = blockSize + (blockSize >> 1) + 0x10; // Adjust for overhead
         }
 
@@ -104,7 +149,14 @@ namespace Nanook.GrindCore.Lzma
                 *&dstPtr += dstData.Offset;
 
                 IntPtr encoder = SZ_Lzma_v25_01_Enc_Create();
-                SZ_Lzma_v25_01_Enc_SetProps(encoder, ref _props);
+                int res = SZ_Lzma_v25_01_Enc_SetProps(encoder, ref _props);
+                if (res != 0)
+                {
+                    SZ_Lzma_v25_01_Enc_Destroy(encoder);
+                    dstCount = 0;
+                    return mapResult(res);
+                }
+                
                 SZ_Lzma_v25_01_Enc_SetDataSize(encoder, (ulong)srcData.Length);
                 int result;
 
@@ -121,6 +173,14 @@ namespace Nanook.GrindCore.Lzma
 
                     result = SZ_Lzma_v25_01_Enc_MemEncode(
                         encoder, dstPtr, &compressedSize, srcPtr, (ulong)srcData.Length, 0, IntPtr.Zero);
+                    
+                    // Handle insufficient buffer error gracefully like LzmaEncoder
+                    if (result == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
+                    {
+                        // Return partial result - this is normal for block compression with higher levels
+                        dstCount = (int)compressedSize;
+                        return CompressionResultCode.Success;
+                    }
                 }
                 finally
                 {

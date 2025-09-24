@@ -70,10 +70,6 @@ namespace Nanook.GrindCore.Lzma
                     }
                     : new CompressionDictionaryOptions { DictionarySize = dictSizeToUse };
 
-                // Ensure FastBytes fallback is set if not provided
-                if (!mergedDict.FastBytes.HasValue)
-                    mergedDict.FastBytes = options?.Dictionary?.FastBytes ?? 0;
-
                 // Pass merged dictionary options and thread count into encoder. Provide compression level as fallback.
                 _encoder = new LzmaEncoder(mergedDict, options?.ThreadCount, (int)CompressionType);
                 Properties = _encoder.Properties;

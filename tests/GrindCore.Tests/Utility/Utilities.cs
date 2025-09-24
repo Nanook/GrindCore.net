@@ -79,6 +79,8 @@ namespace GrindCore.Tests.Utility
                             }
                         }
 
+                       // File.WriteAllBytes(@"d:\temp\out.bin", compMemoryStream.ToArray());
+
                         // Hash Compressed data
                         compressedBytes = (int)compMemoryStream.Position;
                         compMemoryStream.Position = 0; //reset for reading
