@@ -148,7 +148,7 @@ GrindCore is designed to overcome several known complications in the dotnet ecos
 
 Several enhancements and additional features could be introduced to further improve GrindCore. While these may be addressed over time, listing them here serves to communicate known gaps and encourage community contributions:
 - Multi-language support.
-- Dictionary support.
+- Custom Dictionaries and training where supported.
 - Progress updates raised from C library.
 - Update native compression versions.
 - Expanded compression algorithm capabilities.

@@ -29,39 +29,66 @@ namespace Nanook.GrindCore.FastLzma2
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
 
-            // Resolve input block size: prefer Dictionary.DictionarySize when provided, otherwise use options.BlockSize.
-            long bs = options.Dictionary?.DictionarySize ?? options.BlockSize ?? 0L;
-            if (bs <= 0)
-            {
-                // fall back to a small default to avoid throwing in tests
-                bs = 1;
-            }
+            // Resolve input block size: prefer explicit BlockSize first, then Dictionary.DictionarySize as fallback.
+            long bs = options.BlockSize ?? options.Dictionary?.DictionarySize ?? 1L;
+            if (bs <= 0) bs = 1; // Ensure minimum valid block size
             if (bs > int.MaxValue) bs = int.MaxValue;
             int blockSize = (int)bs;
-
-            // Resolve dictionary size separately if provided (some callers want a different dictionary than blockSize)
-            long dictSize = options.Dictionary?.DictionarySize ?? bs;
-            if (dictSize < 0)
-                dictSize = 0;
-            if (dictSize > (long)uint.MaxValue)
-                dictSize = uint.MaxValue;
 
             // Determine compression level: prefer Dictionary.Strategy when provided; otherwise use CompressionType resolved by base.
             int level = options.Dictionary?.Strategy ?? (int)this.CompressionType;
 
-            // Determine thread count (default to 1)
+            // Determine thread count (default to 1 for consistency with other blocks)
             int threads = options.ThreadCount ?? 1;
 
             // Create contexts (use MT creation when supported; library expects thread count)
             _compressCtx = FL2_createCCtxMt((uint)threads);
             _decompressCtx = FL2_createDCtxMt((uint)threads);
 
+            // Configure compression properties - only set explicit values when provided
+            if (options.Dictionary?.DictionarySize.HasValue == true && options.Dictionary.DictionarySize.Value > 0)
+            {
+                long dictSize = options.Dictionary.DictionarySize.Value;
+                if (dictSize > uint.MaxValue) dictSize = uint.MaxValue;
+                FL2_CCtx_setParameter(_compressCtx, FL2Parameter.DictionarySize, (nuint)dictSize);
+            }
+            // else let Fast-LZMA2 native normalization choose dictionary size based on level
+            
+            FL2_CCtx_setParameter(_compressCtx, FL2Parameter.CompressionLevel, (nuint)level);
+
+            // Apply other dictionary options if provided
+            if (options.Dictionary != null)
+            {
+                if (options.Dictionary.FastBytes.HasValue)
+                    FL2_CCtx_setParameter(_compressCtx, FL2Parameter.FastLength, (nuint)options.Dictionary.FastBytes.Value);
+                    
+                if (options.Dictionary.LiteralContextBits.HasValue)
+                    FL2_CCtx_setParameter(_compressCtx, FL2Parameter.LiteralCtxBits, (nuint)options.Dictionary.LiteralContextBits.Value);
+                    
+                if (options.Dictionary.LiteralPositionBits.HasValue)
+                    FL2_CCtx_setParameter(_compressCtx, FL2Parameter.LiteralPosBits, (nuint)options.Dictionary.LiteralPositionBits.Value);
+                    
+                if (options.Dictionary.PositionBits.HasValue)
+                    FL2_CCtx_setParameter(_compressCtx, FL2Parameter.posBits, (nuint)options.Dictionary.PositionBits.Value);
+                    
+                if (options.Dictionary.SearchDepth.HasValue)
+                    FL2_CCtx_setParameter(_compressCtx, FL2Parameter.SearchDepth, (nuint)options.Dictionary.SearchDepth.Value);
+                    
+                // Strategy handling
+                if (options.Dictionary.Strategy.HasValue)
+                {
+                    FL2_CCtx_setParameter(_compressCtx, FL2Parameter.Strategy, (nuint)options.Dictionary.Strategy.Value);
+                }
+                // Algorithm mapping: 0=fast -> 1=fast, 1=normal -> 3=ultra
+                else if (options.Dictionary.Algorithm.HasValue)
+                {
+                    int strategy = options.Dictionary.Algorithm.Value == 0 ? 1 : 3;
+                    FL2_CCtx_setParameter(_compressCtx, FL2Parameter.Strategy, (nuint)strategy);
+                }
+            }
+
             // Retrieve dictionary property for decoding
             _dictProp = FL2_getCCtxDictProp(_compressCtx);
-
-            // Configure compression properties
-            FL2_CCtx_setParameter(_compressCtx, FL2Parameter.DictionarySize, (nuint)dictSize);
-            FL2_CCtx_setParameter(_compressCtx, FL2Parameter.CompressionLevel, (nuint)level);
 
             RequiredCompressOutputSize = (int)FL2_compressBound((nuint)blockSize);
         }
@@ -85,8 +112,17 @@ namespace Nanook.GrindCore.FastLzma2
                 nuint result = FL2_compressCCtx(
                     _compressCtx, dstPtr, compressedSize, srcPtr, (nuint)srcData.Length, (int)this.CompressionType);
 
-                if (result < 0)
+                // Handle insufficient buffer error gracefully like other encoders
+                if ((long)result < 0)
                 {
+                    // Check for specific insufficient buffer error
+                    if ((int)result == -11) // FL2_error_dstSize_tooSmall
+                    {
+                        // Return partial result if any data was compressed
+                        dstCount = (int)compressedSize;
+                        return CompressionResultCode.InsufficientBuffer;
+                    }
+                    
                     dstCount = 0;
                     return mapResult((int)result);
                 }

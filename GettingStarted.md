@@ -54,7 +54,9 @@ All stream classes in GrindCore follow a standardized pattern, making them easy 
 
 ### CompressionOptions.Dictionary (tuning)
 
-For algorithms that support detailed tuning (notably the LZMA family: LZMA, LZMA2 and Fast?LZMA2), use `CompressionOptions.Dictionary` to provide encoder-specific settings. The Dictionary object is intentionally algorithm-agnostic; encoders map the relevant fields to native parameters.
+For algorithms that support detailed tuning (notably the LZMA family: LZMA, LZMA2 and Fast-LZMA2), use `CompressionOptions.Dictionary` to provide encoder-specific settings. The Dictionary object is intentionally algorithm-agnostic; encoders map the relevant fields to native parameters.
+
+> **Note**: Fast-LZMA2 has sophisticated native multi-threading support and uses its own internal parameter system. Dictionary options are automatically mapped to appropriate native Fast-LZMA2 settings.
 
 Common useful fields for the LZMA family:
 - `DictionarySize` — dictionary size in bytes (most impactful for ratio/memory).
@@ -62,14 +64,14 @@ Common useful fields for the LZMA family:
 - `LiteralContextBits`, `LiteralPositionBits`, `PositionBits` — map to LZMA's lc/lp/pb settings.
 - `Algorithm`, `BinaryTreeMode`, `HashBytes`, `MatchCycles`, `SearchDepth` — various match-finder and algorithm-mode knobs.
 - `Strategy` — used by some wrappers to indicate compression level/variant for hybrid encoders (Fast?LZMA2 maps Strategy ? compression level).
-- `ThreadCount` (on `CompressionOptions`) — used where the native encoder supports multithreading (e.g., Fast?LZMA2, block-based LZMA2).
-
-Note: CompressionOptions.Dictionary is also used for tuning other algorithms — for example WindowBits/WindowLog (ZStd, Brotli, ZLib), MemoryLevel and Strategy (ZLib/Deflate/GZip), Quality (Brotli), and WindowBits/DictionarySize/Strategy for ZStd and LZ4. Each encoder maps relevant fields for its algorithm/version.
+- `ThreadCount` (on `CompressionOptions`) — used where the native encoder supports multithreading (e.g., Fast-LZMA2, block-based LZMA2). Note: LZMA uses single-threading for stability; LZMA2 and Fast-LZMA2 support true multithreading.
 
 Best practice:
 - Set tuning via `CompressionOptions.WithLzmaDictionary(...)`, `WithLzma2Dictionary(...)` or `WithFastLzma2Dictionary(...)` helpers where provided.
+- Dictionary Size: Only set explicit `DictionarySize` when needed; native normalization often chooses optimal values based on compression level.
 - After compression, persist `CompressionStream.Properties` (encoder runtime properties like LZMA property byte) alongside compressed data. When decompressing, set `CompressionOptions.InitProperties = savedProperties` so the decoder is initialized identically.
 - Encoders clone dictionary options before mutating and validate/clamp ranges; follow the same pattern in your code if you mutate the input object.
+
 
 Short example:
 
