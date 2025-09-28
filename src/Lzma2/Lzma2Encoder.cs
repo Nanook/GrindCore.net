@@ -262,9 +262,7 @@ namespace Nanook.GrindCore.Lzma
 
                 int p = (int)((_inStream.pos + _inStream.remaining) % _inStream.size);
 
-                // Fix: For solid mode, use the internal block size (LZMA2_BLOCK_SIZE) instead of this.BlockSize
-                long effectiveBlockSize = _solid ? LZMA2_BLOCK_SIZE : this.BlockSize;
-                int sz = (int)Math.Min(inData.AvailableRead, (long)Math.Min(_inStream.size - _inStream.remaining, (ulong)effectiveBlockSize - (ulong)_blkTotal));
+                int sz = (int)Math.Min(inData.AvailableRead, (long)Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize - (ulong)_blkTotal));
 
                 int endSz = (int)(_inStream.size - (ulong)p);
                 inData.Read(_inBuffer, (int)p, (int)Math.Min(sz, endSz));
@@ -278,8 +276,7 @@ namespace Nanook.GrindCore.Lzma
                 _inStream.remaining += (ulong)sz;
 
                 finalfinal = final && inData.AvailableRead == 0 && _inStream.remaining == 0;
-                // Fix: For solid mode, use internal block size for determining block completion
-                blkFinal = _solid ? (_blkTotal >= LZMA2_BLOCK_SIZE) : (this.BlockSize == _blkTotal);
+                blkFinal = this.BlockSize == _blkTotal;
 
                 if (!final && !blkFinal && _inStream.remaining < _inStream.size)
                     break;
@@ -294,17 +291,16 @@ namespace Nanook.GrindCore.Lzma
                         byte* outPtr2 = *&outPtr + outData.Size;
                         _blockComplete = finalfinal || blkFinal;
                         res = SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u);
-                        
-                        // Handle insufficient buffer error gracefully
+                        outTotal += (int)outSz;
+
+                        // Handle insufficient buffer error gracefully like LzmaEncoder
                         if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
                         {
-                            // Return partial result and let caller handle it
-                            outTotal += (int)outSz;
+                            // Return partial result - this is normal for higher compression levels
                             outData.Write((int)outSz);
                             return outTotal;
                         }
-                        
-                        outTotal += (int)outSz;
+
                         outData.Write((int)outSz);
                     } while (res == 0 && outSz != 0 && (finalfinal || blkFinal));
 

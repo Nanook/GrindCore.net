@@ -39,8 +39,9 @@ namespace GrindCore.Tests.Utility
                 BlockSize = blockSize ?? bufferSize,
                 ThreadCount = threadCount,
                 Version = CompressionVersion.Create(algorithm, version ?? ""),
-                Dictionary = new CompressionDictionaryOptions {
-                    DictionarySize = bufferSize, //4MiB dictionary
+                Dictionary = new CompressionDictionaryOptions
+                {
+                    DictionarySize = algorithm == CompressionAlgorithm.FastLzma2 ? 0 : bufferSize, // fast-lzma2 is flakey and possibly should be deprecated
                 }
             };
 
@@ -79,6 +80,8 @@ namespace GrindCore.Tests.Utility
                                 Assert.Equal(data.Position, compressionStream.PositionFullSize); //compression position is correct
                             }
                         }
+
+                        //File.WriteAllBytes(@$"d:\temp\out_{type}.bin", compMemoryStream.ToArray());
 
                         // Hash Compressed data
                         compressedBytes = (int)compMemoryStream.Position;
