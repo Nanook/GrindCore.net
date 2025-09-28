@@ -13,23 +13,25 @@ using Nanook.GrindCore.Lzma;
 
 namespace GrindCore.Tests
 {
+
 #if !IS_32BIT //works for win-x86 not arm :(
 
     public sealed class Lzma2Tests
     {
-
+        //// These match the 7zip app (v25.01) when setting the dict size, threads to 1 and block size to solid
         //[Theory]
-        //[InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x1831cfe2, "5498dfddb9e1a40e", "0e7687d82e5aeee6")]
-        ////[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x4e201, "c668fabe6e6e9235", "4ae0151988b74cae")]
-        //public void Data_StreamCorpus_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
+        //[InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 4, 0x1831cfe2, "5498dfddb9e1a40e", "0e7687d82e5aeee6")]
+        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 4, 0x1831911c, "5498dfddb9e1a40e", "92036e1d1f07ede8")] // level 1
+        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 32, 0x144D5196, "5498dfddb9e1a40e", "C93A3EAB5AD48B56")] // level 5
+        //public void Data_StreamCorpus_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, int dictMb, long compressedSize, string rawXxH64, string compXxH64)
         //{
         //    FileInfo inputFile = new FileInfo(@"D:\Temp\mcorpus.bin");
         //    int streamLen = (int)inputFile.Length; // Total bytes to process
-        //    int bufferSize = 4 * 1024 * 1024; // 1MiB block size
+        //    int bufferSize = dictMb * 1024 * 1024; // 1MiB block size
 
         //    using (var data = inputFile.OpenRead())
         //    {
-        //        TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, 0);
+        //        TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, 0, 1, null, -1);
 
         //        Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
         //        Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
