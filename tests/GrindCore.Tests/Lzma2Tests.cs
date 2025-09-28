@@ -13,31 +13,41 @@ using Nanook.GrindCore.Lzma;
 
 namespace GrindCore.Tests
 {
+
 #if !IS_32BIT //works for win-x86 not arm :(
 
     public sealed class Lzma2Tests
     {
+        [Fact]
+        public void Test()
+        {
+            using (var memstream = File.OpenWrite(@"D:\Temp\mcorpus.bin_xz_OUT")) // new MemoryStream())
+            using (var lzma2Stream = new Lzma2Stream(File.OpenRead(@"D:\Temp\out.bin"), new CompressionOptions { InitProperties = new byte[] { 0x14 }, Type = CompressionType.Decompress, LeaveOpen = false }))
+            {
+                lzma2Stream.CopyTo(memstream);
+            }
+        }
 
-        //[Theory]
-        //[InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x1831cfe2, "5498dfddb9e1a40e", "0e7687d82e5aeee6")]
-        ////[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x4e201, "c668fabe6e6e9235", "4ae0151988b74cae")]
-        //public void Data_StreamCorpus_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
-        //{
-        //    FileInfo inputFile = new FileInfo(@"D:\Temp\mcorpus.bin");
-        //    int streamLen = (int)inputFile.Length; // Total bytes to process
-        //    int bufferSize = 4 * 1024 * 1024; // 1MiB block size
+        [Theory]
+        [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0x1831cfe2, "5498dfddb9e1a40e", "0e7687d82e5aeee6")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x18f9cf24, "5498dfddb9e1a40e", "a49e3aee5303d87f")]
+        public void Data_StreamCorpus_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
+        {
+            FileInfo inputFile = new FileInfo(@"D:\Temp\mcorpus.bin");
+            int streamLen = (int)inputFile.Length; // Total bytes to process
+            int bufferSize = 4 * 1024 * 1024; // 1MiB block size
 
-        //    using (var data = inputFile.OpenRead())
-        //    {
-        //        TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, 0);
+            using (var data = inputFile.OpenRead())
+            {
+                TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, 0, 1, null, -1);
 
-        //        Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
-        //        Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
-        //        Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
-        //        Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
-        //        Assert.Equal(r.InHash, r.OutHash); //test IN and decompressed data hashes match
-        //    }
-        //}
+                Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
+                Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
+                Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
+                Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
+                Assert.Equal(r.InHash, r.OutHash); //test IN and decompressed data hashes match
+            }
+        }
 
         [Theory]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest,      0x200000,  1,  0x953, "7833322f45651d24", "eb4d661eaefb646f")]

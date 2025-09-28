@@ -20,7 +20,7 @@ namespace GrindCore.Tests.Utility
     internal partial class Utilities
     {
 
-        public static TestResults TestStreamBlocks(Stream data, CompressionAlgorithm algorithm, CompressionType type, int dataSize, int bufferSize, int compSize, int? threads = null, string? version = null)
+        public static TestResults TestStreamBlocks(Stream data, CompressionAlgorithm algorithm, CompressionType type, int dataSize, int bufferSize, int compSize, int? threads = null, string? version = null, int? blockSize = null)
         {
             // Process in 1MiB blocks
             int total = dataSize; // Total bytes to process
@@ -36,9 +36,12 @@ namespace GrindCore.Tests.Utility
                 Type = type,
                 LeaveOpen = true,
                 BufferSize = bufferSize,
-                BlockSize = bufferSize,
+                BlockSize = blockSize ?? bufferSize,
                 ThreadCount = threadCount,
-                Version = CompressionVersion.Create(algorithm, version ?? "")
+                Version = CompressionVersion.Create(algorithm, version ?? ""),
+                Dictionary = new CompressionDictionaryOptions {
+                    DictionarySize = bufferSize, //4MiB dictionary
+                }
             };
 
             CompressionOptions decompOptions = new CompressionOptions()
@@ -51,8 +54,6 @@ namespace GrindCore.Tests.Utility
 
             try
             {
-                //File.WriteAllBytes(@"d:\temp\zstd-non-good.bin", TestNonCompressibleDataStream.Create(6 * 1024 * 1024));
-
                 using (var inXxhash = XXHash64.Create())
                 using (var compXxhash = XXHash64.Create())
                 using (var outXxhash = XXHash64.Create())
@@ -78,8 +79,6 @@ namespace GrindCore.Tests.Utility
                                 Assert.Equal(data.Position, compressionStream.PositionFullSize); //compression position is correct
                             }
                         }
-
-                       // File.WriteAllBytes(@"d:\temp\out.bin", compMemoryStream.ToArray());
 
                         // Hash Compressed data
                         compressedBytes = (int)compMemoryStream.Position;

@@ -70,8 +70,7 @@ namespace Nanook.GrindCore.Lzma
                         Algorithm = dictOpt.Algorithm,
                         BinaryTreeMode = dictOpt.BinaryTreeMode,
                         HashBytes = dictOpt.HashBytes,
-                        MatchCycles = dictOpt.MatchCycles,
-                        WriteEndMarker = dictOpt.WriteEndMarker
+                        MatchCycles = dictOpt.MatchCycles
                     };
                 }
                 else
@@ -90,15 +89,23 @@ namespace Nanook.GrindCore.Lzma
                             Algorithm = dictOpt.Algorithm,
                             BinaryTreeMode = dictOpt.BinaryTreeMode,
                             HashBytes = dictOpt.HashBytes,
-                            MatchCycles = dictOpt.MatchCycles,
-                            WriteEndMarker = dictOpt.WriteEndMarker
+                            MatchCycles = dictOpt.MatchCycles
                         };
                     }
                     // else leave merged as null to use pure native defaults
                 }
 
+                // Fix: Pass proper parameters for solid mode
+                // Solid mode should be used when: blockSize == -1 OR (threadCount == 1 AND blockSize == 0)
+                int threads = options?.ThreadCount ?? 1;
+                long blockSize = options?.BlockSize ?? -1;
+                
+                // Default to solid mode for single-threaded LZMA2 (matches 7-Zip behavior)
+                if (threads == 1 && blockSize == 0)
+                    blockSize = -1;
+
                 // Pass merged dictionary options and thread/block settings into encoder.
-                _encoder = new Lzma2Encoder((int)CompressionType, options?.ThreadCount ?? 1, options?.BlockSize ?? -1, merged, options?.BufferSize ?? 0);
+                _encoder = new Lzma2Encoder((int)CompressionType, threads, blockSize, merged, options?.BufferSize ?? 0);
 
                 this.Properties = new byte[] { _encoder.Properties };
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
@@ -154,8 +161,8 @@ namespace Nanook.GrindCore.Lzma
                             if (info.CompressedSize != 0)
                                 read += BaseRead(_buffer, info.BlockSize - read);
                         }
-                        else
-                            _ended = true;
+                        //else // even the 7zip app will insert nulls mid stream!! Took a while to deduce that one
+                        //    _ended = true;
                     }
                 }
                 if (_buffer.AvailableRead == 0)
@@ -186,7 +193,6 @@ namespace Nanook.GrindCore.Lzma
 
             bytesWrittenToStream = 0;
             cancel.ThrowIfCancellationRequested();
-
             int avRead = data.AvailableRead;
             long size = _encoder.EncodeData(data, _buffer, false, cancel);
 
@@ -224,7 +230,7 @@ namespace Nanook.GrindCore.Lzma
                 {
                     _buffer.Pos = 0;
                     _buffer.Size = 0;
-                    _buffer.Write(new byte[1], 0, 1);
+                    _buffer.Write(new byte[1] { 0x00 }, 0, 1);
                     bytesWrittenToStream += BaseWrite(_buffer, 1);
                 }
             }

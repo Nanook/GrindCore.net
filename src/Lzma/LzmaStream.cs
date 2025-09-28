@@ -65,8 +65,7 @@ namespace Nanook.GrindCore.Lzma
                         Algorithm = options.Dictionary.Algorithm,
                         BinaryTreeMode = options.Dictionary.BinaryTreeMode,
                         HashBytes = options.Dictionary.HashBytes,
-                        MatchCycles = options.Dictionary.MatchCycles,
-                        WriteEndMarker = options.Dictionary.WriteEndMarker
+                        MatchCycles = options.Dictionary.MatchCycles
                     }
                     : new CompressionDictionaryOptions { DictionarySize = dictSizeToUse };
 

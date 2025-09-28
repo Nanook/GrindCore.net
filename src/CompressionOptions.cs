@@ -593,16 +593,6 @@ namespace Nanook.GrindCore
         public int? MemoryLevel { get; set; }
 
         /// <summary>
-        /// Gets or sets whether to write end marker for LZMA compression.
-        /// Controls whether a stream termination marker is written to the compressed data.
-        /// <para><strong>Algorithms:</strong></para>
-        /// <para>• <strong>LZMA/LZMA2:</strong> 0=no end marker, 1=write EOPM, default = 0</para>
-        /// <para><strong>Impact:</strong> End markers are useful when the uncompressed size is unknown during decompression.</para>
-        /// <para>They add a small overhead but provide better error detection and stream validation.</para>
-        /// </summary>
-        public bool? WriteEndMarker { get; set; }
-
-        /// <summary>
         /// Gets or sets the hash log for ZStd compression.
         /// Controls the size of the hash table used for match finding.
         /// <para><strong>Algorithms:</strong></para>

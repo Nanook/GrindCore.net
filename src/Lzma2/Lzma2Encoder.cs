@@ -51,29 +51,19 @@ namespace Nanook.GrindCore.Lzma
             if (_encoder == IntPtr.Zero)
                 throw new Exception("Failed to create LZMA2 encoder.");
 
-            // encoder already has props, replace them. Blank lc, lp etc to ensure they're recalculated from the level
+            // SAFE APPROACH: Create our own properties struct that doesn't conflict with encoder's memory
+            // This follows the same pattern as Lzma2Block which works without crashes
             CLzma2EncProps props = new CLzma2EncProps();
+            SZ_Lzma2_v25_01_Enc_Construct(ref props);
 
-            // init
-            props.lzmaProps.level = 5;
-            props.lzmaProps.dictSize = props.lzmaProps.mc = 0;
-            props.lzmaProps.reduceSize = ulong.MaxValue;
-            props.lzmaProps.lc = props.lzmaProps.lp = props.lzmaProps.pb = props.lzmaProps.algo = props.lzmaProps.fb = props.lzmaProps.btMode = props.lzmaProps.numHashBytes = props.lzmaProps.numThreads = -1;
-            props.lzmaProps.numHashBytes = 0;
-            props.lzmaProps.writeEndMark = 0;
-            props.lzmaProps.affinity = 0;
-            props.blockSize = 0;
-            props.numBlockThreads_Max = -1;
-            props.numBlockThreads_Reduced = -1;
-            props.numTotalThreads = -1;
-
-            // config base
+            // Set the compression level and basic configuration
             props.lzmaProps.level = level;
-            props.lzmaProps.numThreads = -1;
+
+            // Configure threading
+            props.lzmaProps.numThreads = -1; // Let LZMA2 handle this internally
             props.numBlockThreads_Max = threads;
             props.numBlockThreads_Reduced = -1;
             props.numTotalThreads = threads;
-            props.numThreadGroups = 0; // new for 25.01
 
             // Apply dictionary options (dict size & LZMA tuning) if provided
             if (dictOptions != null)
@@ -85,8 +75,6 @@ namespace Nanook.GrindCore.Lzma
                     if (ds < 0 || ds > uint.MaxValue)
                         throw new ArgumentOutOfRangeException(nameof(dictOptions.DictionarySize), $"DictionarySize must be between 0 and {uint.MaxValue} (fits in uint).");
                     props.lzmaProps.dictSize = (uint)ds;
-                    // mc uses a uint; keep previous heuristic but it's not critical
-                    props.lzmaProps.mc = (uint)Math.Min(ds, int.MaxValue);
                 }
                 // else leave props.lzmaProps.dictSize = 0 so native normalization chooses based on level
 
@@ -108,7 +96,6 @@ namespace Nanook.GrindCore.Lzma
                     int mc = Clamp(dictOptions.MatchCycles.Value, 1, 1 << 30);
                     props.lzmaProps.mc = (uint)mc;
                 }
-                if (dictOptions.WriteEndMarker.HasValue) props.lzmaProps.writeEndMark = dictOptions.WriteEndMarker.Value ? 1u : 0u;
 
                 // Ensure lc + lp is within native acceptable limits. Some native versions reject combinations where lc+lp is too large.
                 // If both lc and lp were explicitly set and their sum exceeds 4, reduce lc so lc+lp == 4 to avoid SZ_ERROR_PARAM.
@@ -124,18 +111,40 @@ namespace Nanook.GrindCore.Lzma
             }
             // else: no dictOptions — keep fb and dictSize unset (-1/0) so native defaults apply
 
-            // Determine LZMA2 blockSize behavior (unchanged): props.blockSize set relative to threads & blockSize param
-            if (threads == 1 || blockSize == -1)
-                props.blockSize = ulong.MaxValue;
+            // Fix: Determine solid mode properly - solid if blockSize is -1 OR if using 1 thread with auto block size
+            bool isSolidMode = (blockSize == -1) || (threads == 1 && blockSize == 0);
+            
+            // Configure LZMA2 blockSize behavior
+            if (isSolidMode)
+            {
+                props.blockSize = ulong.MaxValue; // Solid mode
+                _solid = true;
+                this.BlockSize = -1; // Indicate solid mode to callers
+            }
             else if (blockSize == 0 && minBufferSize > 0)
+            {
                 props.blockSize = (ulong)minBufferSize / (ulong)threads;
-            else
+                _solid = false;
+                this.BlockSize = blockSize; // Keep original value
+            }
+            else if (blockSize > 0)
+            {
                 props.blockSize = (ulong)blockSize / (ulong)threads;
+                _solid = false;
+                this.BlockSize = blockSize; // Keep original value
+            }
+            else
+            {
+                // Default case: use solid mode for consistency
+                props.blockSize = ulong.MaxValue;
+                _solid = true;
+                this.BlockSize = -1;
+            }
 
-            _solid = props.blockSize == ulong.MaxValue;
-            this.BlockSize = _solid && blockSize == 0 ? -1 : blockSize;
+            // CRITICAL: Let native normalization set optimal values - DO NOT override afterwards!
+            SZ_Lzma2_v25_01_Enc_Normalize(ref props);
 
-            // Validate and dump props on failure to help identify invalid parameter (SZ_ERROR_PARAM)
+            // Now apply our custom properties to the encoder (this is safe - we own the props struct)
             try
             {
                 int res = SZ_Lzma2_v25_01_Enc_SetProps(_encoder, ref props);
@@ -253,7 +262,9 @@ namespace Nanook.GrindCore.Lzma
 
                 int p = (int)((_inStream.pos + _inStream.remaining) % _inStream.size);
 
-                int sz = (int)Math.Min(inData.AvailableRead, (long)Math.Min(_inStream.size - _inStream.remaining, (ulong)this.BlockSize - (ulong)_blkTotal));
+                // Fix: For solid mode, use the internal block size (LZMA2_BLOCK_SIZE) instead of this.BlockSize
+                long effectiveBlockSize = _solid ? LZMA2_BLOCK_SIZE : this.BlockSize;
+                int sz = (int)Math.Min(inData.AvailableRead, (long)Math.Min(_inStream.size - _inStream.remaining, (ulong)effectiveBlockSize - (ulong)_blkTotal));
 
                 int endSz = (int)(_inStream.size - (ulong)p);
                 inData.Read(_inBuffer, (int)p, (int)Math.Min(sz, endSz));
@@ -267,7 +278,8 @@ namespace Nanook.GrindCore.Lzma
                 _inStream.remaining += (ulong)sz;
 
                 finalfinal = final && inData.AvailableRead == 0 && _inStream.remaining == 0;
-                blkFinal = this.BlockSize == _blkTotal;
+                // Fix: For solid mode, use internal block size for determining block completion
+                blkFinal = _solid ? (_blkTotal >= LZMA2_BLOCK_SIZE) : (this.BlockSize == _blkTotal);
 
                 if (!final && !blkFinal && _inStream.remaining < _inStream.size)
                     break;

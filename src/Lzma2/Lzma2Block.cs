@@ -85,8 +85,6 @@ namespace Nanook.GrindCore.Lzma
                     props.lzmaProps.numHashBytes = options.Dictionary.HashBytes.Value;
                 if (options.Dictionary.MatchCycles.HasValue)
                     props.lzmaProps.mc = (uint)options.Dictionary.MatchCycles.Value;
-                if (options.Dictionary.WriteEndMarker.HasValue)
-                    props.lzmaProps.writeEndMark = options.Dictionary.WriteEndMarker.Value ? 1u : 0u;
                 
                 // Ensure lc + lp is within acceptable limits like Lzma2Encoder
                 if (props.lzmaProps.lc >= 0 && props.lzmaProps.lp >= 0)
