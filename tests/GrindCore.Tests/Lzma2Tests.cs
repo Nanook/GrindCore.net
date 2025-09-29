@@ -22,8 +22,8 @@ namespace GrindCore.Tests
         //[Theory]
         //[InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 4, 0x1831cfe2, "5498dfddb9e1a40e", "0e7687d82e5aeee6")]
         //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 4, 0x1831911c, "5498dfddb9e1a40e", "92036e1d1f07ede8")] // level 1
-        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 32, 0x144D5196, "5498dfddb9e1a40e", "C93A3EAB5AD48B56")] // level 5
-        //public void Data_StreamCorpus_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, int dictMb, long compressedSize, string rawXxH64, string compXxH64)
+        //[InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 32, 0x144d5196, "5498dfddb9e1a40e", "c93a3eab5ad48b56")] // level 5
+        //public void Data_StreamCorpus(CompressionAlgorithm algorithm, CompressionType type, int dictMb, long compressedSize, string rawXxH64, string compXxH64)
         //{
         //    FileInfo inputFile = new FileInfo(@"D:\Temp\mcorpus.bin");
         //    int streamLen = (int)inputFile.Length; // Total bytes to process
@@ -33,7 +33,7 @@ namespace GrindCore.Tests
         //    {
         //        TestResults r = Utl.TestStreamBlocks(data, algorithm, type, streamLen, bufferSize, 0, 1, null, -1);
 
-        //        Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
+        //        Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, {dictMb}, 0x{r.CompressedBytes:x}, \"{r.InHash}\", \"{r.CompressedHash}\")]");
         //        Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected
         //        Assert.Equal(compXxH64, r.CompressedHash); //test compressed data hash matches expected
         //        Assert.Equal(rawXxH64, r.InHash); //test raw data hash matches expected
