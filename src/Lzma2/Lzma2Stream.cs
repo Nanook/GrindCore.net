@@ -19,6 +19,7 @@ namespace Nanook.GrindCore.Lzma
         private Lzma2Decoder _decoder;
         private Lzma2Encoder _encoder;
         private CompressionBuffer _buffer;
+        private bool _isEnd;
         private bool _ended;
 
         /// <summary>
@@ -41,6 +42,7 @@ namespace Nanook.GrindCore.Lzma
         public Lzma2Stream(Stream stream, CompressionOptions options)
             : base(true, stream, CompressionAlgorithm.Lzma2, options)
         {
+            _isEnd = false;
             _ended = false;
 
             if (IsCompress)
@@ -155,14 +157,19 @@ namespace Nanook.GrindCore.Lzma
                     {
                         if (_buffer.Data[_buffer.Size - 1] != 0)
                         {
+                            _isEnd = false;
                             bool control = (_buffer.Data[_buffer.Size - 1] & 0b10000000) != 0;
                             read += BaseRead(_buffer, (control ? 6 : 5) - 1);
                             Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read));
                             if (info.CompressedSize != 0)
                                 read += BaseRead(_buffer, info.BlockSize - read);
                         }
-                        //else // even the 7zip app will insert nulls mid stream!! Took a while to deduce that one
-                        //    _ended = true;
+                        else // even the 7zip app will insert nulls mid stream!! Took a while to deduce that one
+                        {
+                            _ended = _isEnd;
+                            _isEnd = true;
+                            return total;
+                        }
                     }
                 }
                 if (_buffer.AvailableRead == 0)
@@ -171,7 +178,6 @@ namespace Nanook.GrindCore.Lzma
                 decoded = _decoder.DecodeData(_buffer, ref inSz, data, length - total, out var _);
                 bytesReadFromStream += inSz;
                 total += decoded;
-                _ended = _ended && decoded == 0;
             }
 
             return total;
