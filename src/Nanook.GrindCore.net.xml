@@ -2045,6 +2045,21 @@
             </summary>
             <param name="span">The source span.</param>
         </member>
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a byte array, offset and length.
+            This overload ensures array-backed blocks get a writable span.
+            </summary>
+            <param name="data">The source array.</param>
+            <param name="offset">The offset within the array.</param>
+            <param name="length">The length of the data block.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Byte[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a byte array covering the entire array.
+            </summary>
+            <param name="data">The source array.</param>
+        </member>
         <member name="P:Nanook.GrindCore.DataBlock.Offset">
             <summary>
             Gets the offset within the underlying span or array.
@@ -2055,11 +2070,12 @@
             Gets the length of the data block.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.DataBlock.AsWritableSpan">
+        <member name="M:Nanook.GrindCore.DataBlock.asWritableSpan">
             <summary>
             Exposes the mutable span for writing, if available.
+            Returns the span window for this DataBlock (already sliced to Offset/Length).
             </summary>
-            <returns>The writable <see cref="T:System.Span`1"/>.</returns>
+            <returns>The writable <see cref="T:System.Span`1"/> for this block.</returns>
         </member>
         <member name="M:Nanook.GrindCore.DataBlock.Read(System.Int32,System.Byte[],System.Int32,System.Int32)">
             <summary>
