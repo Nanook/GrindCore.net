@@ -317,7 +317,7 @@ namespace GrindCore.Tests
 
 #if WIN_X64
         [Theory]
-        //[InlineData(CompressionAlgorithm.Copy, CompressionType.Fastest, 512 * 1024 * 1024, "c668fabe6e6e9235", "c668fabe6e6e9235")]
+        [InlineData(CompressionAlgorithm.Copy, CompressionType.Fastest, 512 * 1024 * 1024, "c668fabe6e6e9235", "c668fabe6e6e9235")]
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.Fastest, 0xaba27, "c668fabe6e6e9235", "f11172f7d39c66ff")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.Fastest, 0x3b918d, "c668fabe6e6e9235", "78d7773f85aa8e7c")]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionType.Fastest, 0x673322, "c668fabe6e6e9235", "2be7825c1fffe4d2")]

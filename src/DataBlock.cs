@@ -59,6 +59,32 @@ namespace Nanook.GrindCore
         public DataBlock(Span<byte> span) : this(span, 0, span.Length) { }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="DataBlock"/> struct from a byte array, offset and length.
+        /// This overload ensures array-backed blocks get a writable span.
+        /// </summary>
+        /// <param name="data">The source array.</param>
+        /// <param name="offset">The offset within the array.</param>
+        /// <param name="length">The length of the data block.</param>
+        public DataBlock(byte[] data, int offset, int length)
+        {
+            if (data is null)
+                throw new ArgumentNullException(nameof(data));
+            if (offset < 0 || length < 0 || offset + length > data.Length)
+                throw new ArgumentOutOfRangeException(nameof(offset), "Offset/length out of bounds for array.");
+
+            _mutableData = data.AsSpan();
+            Data = data;
+            Offset = offset;
+            Length = length;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataBlock"/> struct from a byte array covering the entire array.
+        /// </summary>
+        /// <param name="data">The source array.</param>
+        public DataBlock(byte[] data) : this(data, 0, data?.Length ?? 0) { }
+
+        /// <summary>
         /// Gets the offset within the underlying span or array.
         /// </summary>
         public int Offset { get; }
@@ -70,11 +96,13 @@ namespace Nanook.GrindCore
 
         /// <summary>
         /// Exposes the mutable span for writing, if available.
+        /// Returns the span window for this DataBlock (already sliced to Offset/Length).
         /// </summary>
-        /// <returns>The writable <see cref="Span{Byte}"/>.</returns>
-        public Span<byte> AsWritableSpan()
+        /// <returns>The writable <see cref="Span{Byte}"/> for this block.</returns>
+        private Span<byte> asWritableSpan()
         {
-            return _mutableData;
+            // Return exactly the writable window for this block so callers don't need to apply Offset.
+            return _mutableData.IsEmpty ? Span<byte>.Empty : _mutableData.Slice(Offset, Length);
         }
 
         /// <summary>
@@ -118,12 +146,17 @@ namespace Nanook.GrindCore
         /// <exception cref="ArgumentOutOfRangeException">Thrown if the source range is out of bounds.</exception>
         public void Write(int sourceOffset, CompressionBuffer buffer, int length)
         {
+            // zero-length writes are no-op
+            if (length == 0)
+                return;
+
             if (_mutableData.IsEmpty)
                 throw new NotSupportedException("ReadOnlySpan is not writable");
             if (sourceOffset < 0 || length < 0 || sourceOffset + length > Length)
                 throw new ArgumentOutOfRangeException(nameof(sourceOffset), "Source range is out of bounds.");
 
-            buffer.Read(_mutableData.Slice(this.Offset + sourceOffset, length));
+            // Use the block-local writable window
+            buffer.Read(asWritableSpan().Slice(sourceOffset, length));
         }
 
         /// <summary>
@@ -145,7 +178,17 @@ namespace Nanook.GrindCore
             if (targetOffset + length > target.Length)
                 throw new ArgumentOutOfRangeException(nameof(targetOffset), "Target range is out of bounds.");
 
-            Data.Slice(Offset + sourceOffset, length).CopyTo(target.AsWritableSpan().Slice(target.Offset + targetOffset, length));
+            // zero-length copy is a no-op and should not fail even if target is read-only
+            if (length == 0)
+                return;
+
+            ReadOnlySpan<byte> src = Data.Slice(Offset + sourceOffset, length);
+            Span<byte> dstWindow = target.asWritableSpan();
+            if (dstWindow.IsEmpty)
+                throw new NotSupportedException("Target DataBlock is not writable");
+            Span<byte> dst = dstWindow.Slice(targetOffset, length);
+
+            src.CopyTo(dst);
         }
     }
 
