@@ -42,7 +42,7 @@ jobs:
       run: ls -l ${{ github.workspace }}/.nuget
 
     - name: Upload NuGet package as artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: nuget-package
         path: '**/*.nupkg'
