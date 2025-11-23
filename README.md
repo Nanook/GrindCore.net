@@ -4,7 +4,7 @@ An AOT-compatible compression and hashing library built in the **System.IO.Compr
 
 Published on **NuGet** as [GrindCore](https://www.nuget.org/packages/GrindCore) with support for multiple platforms.  
 
-> **⚠️ Important Notice**: While GrindCore has reached its first stable release, it should still be used with caution in production environments. The library is actively being tested and refined. Please thoroughly test in your specific use cases and report any issues encountered.
+> **⚠️ Important Notice**: GrindCore is still in the early days of broader adoption. It is actively being tested and refined, but it is already being used in production scenarios and appears to be stable. Please thoroughly test in your specific use cases and report any issues encountered.
 
 ## Table of Contents
 
@@ -46,8 +46,8 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 ## Key Features
 
 - **Stream Position Correction**: Advanced buffer management for precise stream rewinding when overreading occurs
-- **Multi-Framework Support**: Compatible with .NET Framework 3.5 through .NET 9
-  `net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35`
+- **Multi-Framework Support**: Compatible with .NET Framework 3.5 through .NET 10
+  `net10.0;net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35`
 - **AOT Compatible**: Fully supports Ahead-of-Time compilation
 - **Native Performance**: Leverages native C libraries for optimal performance
 

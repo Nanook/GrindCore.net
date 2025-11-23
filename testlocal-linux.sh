@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-## Publish the test project for linux-x64, Debug configuration, .NET 9.0, output to output/linux-x64
-#dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net9.0 -p:TargetFrameworks=net9.0 -o output/linux-x64 --self-contained false
+## Publish the test project for linux-x64, Debug configuration, .NET 10.0, output to output/linux-x64
+#dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r linux-x64 -p:TargetFramework=net10.0 -p:TargetFrameworks=net10.0 -o output/linux-x64 --self-contained false
 #
 ## Copy native libraries to the output directory for easier loading
 #cp -a ./output/linux-x64/runtimes/linux-x64/native/* ./output/linux-x64/
@@ -12,11 +12,11 @@ set -e
 #./output/linux-x64/GrindCore.Tests.Runtime
 
 # Configurable via environment (sensible defaults)
-TARGET_FRAMEWORK=${TARGET_FRAMEWORK:-net9.0}
+TARGET_FRAMEWORK=${TARGET_FRAMEWORK:-net10.0}
 RUNTIME=${RUNTIME:-linux-x64}
 CONFIG=${CONFIG:-Release}
 PROJECT_PATH=${PROJECT_PATH:-Tests/GrindCore.Tests/GrindCore.Tests.csproj}
-DOCKER_IMAGE=${DOCKER_IMAGE:-mcr.microsoft.com/dotnet/sdk:9.0}
+DOCKER_IMAGE=${DOCKER_IMAGE:-mcr.microsoft.com/dotnet/sdk:10.0}
 
 # Get the absolute path of the current directory to mount in Docker
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
