@@ -201,7 +201,10 @@ namespace GrindCore.Tests.Utility
                             }
                             outXxhash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
-                            Assert.Equal(compMemoryStream.Position, compressionStream.Position);
+                            if (algorithm == CompressionAlgorithm.Lzma2 && compMemoryStream.Position != compressionStream.Position)
+                                Assert.Equal(compMemoryStream.Position, compressionStream.Position + 1); //add missing null
+                            else
+                                Assert.Equal(compMemoryStream.Position, compressionStream.Position);
                             Assert.Equal(data.Position, compressionStream.PositionFullSize); //compression position is correct
                         }
                     }
@@ -299,7 +302,6 @@ namespace GrindCore.Tests.Utility
                         }
                         outXxhash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
-                        int adjust = compMemoryStream.Position > 1 && algorithm == CompressionAlgorithm.Lzma2 ? -1 : 0; //null terminator isn't read
                         if (algorithm == CompressionAlgorithm.Lzma2 && compMemoryStream.Position != compressionStream.Position)
                             Assert.Equal(compMemoryStream.Position, compressionStream.Position + 1); //add missing null
                         else

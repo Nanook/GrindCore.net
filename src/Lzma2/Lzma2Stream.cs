@@ -158,10 +158,13 @@ namespace Nanook.GrindCore.Lzma
                         if (_buffer.Data[_buffer.Size - 1] != 0)
                         {
                             _isEnd = false;
-                            bool control = (_buffer.Data[_buffer.Size - 1] & 0b10000000) != 0;
-                            read += BaseRead(_buffer, (control ? 6 : 5) - 1);
+                            byte controlByte = _buffer.Data[_buffer.Size - 1];
+                            // Determine exact header length: control blocks are 5 or 6 bytes (with prop), uncompressed blocks are 3 bytes
+                            int headerTotal = (controlByte & 0b10000000) != 0 ? (((controlByte & 0b01000000) != 0) ? 6 : 5) : 3;
+                            read += BaseRead(_buffer, headerTotal - 1);
                             Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read));
-                            if (info.CompressedSize != 0)
+                            // Ensure the entire block (header + payload) is read regardless of compression state
+                            if (info.BlockSize > read)
                                 read += BaseRead(_buffer, info.BlockSize - read);
                         }
                         else // even the 7zip app will insert nulls mid stream!! Took a while to deduce that one

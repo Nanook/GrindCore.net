@@ -101,21 +101,53 @@ namespace Nanook.GrindCore.Lzma
                 throw new ArgumentOutOfRangeException(nameof(inOffset), "Position is outside the bounds of the data array.");
 
             byte b = inData[inOffset];
-            bool isControlBlock = (b & 0b10000000) != 0;
-            bool initProp = (b & 0b01000000) != 0 && isControlBlock;
-            bool initState = (b & 0b00100000) != 0 && isControlBlock;
+            bool isControl = (b & 0x80) != 0;
+            bool initProp = isControl && (b & 0x40) != 0;
+            bool initState = isControl && (b & 0x20) != 0;
 
-            return new Lzma2BlockInfo()
+            if (b == 0)
+                return new Lzma2BlockInfo { IsTerminator = true };
+
+            if (isControl)
             {
-                IsTerminator = b == 0,
-                IsControlBlock = isControlBlock,
-                InitProp = initProp,
-                InitState = initState,
-                Prop = initProp ? inData[inOffset + 5] : (byte)0,
-                UncompressedSize = isControlBlock || b == 1 ? ((b & 0x1F) << 16) + (inData[inOffset + 1] << 8) + inData[inOffset + 2] + 1 : 0,
-                CompressedSize = isControlBlock ? (inData[inOffset + 3] << 8) + inData[inOffset + 4] + 1 : 0,
-                CompressedHeaderSize = isControlBlock ? (initProp ? 6 : 5) : 0
-            };
+                int headerSize = initProp ? 6 : 5; // control + [prop?] + 2(unp) + 2(pack)
+                if ((ulong)inData.LongLength < inOffset + (ulong)headerSize)
+                    return new Lzma2BlockInfo { IsControlBlock = true, InitProp = initProp, InitState = initState };
+
+                int idx = (int)inOffset + 1;
+                byte prop = 0;
+                if (initProp) prop = inData[idx++];
+
+                int unp = (((b & 0x1F) << 16) | (inData[idx++] << 8) | inData[idx++]) + 1;
+                int pack = ((inData[idx++] << 8) | inData[idx++]) + 1;
+
+                return new Lzma2BlockInfo
+                {
+                    IsControlBlock = true,
+                    InitProp = initProp,
+                    InitState = initState,
+                    Prop = prop,
+                    UncompressedSize = unp,
+                    CompressedSize = pack,
+                    CompressedHeaderSize = headerSize
+                };
+            }
+            else
+            {
+                // uncompressed block: control + 2 bytes for unp
+                int headerSize = 3;
+                if ((ulong)inData.LongLength < inOffset + (ulong)headerSize)
+                    return new Lzma2BlockInfo { IsControlBlock = false };
+
+                int unp = (((b & 0x1F) << 16) | (inData[inOffset + 1] << 8) | inData[inOffset + 2]) + 1;
+                return new Lzma2BlockInfo
+                {
+                    IsControlBlock = false,
+                    UncompressedSize = unp,
+                    CompressedSize = unp,
+                    CompressedHeaderSize = headerSize
+                };
+            }
         }
 
         /// <summary>
