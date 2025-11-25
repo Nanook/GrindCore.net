@@ -100,39 +100,71 @@ namespace Nanook.GrindCore.Lzma
             if (inOffset >= (ulong)inData.LongLength)
                 throw new ArgumentOutOfRangeException(nameof(inOffset), "Position is outside the bounds of the data array.");
 
-            byte b = inData[inOffset];
-            bool isControlBlock = (b & 0b10000000) != 0;
+            byte control = inData[inOffset];
 
-            if (isControlBlock)
+            // Terminator / padding
+            if (control == 0)
             {
-                bool initProp = (b & 0b01000000) != 0 && isControlBlock;
-                bool initState = (b & 0b00100000) != 0 && isControlBlock;
-
-                return new Lzma2BlockInfo()
+                return new Lzma2BlockInfo
                 {
-                    IsTerminator = b == 0,
-                    IsControlBlock = isControlBlock,
+                    IsTerminator = true,
+                    IsControlBlock = true,
+                    InitProp = false,
+                    InitState = false,
+                    Prop = 0,
+                    UncompressedSize = 0,
+                    CompressedSize = 0,
+                    CompressedHeaderSize = 1
+                };
+            }
+
+            bool isCompressed = (control & 0x80) != 0;
+            bool initProp = (control & 0x40) != 0;
+            bool initState = (control & 0x20) != 0;
+
+            int idx = (int)inOffset + 1;
+            if (isCompressed)
+            {
+                byte prop = 0;
+                if (initProp)
+                {
+                    prop = inData[idx];
+                    idx++;
+                }
+
+                // Unpack size: top 5 bits from control + next two bytes
+                int unpackSize = ((control & 0x1F) << 16) | (inData[idx++] << 8) | inData[idx++];
+                // Pack size: next two bytes
+                int packSize = (inData[idx++] << 8) | inData[idx++];
+
+                int headerSize = idx - (int)inOffset;
+
+                return new Lzma2BlockInfo
+                {
+                    IsTerminator = false,
+                    IsControlBlock = true,
                     InitProp = initProp,
                     InitState = initState,
-                    Prop = initProp ? inData[inOffset + 5] : (byte)0,
-                    UncompressedSize = isControlBlock || b == 1 ? ((b & 0x1F) << 16) + (inData[inOffset + 1] << 8) + inData[inOffset + 2] + 1 : 0,
-                    CompressedSize = isControlBlock ? (inData[inOffset + 3] << 8) + inData[inOffset + 4] + 1 : 0,
-                    CompressedHeaderSize = isControlBlock ? (initProp ? 6 : 5) : 0
+                    Prop = prop,
+                    UncompressedSize = unpackSize + 1,
+                    CompressedSize = packSize + 1,
+                    CompressedHeaderSize = headerSize
                 };
             }
             else
             {
-                // uncompressed block: control + 2 bytes for unp
-                int headerSize = 3;
-                if ((ulong)inData.LongLength < inOffset + (ulong)headerSize)
-                    return new Lzma2BlockInfo { IsControlBlock = false };
-
-                int unp = (((b & 0x1F) << 16) | (inData[inOffset + 1] << 8) | inData[inOffset + 2]) + 1;
+                // Uncompressed block: control + 2 bytes that, together with control's low 5 bits, form the size (size-1).
+                int unpackSize = ((control & 0x1F) << 16) | (inData[idx++] << 8) | inData[idx++];
+                int headerSize = 3; // control + two bytes
                 return new Lzma2BlockInfo
                 {
+                    IsTerminator = false,
                     IsControlBlock = false,
-                    UncompressedSize = unp,
-                    CompressedSize = unp,
+                    InitProp = false,
+                    InitState = false,
+                    Prop = 0,
+                    UncompressedSize = unpackSize + 1,
+                    CompressedSize = unpackSize + 1,
                     CompressedHeaderSize = headerSize
                 };
             }

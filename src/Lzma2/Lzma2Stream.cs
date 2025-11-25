@@ -19,8 +19,9 @@ namespace Nanook.GrindCore.Lzma
         private Lzma2Decoder _decoder;
         private Lzma2Encoder _encoder;
         private CompressionBuffer _buffer;
-        private bool _isEnd;
         private bool _ended;
+        private string _logPath;
+        private StreamWriter _logWriter;
 
         /// <summary>
         /// Gets the input buffer size for LZMA2 operations.
@@ -42,7 +43,6 @@ namespace Nanook.GrindCore.Lzma
         public Lzma2Stream(Stream stream, CompressionOptions options)
             : base(true, stream, CompressionAlgorithm.Lzma2, options)
         {
-            _isEnd = false;
             _ended = false;
 
             if (IsCompress)
@@ -119,8 +119,21 @@ namespace Nanook.GrindCore.Lzma
 
                 this.Properties = options.InitProperties;
                 _decoder = new Lzma2Decoder(options.InitProperties[0]);
-                this.BufferSizeOutput = BufferThreshold;
+                this.BufferSizeOutput = 0x3 * 0x400 * 0x400; // BufferThreshold;
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
+
+                try
+                {
+                    // Create a timestamped log file for testing and write directly to it
+                    string fileName = $"Lzma2Stream_{DateTime.UtcNow:yyyyMMdd_HHmmssfff}.log";
+                    _logPath = Path.Combine(Path.GetTempPath(), fileName);
+                    _logWriter = new StreamWriter(File.Open(_logPath, FileMode.Create, FileAccess.Write, FileShare.Read)) { AutoFlush = true };
+                    _logWriter.WriteLine($"Lzma2Stream: logging to {_logPath}");
+                }
+                catch
+                {
+                    // Swallow errors - logging is optional
+                }
             }
         }
 
@@ -155,24 +168,58 @@ namespace Nanook.GrindCore.Lzma
                     read = BaseRead(_buffer, 1);
                     if (read == 1)
                     {
-                        if (_buffer.Data[_buffer.Size - 1] != 0)
+                        // If the newly-read control byte is 0x00 -> terminator/padding
+                        if (_buffer.Data[_buffer.Size - 1] == 0)
                         {
-                            _isEnd = false;
-                            byte controlByte = _buffer.Data[_buffer.Size - 1];
-                            // Determine exact header length: control blocks are 5 or 6 bytes (with prop), uncompressed blocks are 3 bytes
-                            int headerTotal = (controlByte & 0b10000000) != 0 ? (((controlByte & 0b01000000) != 0) ? 6 : 5) : 3;
-                            read += BaseRead(_buffer, headerTotal - 1);
-                            Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read));
-                            // Ensure the entire block (header + payload) is read regardless of compression state
-                            if (info.BlockSize > read)
-                                read += BaseRead(_buffer, info.BlockSize - read);
-                        }
-                        else // even the 7zip app will insert nulls mid stream!! Took a while to deduce that one
-                        {
-                            _ended = _isEnd;
-                            _isEnd = true;
+                            // consume terminator byte and mark ended
+                            _buffer.Read(1);
+                            _logWriter?.WriteLine("Lzma2Stream: consumed terminator 0x00 (single-byte)");
+                            _ended = true;
                             return total;
                         }
+
+                        // Determine header length from control byte
+                        byte controlPeek = _buffer.Data[_buffer.Size - 1];
+                        _logWriter?.WriteLine($"Lzma2Stream: control byte peek=0x{controlPeek:X2}");
+                        int headerTotal = (controlPeek & 0b10000000) != 0 ? (((controlPeek & 0b01000000) != 0) ? 6 : 5) : 3;
+
+                        // Ensure full header
+                        int got = ensureRead(_buffer, headerTotal);
+                        _logWriter?.WriteLine($"Lzma2Stream: ensureRead header -> want={headerTotal}, got={got}, availableRead={_buffer.AvailableRead}");
+                        if (got < headerTotal)
+                            return total; // incomplete header - wait for more data
+
+                        int headerOffset = _buffer.Size - headerTotal;
+                        Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)headerOffset);
+                        _logWriter?.WriteLine($"Lzma2Stream: parsed block info IsTerminator={info.IsTerminator}, IsControl={info.IsControlBlock}, InitProp={info.InitProp}, InitState={info.InitState}, Prop=0x{info.Prop:X2}, Unp={info.UncompressedSize}, Packed={info.CompressedSize}, HeaderSize={info.CompressedHeaderSize}, BlockSize={info.BlockSize}");
+
+                        if (info.IsTerminator)
+                        {
+                            // consume terminator header and mark ended
+                            _buffer.Read(info.CompressedHeaderSize);
+                            _logWriter?.WriteLine("Lzma2Stream: consumed terminator after parse");
+                            _ended = true;
+                            return total;
+                        }
+
+                        // Ensure full block (header + payload) is available before decoding
+                        int want = info.BlockSize;
+                        if (want <= 0)
+                            return total; // nothing to do or malformed
+
+                        // Read exactly the block size (loop until all bytes are present or EOF)
+                        got = ensureRead(_buffer, want);
+                        _logWriter?.WriteLine($"Lzma2Stream: ensureRead block -> want={want}, got={got}, availableRead={_buffer.AvailableRead}");
+                        if (_buffer.AvailableRead < want)
+                            return total; // incomplete block - wait for more data
+
+                        // Now decode exactly this block
+                        int sz = info.BlockSize;
+                        _logWriter?.WriteLine($"Lzma2Stream: calling DecodeData with inSz={sz}, outputWanted={length - total}");
+                        decoded = _decoder.DecodeData(_buffer, ref sz, data, length - total, out var _);
+                        _logWriter?.WriteLine($"Lzma2Stream: DecodeData returned decoded={decoded}, consumedIn={sz}, bufferAvailableRead={_buffer.AvailableRead}");
+                        bytesReadFromStream += sz;
+                        total += decoded;
                     }
                 }
                 if (_buffer.AvailableRead == 0)
@@ -184,6 +231,35 @@ namespace Nanook.GrindCore.Lzma
             }
 
             return total;
+        }
+
+        /// <summary>
+        /// Ensure the internal buffer has at least <paramref name="want"/> bytes available to read.
+        /// Calls BaseRead repeatedly until the requested amount is available or EOF is reached.
+        /// Returns the number of bytes currently available to read after the attempt.
+        /// </summary>
+        /// <param name="inBuffer">The compression buffer to fill.</param>
+        /// <param name="want">The desired number of available bytes.</param>
+        /// <returns>Number of bytes available to read in <paramref name="inBuffer"/> after the call.</returns>
+        private int ensureRead(CompressionBuffer inBuffer, int want)
+        {
+            if (want <= 0)
+                return inBuffer.AvailableRead;
+
+            // If we already have enough data, return immediately.
+            if (inBuffer.AvailableRead >= want)
+                return inBuffer.AvailableRead;
+
+            // Attempt to read the remaining bytes needed.
+            while (inBuffer.AvailableRead < want)
+            {
+                int toRead = want - inBuffer.AvailableRead;
+                int r = BaseRead(inBuffer, toRead);
+                if (r == 0)
+                    break; // EOF or no more data available right now
+            }
+
+            return inBuffer.AvailableRead;
         }
 
         /// <summary>
@@ -255,6 +331,16 @@ namespace Nanook.GrindCore.Lzma
             else
                 try { _decoder.Dispose(); } catch { }
             try { _buffer.Dispose(); } catch { }
+            try
+            {
+                if (_logWriter != null)
+                {
+                    try { _logWriter.Flush(); } catch { }
+                    try { _logWriter.Close(); } catch { }
+                    _logWriter = null;
+                }
+            }
+            catch { }
         }
     }
 }

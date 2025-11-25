@@ -4735,6 +4735,16 @@
             <exception cref="T:System.NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
             <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
         </member>
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.ensureRead(Nanook.GrindCore.CompressionBuffer,System.Int32)">
+            <summary>
+            Ensure the internal buffer has at least <paramref name="want"/> bytes available to read.
+            Calls BaseRead repeatedly until the requested amount is available or EOF is reached.
+            Returns the number of bytes currently available to read after the attempt.
+            </summary>
+            <param name="inBuffer">The compression buffer to fill.</param>
+            <param name="want">The desired number of available bytes.</param>
+            <returns>Number of bytes available to read in <paramref name="inBuffer"/> after the call.</returns>
+        </member>
         <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.OnWrite(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@)">
             <summary>
             Compresses data using LZMA2 and writes it to the stream.
