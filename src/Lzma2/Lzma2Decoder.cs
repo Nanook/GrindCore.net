@@ -9,46 +9,26 @@ namespace Nanook.GrindCore.Lzma
     /// </summary>
     internal struct Lzma2BlockInfo
     {
-        /// <summary>
-        /// Gets a value indicating whether this block is a terminator.
-        /// </summary>
+        /// <summary>Indicates whether this block is a terminator.</summary>
         public bool IsTerminator;
-        /// <summary>
-        /// Gets a value indicating whether this block is a control block.
-        /// </summary>
-        public bool IsControlBlock;
-        /// <summary>
-        /// Gets a value indicating whether this block initializes the decoder state.
-        /// </summary>
+        /// <summary>Indicates whether this block contains compressed data.</summary>
+        public bool IsCompressed;
+        /// <summary>Indicates whether this block initializes the decoder state.</summary>
         public bool InitState;
-        /// <summary>
-        /// Gets a value indicating whether this block initializes the decoder properties.
-        /// </summary>
+        /// <summary>Indicates whether this block initializes the decoder properties.</summary>
         public bool InitProp;
-        /// <summary>
-        /// Gets the property byte for this block, if present.
-        /// </summary>
+        /// <summary>The property byte for this block, if present.</summary>
         public byte Prop;
-        /// <summary>
-        /// Gets the uncompressed size of this block.
-        /// </summary>
+        /// <summary>The uncompressed size of this block.</summary>
         public int UncompressedSize;
-        /// <summary>
-        /// Gets the compressed size of this block.
-        /// </summary>
+        /// <summary>The compressed payload size of this block.</summary>
         public int CompressedSize;
-        /// <summary>
-        /// Gets the size of the compressed header for this block.
-        /// </summary>
-        public int CompressedHeaderSize;
-        /// <summary>
-        /// Gets the total block size (compressed size plus header size).
-        /// </summary>
-        public int BlockSize => CompressedSize + CompressedHeaderSize;
-        /// <summary>
-        /// Gets a value indicating whether this is a new block with control, state, and property initialization.
-        /// </summary>
-        public bool NewBlock => IsControlBlock && InitState && InitProp;
+        /// <summary>The size of the header (including dictionary) for this block.</summary>
+        public int HeaderSize;
+        /// <summary>The total block size (header size plus compressed payload size).</summary>
+        public int BlockSize => CompressedSize + HeaderSize;
+        /// <summary>Indicates whether this is a new block with control, state, and property initialization.</summary>
+        public bool NewBlock => IsCompressed && InitState && InitProp;
     }
 
     /// <summary>
@@ -89,53 +69,104 @@ namespace Nanook.GrindCore.Lzma
         }
 
         /// <summary>
+        /// Determines the number of header bytes to read for an LZMA2 block, based on the first control byte.
+        /// </summary>
+        /// <param name="control">The first byte of the LZMA2 block header.</param>
+        /// <returns>The minimal number of header bytes to read before the payload.</returns>
+        public int GetHeaderSize(byte control)
+        {
+            if (control == 0)
+                return 1; // terminator marker only
+
+            if ((control & 0x80) == 0)
+                return 3; // uncompressed block: 1 control + 2 size bytes
+
+            // compressed block
+            // base header is 5 bytes: 1 control + 2 uncompressed size + 2 compressed size
+            // if properties are reset (bit 0x40), at least one extra property byte follows -> 6 bytes minimal
+            // Do NOT assume the 4-byte dictionary size exists here (varies by container). Caller will read more if needed.
+            return (control & 0x40) != 0 ? 6 : 5;
+        }
+
+        /// <summary>
         /// Reads information about a sub-block from the input data at the specified offset.
+        /// This method is tolerant of headers that are present only partially in the buffer:
+        /// it uses the provided <paramref name="size"/> (number of header bytes currently available).
         /// </summary>
         /// <param name="inData">The input data array.</param>
         /// <param name="inOffset">The offset within the input data array.</param>
+        /// <param name="size">The number of header bytes currently available at the offset.</param>
         /// <returns>A <see cref="Lzma2BlockInfo"/> structure describing the sub-block.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="inOffset"/> is outside the bounds of the data array.</exception>
-        public Lzma2BlockInfo ReadSubBlockInfo(byte[] inData, ulong inOffset)
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="inOffset"/> is outside the bounds of the data array or if the provided header bytes are insufficient to parse mandatory fields.</exception>
+        public Lzma2BlockInfo ReadSubBlockInfo(byte[] inData, ulong inOffset, int size)
         {
             if (inOffset >= (ulong)inData.LongLength)
-                throw new ArgumentOutOfRangeException(nameof(inOffset), "Position is outside the bounds of the data array.");
+                throw new ArgumentOutOfRangeException(nameof(inOffset));
+
+            // Need at least 1 byte for control
+            if (size < 1)
+                throw new ArgumentOutOfRangeException(nameof(size), "Not enough data to read control byte");
 
             byte b = inData[inOffset];
-            bool isControlBlock = (b & 0b10000000) != 0;
+            bool hasComp = (b & 0x80) != 0;
+            bool initProp = (b & 0x40) != 0;
+            bool initState = (b & 0x20) != 0;
 
-            if (isControlBlock)
+            // For size fields we need at least bytes at offsets +1 and +2 (uncompressed size)
+            if (size < 3)
+                throw new ArgumentOutOfRangeException(nameof(size), "Incomplete header: need at least 3 bytes to read size fields");
+
+            int uSize = ((b & 0x1F) << 16 | (inData[inOffset + 1] << 8) | inData[inOffset + 2]) + 1;
+
+            int cSize;
+            if (!hasComp)
             {
-                bool initProp = (b & 0b01000000) != 0 && isControlBlock;
-                bool initState = (b & 0b00100000) != 0 && isControlBlock;
-
-                return new Lzma2BlockInfo()
-                {
-                    IsTerminator = b == 0,
-                    IsControlBlock = isControlBlock,
-                    InitProp = initProp,
-                    InitState = initState,
-                    Prop = initProp ? inData[inOffset + 5] : (byte)0,
-                    UncompressedSize = isControlBlock || b == 1 ? ((b & 0x1F) << 16) + (inData[inOffset + 1] << 8) + inData[inOffset + 2] + 1 : 0,
-                    CompressedSize = isControlBlock ? (inData[inOffset + 3] << 8) + inData[inOffset + 4] + 1 : 0,
-                    CompressedHeaderSize = isControlBlock ? (initProp ? 6 : 5) : 0
-                };
+                // uncompressed block: compressed payload size equals uncompressed size
+                cSize = uSize;
             }
             else
             {
-                // uncompressed block: control + 2 bytes for unp
-                int headerSize = 3;
-                if ((ulong)inData.LongLength < inOffset + (ulong)headerSize)
-                    return new Lzma2BlockInfo { IsControlBlock = false };
-
-                int unp = (((b & 0x1F) << 16) | (inData[inOffset + 1] << 8) | inData[inOffset + 2]) + 1;
-                return new Lzma2BlockInfo
-                {
-                    IsControlBlock = false,
-                    UncompressedSize = unp,
-                    CompressedSize = unp,
-                    CompressedHeaderSize = headerSize
-                };
+                // For compressed blocks we need compressed-size bytes at offsets +3 and +4
+                if (size < 5)
+                    throw new ArgumentOutOfRangeException(nameof(size), "Incomplete header: need at least 5 bytes for compressed-size");
+                cSize = ((inData[inOffset + 3] << 8) | inData[inOffset + 4]) + 1;
             }
+
+            // Determine the header size we actually have / should expect.
+            // Minimal header length:
+            int minimalHeader = hasComp ? 5 : 3;
+            if (hasComp && initProp)
+                minimalHeader = 6; // base 5 + prop byte
+
+            // If the buffer actually contains the 4-byte dict size (10 total) treat that as full header.
+            int fullHeader = hasComp && initProp ? 10 : minimalHeader;
+
+            // Decide reported HeaderSize:
+            // - If caller provided fewer header bytes than minimal required, throw earlier.
+            // - If caller provided at least fullHeader bytes (i.e. 10), report fullHeader.
+            // - Otherwise report the minimal header (6 or 5 or 3).
+            int reportedHeaderSize = minimalHeader;
+            if (size >= fullHeader)
+                reportedHeaderSize = fullHeader;
+
+            // Read property byte only if present in the provided header bytes (or present in full header)
+            byte prop = 0;
+            if (initProp && size >= 6)
+                prop = inData[inOffset + 5];
+            else if (initProp && size < 6)
+                prop = 0; // property not yet available; caller should read more
+
+            return new Lzma2BlockInfo
+            {
+                IsTerminator = b == 0,
+                IsCompressed = hasComp,
+                InitProp = initProp,
+                InitState = initState,
+                Prop = prop,
+                UncompressedSize = uSize,
+                CompressedSize = cSize,
+                HeaderSize = reportedHeaderSize
+            };
         }
 
         /// <summary>
@@ -173,13 +204,14 @@ namespace Nanook.GrindCore.Lzma
 
             ulong inSz = (ulong)inSize;
             ulong outSz = (ulong)outSize;
+            status = 0; // defensive init
             fixed (byte* outPtr = outData.Data)
             fixed (byte* inPtr = inData.Data)
             fixed (int* statusPtr = &status)
             {
-                *&outPtr += outData.Size; //Size is writing Pos
-                *&inPtr += inData.Pos;
-                int res = SZ_Lzma2_v25_01_Dec_DecodeToBuf(ref _decCtx, outPtr, &outSz, inPtr, &inSz, 0, statusPtr);
+                byte* pOut = outPtr + outData.Size; // Size is writing Pos
+                byte* pIn = inPtr + inData.Pos;
+                int res = SZ_Lzma2_v25_01_Dec_DecodeToBuf(ref _decCtx, pOut, &outSz, pIn, &inSz, 0, statusPtr);
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");
 
@@ -190,9 +222,7 @@ namespace Nanook.GrindCore.Lzma
             }
         }
 
-        /// <summary>
-        /// Releases all resources used by the <see cref="Lzma2Decoder"/>.
-        /// </summary>
+        /// <summary>Releases all resources used by the <see cref="Lzma2Decoder"/>.</summary>
         public void Dispose()
         {
             SZ_Lzma2_v25_01_Dec_Free(ref _decCtx);

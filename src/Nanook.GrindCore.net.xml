@@ -4540,54 +4540,34 @@
             </summary>
         </member>
         <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.IsTerminator">
-            <summary>
-            Gets a value indicating whether this block is a terminator.
-            </summary>
+            <summary>Indicates whether this block is a terminator.</summary>
         </member>
-        <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.IsControlBlock">
-            <summary>
-            Gets a value indicating whether this block is a control block.
-            </summary>
+        <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.IsCompressed">
+            <summary>Indicates whether this block contains compressed data.</summary>
         </member>
         <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.InitState">
-            <summary>
-            Gets a value indicating whether this block initializes the decoder state.
-            </summary>
+            <summary>Indicates whether this block initializes the decoder state.</summary>
         </member>
         <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.InitProp">
-            <summary>
-            Gets a value indicating whether this block initializes the decoder properties.
-            </summary>
+            <summary>Indicates whether this block initializes the decoder properties.</summary>
         </member>
         <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.Prop">
-            <summary>
-            Gets the property byte for this block, if present.
-            </summary>
+            <summary>The property byte for this block, if present.</summary>
         </member>
         <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.UncompressedSize">
-            <summary>
-            Gets the uncompressed size of this block.
-            </summary>
+            <summary>The uncompressed size of this block.</summary>
         </member>
         <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.CompressedSize">
-            <summary>
-            Gets the compressed size of this block.
-            </summary>
+            <summary>The compressed payload size of this block.</summary>
         </member>
-        <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.CompressedHeaderSize">
-            <summary>
-            Gets the size of the compressed header for this block.
-            </summary>
+        <member name="F:Nanook.GrindCore.Lzma.Lzma2BlockInfo.HeaderSize">
+            <summary>The size of the header (including dictionary) for this block.</summary>
         </member>
         <member name="P:Nanook.GrindCore.Lzma.Lzma2BlockInfo.BlockSize">
-            <summary>
-            Gets the total block size (compressed size plus header size).
-            </summary>
+            <summary>The total block size (header size plus compressed payload size).</summary>
         </member>
         <member name="P:Nanook.GrindCore.Lzma.Lzma2BlockInfo.NewBlock">
-            <summary>
-            Gets a value indicating whether this is a new block with control, state, and property initialization.
-            </summary>
+            <summary>Indicates whether this is a new block with control, state, and property initialization.</summary>
         </member>
         <member name="T:Nanook.GrindCore.Lzma.Lzma2Decoder">
             <summary>
@@ -4613,14 +4593,24 @@
             <param name="props">The LZMA2 property byte.</param>
             <exception cref="T:System.Exception">Thrown if the decoder context cannot be allocated.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.Lzma.Lzma2Decoder.ReadSubBlockInfo(System.Byte[],System.UInt64)">
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Decoder.GetHeaderSize(System.Byte)">
+            <summary>
+            Determines the number of header bytes to read for an LZMA2 block, based on the first control byte.
+            </summary>
+            <param name="control">The first byte of the LZMA2 block header.</param>
+            <returns>The minimal number of header bytes to read before the payload.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Decoder.ReadSubBlockInfo(System.Byte[],System.UInt64,System.Int32)">
             <summary>
             Reads information about a sub-block from the input data at the specified offset.
+            This method is tolerant of headers that are present only partially in the buffer:
+            it uses the provided <paramref name="size"/> (number of header bytes currently available).
             </summary>
             <param name="inData">The input data array.</param>
             <param name="inOffset">The offset within the input data array.</param>
+            <param name="size">The number of header bytes currently available at the offset.</param>
             <returns>A <see cref="T:Nanook.GrindCore.Lzma.Lzma2BlockInfo"/> structure describing the sub-block.</returns>
-            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="inOffset"/> is outside the bounds of the data array.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="inOffset"/> is outside the bounds of the data array or if the provided header bytes are insufficient to parse mandatory fields.</exception>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.Lzma2Decoder.SetProps(System.Byte)">
             <summary>
@@ -4647,9 +4637,7 @@
             <exception cref="T:System.Exception">Thrown if decompression fails.</exception>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.Lzma2Decoder.Dispose">
-            <summary>
-            Releases all resources used by the <see cref="T:Nanook.GrindCore.Lzma.Lzma2Decoder"/>.
-            </summary>
+            <summary>Releases all resources used by the <see cref="T:Nanook.GrindCore.Lzma.Lzma2Decoder"/>.</summary>
         </member>
         <member name="T:Nanook.GrindCore.Lzma.Lzma2Encoder">
             <summary>
