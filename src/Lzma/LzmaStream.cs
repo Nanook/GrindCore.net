@@ -11,9 +11,12 @@ namespace Nanook.GrindCore.Lzma
     /// </summary>
     public class LzmaStream : CompressionStream
     {
+        protected override int MinimumBufferThreshold => 0x10000; // 64 KiB algorithm minimum
+
         private readonly LzmaDecoder _decoder;
         private readonly LzmaEncoder _encoder;
         private readonly CompressionBuffer _buffer;
+        private readonly CompressionBuffer _outBuffer;
 
         /// <summary>
         /// Gets the input buffer size for LZMA operations.
@@ -49,7 +52,10 @@ namespace Nanook.GrindCore.Lzma
                     dictSizeToUse = (uint)dictOptSize.Value;
                 }
                 else if (options?.BufferSize is int bs && bs > 0)
-                    dictSizeToUse = (uint)bs;
+                    // Use the actual buffer capacity allocated by the base CompressionStream (snapped)
+                    // rather than the raw requested value. This ensures the LZMA encoder uses the
+                    // same rounded/allowed buffer size the rest of the stream uses.
+                    dictSizeToUse = (uint)(this.InternalBuffer?.Length ?? bs);
                 else
                     dictSizeToUse = (uint)this.BufferSizeInput;
 
@@ -71,9 +77,15 @@ namespace Nanook.GrindCore.Lzma
 
                 // Pass merged dictionary options and thread count into encoder. Provide compression level as fallback.
                 _encoder = new LzmaEncoder(mergedDict, options?.ThreadCount, (int)CompressionType);
+                // Expose encoder properties so callers can initialize a decompressor.
                 Properties = _encoder.Properties;
+
+                // BufferThreshold is enforced by base via MinimumBufferThreshold.
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 1) + 0x10;
                 _buffer = new CompressionBuffer((int)Math.Max(dictSizeToUse, this.BufferSizeOutput));
+                // Use a larger output buffer to allow native encoder to emit bigger chunks and reduce round-trips
+                int outBufSize = this.BufferSizeOutput * 4;
+                _outBuffer = new CompressionBuffer(outBufSize);
             }
             else
             {
@@ -141,16 +153,30 @@ namespace Nanook.GrindCore.Lzma
             bytesWrittenToStream = 0;
             cancel.ThrowIfCancellationRequested();
 
-            int avRead = data.AvailableRead;
-            long size = _encoder.EncodeData(data, _buffer, false, cancel);
-
-            if (size > 0)
+            // Loop: encode then flush output immediately, repeating while input remains.
+            // This lets the native encoder produce small chunks that are written out
+            // so it can accept further input within the same OnWrite call.
+            while (data.AvailableRead > 0)
             {
-                BaseWrite(_buffer, _buffer.AvailableRead);
-                bytesWrittenToStream += (int)size;
+                cancel.ThrowIfCancellationRequested();
+
+                int before = data.AvailableRead;
+                long produced = _encoder.EncodeData(data, _outBuffer, false, cancel);
+
+                if (_outBuffer.AvailableRead > 0)
+                {
+                    BaseWrite(_outBuffer, _outBuffer.AvailableRead);
+                    bytesWrittenToStream += (int)produced;
+                }
+
+                int after = data.AvailableRead;
+                int consumed = before - after;
+
+                // If neither input was consumed nor output produced, break to avoid busy-loop.
+                if (consumed == 0 && produced == 0)
+                    break;
             }
         }
-
         /// <summary>
         /// Flushes any remaining compressed data to the stream.
         /// </summary>
@@ -165,14 +191,27 @@ namespace Nanook.GrindCore.Lzma
             bytesWrittenToStream = 0;
             if (IsCompress)
             {
+                cancel.ThrowIfCancellationRequested();
+
+                // Call EncodeData repeatedly until encoder indicates no more output.
+                // Use a separate output buffer so we don't mix input and output buffers.
+                const int MAX_ITER = 10000;
+                int iter = 0;
                 while (true)
                 {
-                    cancel.ThrowIfCancellationRequested();
-                    long size = _encoder.EncodeData(data, _buffer, true, cancel);
-                    if (size == 0)
+                    int beforeIterAvail = data.AvailableRead;
+                    if (++iter > MAX_ITER)
+                        throw new Exception("LZMA encoder did not make progress (iteration limit reached)");
+
+                    long size = _encoder.EncodeData(data, _outBuffer, true, cancel);
+                    if (size == 0 && _outBuffer.AvailableRead == 0)
                         break;
-                    BaseWrite(_buffer, _buffer.AvailableRead);
-                    bytesWrittenToStream += (int)size;
+
+                    if (_outBuffer.AvailableRead > 0)
+                    {
+                        BaseWrite(_outBuffer, _outBuffer.AvailableRead);
+                        bytesWrittenToStream += (int)size;
+                    }
                 }
             }
         }

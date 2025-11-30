@@ -28,6 +28,11 @@ namespace Nanook.GrindCore.Lzma
         public int BlockSize { get; }
 
         /// <summary>
+        /// Recommended input buffer size (native CStream input recommendation) used by the encoder.
+        /// </summary>
+        public int InputBufferSize { get; private set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="LzmaEncoder"/> class with the specified compression parameters.
         /// Dictionary size, fast-bytes (word size) and other tuning are taken from <paramref name="dictOptions"/> when provided.
         /// </summary>
@@ -116,8 +121,16 @@ namespace Nanook.GrindCore.Lzma
             if (res != 0)
                 throw new Exception($"Failed to prepare LZMA encoder {res}");
 
-            this.BlockSize = (int)dSize; // Use the normalized dictionary size from native code instead of dictSize
+            // Use the normalized dictionary size returned by native code directly.
+            // Do not convert units here — the native prepare call returns the value expected
+            // by the native multi-call logic. If native returns a small value like 8192
+            // that represents the intended threshold; converting it to KB caused an
+            // incorrect 8 MiB threshold and prevented the encoder from making progress.
+            this.BlockSize = (int)dSize;
             bufferSize += 0x8; // align/safety byte
+
+            // Expose the native recommended input buffer size so callers/streams can align thresholds.
+            this.InputBufferSize = (int)bufferSize;
 
             _inBuffer = BufferPool.Rent((int)bufferSize);
             _inBufferPinned = GCHandle.Alloc(_inBuffer, GCHandleType.Pinned);
@@ -179,33 +192,44 @@ namespace Nanook.GrindCore.Lzma
                     break;
                 finalfinal = final && remaining == 0;
 
-                outSz = (ulong)(outData.AvailableWrite);
-
-                fixed (byte* outPtr = outData.Data)
+                fixed (byte* baseOutPtr = outData.Data)
                 {
-                    *&outPtr += outData.Size; // writePos is Size
-
-                    res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, outPtr, &outSz, ref _inStream, final ? 0 : this.BlockSize, &available, finalfinal ? 1 : 0);
-                    if (res != 0)
+                    // Keep calling the native multi-call while we can make progress and the out buffer has space.
+                    while (true)
                     {
-                        // Handle insufficient buffer error gracefully
-                        if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
-                        {
-                            // Output buffer too small - return partial result and let caller handle it
-                            outTotal += (int)outSz;
-                            _toFlush = available;
-                            outData.Write((int)outSz);
-                            return outTotal;
-                        }
-                        
-                        // For other errors, throw with minimal information
-                        throw new Exception($"Native LZMA call failed with error {res} (0x{res:X8})");
-                    }
+                        byte* callPtr = baseOutPtr + outData.Size; // current write position
+                        outSz = (ulong)(outData.AvailableWrite);
+                        res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, callPtr, &outSz, ref _inStream, final ? 0 : this.BlockSize, &available, finalfinal ? 1 : 0);
 
-                    outTotal += (int)outSz;
+                        if (res != 0)
+                        {
+                            // Handle insufficient buffer error gracefully
+                            if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
+                            {
+                                outTotal += (int)outSz;
+                                _toFlush = available;
+                                outData.Write((int)outSz);
+                                return outTotal;
+                            }
+
+                            throw new Exception($"Native LZMA call failed with error {res} (0x{res:X8})");
+                        }
+
+                        // Account for bytes produced and update state
+                        outTotal += (int)outSz;
+                        _toFlush = available;
+                        outData.Write((int)outSz);
+
+                        // If native produced no more output or the out buffer is full, stop looping.
+                        if (outSz == 0 || outData.AvailableWrite == 0)
+                            break;
+
+                        // If not final and native still expects more input (remaining + toFlush < BlockSize), allow caller to feed more.
+                        long remainingNow = (long)(_inStream.remaining + (ulong)_toFlush);
+                        if (!final && remainingNow < (long)this.BlockSize)
+                            break;
+                    }
                 }
-                _toFlush = available;
-                outData.Write((int)outSz);
 
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");

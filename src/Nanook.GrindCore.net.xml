@@ -1368,6 +1368,8 @@
         <member name="F:Nanook.GrindCore.CompressionStream.BufferThreshold">
             <summary>
             Gets the threshold for the internal buffer.
+            This value can be adjusted by derived classes in their constructors to match algorithm-specific
+            minimums (e.g., encoder recommended input sizes).
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.CompressionStream.InternalBufferedBytes">
@@ -1398,6 +1400,13 @@
             This includes bytes remaining in the inflater/deflater buffer plus any buffered bytes that haven't been processed yet.
             Essential for rewinding/correcting stream positions when GrindCore overreads to fill buffers for processing,
             allowing wrapped streams to be repositioned correctly by rewinding the unused overread bytes.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionStream.MinimumBufferThreshold">
+            <summary>
+            Gets the minimum buffer threshold that should be applied for this compression algorithm.
+            Derived streams can override this to enforce algorithm-specific minimums (for example, LZMA requires 64KiB).
+            The base implementation returns 0 (no minimum).
             </summary>
         </member>
         <member name="M:Nanook.GrindCore.CompressionStream.RewindRead(System.Int32)">
@@ -4837,6 +4846,11 @@
         <member name="P:Nanook.GrindCore.Lzma.LzmaEncoder.BlockSize">
             <summary>
             Gets the block size used for compression.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.Lzma.LzmaEncoder.InputBufferSize">
+            <summary>
+            Recommended input buffer size (native CStream input recommendation) used by the encoder.
             </summary>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.#ctor(Nanook.GrindCore.CompressionDictionaryOptions,System.Nullable{System.Int32},System.Int32)">
