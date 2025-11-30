@@ -61,6 +61,18 @@ namespace Nanook.GrindCore.ZStd
 
             if (IsCompress)
             {
+                // Ensure BufferThreshold is at least the encoder's preferred input size so EncodeData
+                // can always make progress when triggered. Create a temporary encoder to read its
+                // InputBufferSize (native recommended CStreamInSize) and adjust threshold accordingly.
+                int encoderInputPref;
+                if (useV152)
+                    encoderInputPref = (int)Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CStreamInSize();
+                else
+                    encoderInputPref = (int)Interop.ZStd.SZ_ZStd_v1_5_7_CStreamInSize();
+
+                if (BufferThreshold != 0 && BufferThreshold < encoderInputPref)
+                    BufferThreshold = encoderInputPref;
+
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 7) + 128;
                 if (useV152)
                     _encoder = new ZStdEncoderV1_5_2(resolvedBlockSize, resolvedCompressionLevel);

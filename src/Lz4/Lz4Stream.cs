@@ -57,7 +57,35 @@ namespace Nanook.GrindCore.Lz4
 
             if (IsCompress)
             {
-                this.BufferSizeOutput = BufferThreshold + (BufferThreshold / 255) + 0x10 + 1;
+                // Map BufferThreshold to LZ4-supported block sizes (64KB,256KB,1MB,4MB).
+                // If a threshold was provided, select the smallest LZ4 block size >= threshold.
+                // If threshold == 0 (wait-until-full) leave it as 0.
+
+                // Respect both the user-requested threshold and the encoder's recommended input size.
+                int target = BufferThreshold != 0 ? Math.Max(BufferThreshold, this.BufferSizeInput) : Math.Max(this.BufferSizeInput, 0x10000);
+                int[] lz4Blocks = new int[] { 0x10000, 0x40000, 0x100000, 0x400000 };
+                int mapped = lz4Blocks[lz4Blocks.Length - 1];
+                foreach (var b in lz4Blocks)
+                {
+                    if (target <= b)
+                    {
+                        mapped = b;
+                        break;
+                    }
+                }
+                if (BufferThreshold != 0)
+                {
+                    BufferThreshold = mapped;
+                    resolvedBlockSize = BufferThreshold; // use mapped block size for encoder
+                }
+                else // leave BufferThreshold==0 to indicate wait-until-full behavior
+                    resolvedBlockSize = mapped;
+
+                // Ensure we have a valid encoder block size (LZ4 does not accept 0).
+                if (resolvedBlockSize <= 0)
+                    resolvedBlockSize = this.BufferSizeInput;
+
+                this.BufferSizeOutput = (BufferThreshold != 0) ? BufferThreshold + (BufferThreshold / 255) + 0x10 + 1 : BufferSizeInput + (BufferSizeInput / 255) + 0x10 + 1;
                 _encoder = new Lz4Encoder(resolvedBlockSize, resolvedCompressionLevel);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
