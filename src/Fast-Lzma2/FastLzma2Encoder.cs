@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Xml.Linq;
 using Nanook.GrindCore;
 
 namespace Nanook.GrindCore.FastLzma2
@@ -35,19 +34,19 @@ namespace Nanook.GrindCore.FastLzma2
                 // Map common dictionary options to Fast-LZMA2 parameters
                 if (dictOptions.DictionarySize.HasValue && dictOptions.DictionarySize.Value > 0)
                     compressParams.DictionarySize = (int)Math.Min(dictOptions.DictionarySize.Value, int.MaxValue);
-                    
+
                 if (dictOptions.LiteralContextBits.HasValue)
                     compressParams.LiteralCtxBits = dictOptions.LiteralContextBits.Value;
-                    
+
                 if (dictOptions.LiteralPositionBits.HasValue)
                     compressParams.LiteralPosBits = dictOptions.LiteralPositionBits.Value;
-                    
+
                 if (dictOptions.PositionBits.HasValue)
                     compressParams.PosBits = dictOptions.PositionBits.Value;
-                    
+
                 if (dictOptions.FastBytes.HasValue)
                     compressParams.FastLength = dictOptions.FastBytes.Value;
-                    
+
                 if (dictOptions.Algorithm.HasValue)
                 {
                     // Map LZMA algorithm to Fast-LZMA2 strategy: 0=fast -> 1=fast, 1=normal -> 3=ultra
