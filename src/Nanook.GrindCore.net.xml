@@ -576,30 +576,18 @@
         </member>
         <member name="T:Nanook.GrindCore.CancellableTask">
             <summary>
-            Represents a cancellable task using a <see cref="T:System.Threading.CancellationToken"/> for supported frameworks.
+            Represents a cancellable task for frameworks that do not support CancellationToken/>.
             </summary>
-        </member>
-        <member name="F:Nanook.GrindCore.CancellableTask.Token">
-            <summary>
-            Gets the associated <see cref="T:System.Threading.CancellationToken"/>.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.CancellableTask.#ctor(System.Threading.CancellationToken)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.CancellableTask"/> struct with a <see cref="T:System.Threading.CancellationToken"/>.
-            </summary>
-            <param name="cancellationToken">The cancellation token to associate with this task.</param>
         </member>
         <member name="P:Nanook.GrindCore.CancellableTask.IsCancellationRequested">
             <summary>
-            Gets a value indicating whether cancellation has been requested for this task.
+            Gets a value indicating whether cancellation has been requested for this task. Always <c>false</c> in unsupported frameworks.
             </summary>
         </member>
         <member name="M:Nanook.GrindCore.CancellableTask.ThrowIfCancellationRequested">
             <summary>
-            Throws an <see cref="T:System.OperationCanceledException"/> if cancellation has been requested.
+            Does nothing, as cancellation is not supported in this framework.
             </summary>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation has been requested.</exception>
         </member>
         <member name="T:Nanook.GrindCore.CompressionAlgorithm">
             <summary>
@@ -847,20 +835,6 @@
             <returns>The number of bytes actually written.</returns>
             <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
             <exception cref="T:System.ArgumentException">Thrown if <paramref name="data"/> is not null and the sum of <paramref name="offset"/> and <paramref name="length"/> is greater than the array length.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionBuffer.Read(System.Span{System.Byte})">
-            <summary>
-            Reads data from the buffer into the specified span and advances the position.
-            </summary>
-            <param name="data">The destination span.</param>
-            <returns>The number of bytes actually read.</returns>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionBuffer.Write(System.ReadOnlySpan{System.Byte})">
-            <summary>
-            Writes data from the specified span to the buffer and advances the size.
-            </summary>
-            <param name="data">The source span.</param>
-            <returns>The number of bytes actually written.</returns>
         </member>
         <member name="T:Nanook.GrindCore.CompressionDefaults">
             <summary>
@@ -1567,74 +1541,6 @@
             </summary>
             <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         </member>
-        <member name="M:Nanook.GrindCore.CompressionStream.ReadAsync(System.Memory{System.Byte},System.Threading.CancellationToken)">
-            <summary>
-            Asynchronously reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
-            </summary>
-            <param name="buffer">The region of memory to write the data into.</param>
-            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-            <returns>A task that represents the asynchronous read operation. The value of the result parameter contains the total number of bytes read into the buffer.</returns>
-            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="buffer"/> length is negative.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionStream.WriteAsync(System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)">
-            <summary>
-            Asynchronously writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
-            </summary>
-            <param name="buffer">The region of memory to write data from.</param>
-            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-            <returns>A task that represents the asynchronous write operation.</returns>
-            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="buffer"/> length is negative.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionStream.CompleteAsync">
-            <summary>
-            Asynchronously completes the compression or decompression operation, flushing all buffers and finalizing the stream without disposing anything.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionStream.DisposeAsync">
-            <summary>
-            Asynchronously releases the unmanaged resources used by the <see cref="T:Nanook.GrindCore.CompressionStream"/> and optionally releases the managed resources.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionStream.ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
-            <summary>
-            Asynchronously reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
-            </summary>
-            <param name="buffer">The buffer to read the data into.</param>
-            <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin storing the data read from the stream.</param>
-            <param name="count">The maximum number of bytes to be read from the stream.</param>
-            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-            <returns>A task that represents the asynchronous read operation. The value of the result parameter contains the total number of bytes read into the buffer.</returns>
-            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="buffer"/> is null.</exception>
-            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative.</exception>
-            <exception cref="T:System.ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="count"/> is greater than the buffer length.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionStream.WriteAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
-            <summary>
-            Asynchronously writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
-            </summary>
-            <param name="buffer">The buffer containing data to write to the stream.</param>
-            <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin copying bytes to the stream.</param>
-            <param name="count">The number of bytes to be written to the stream.</param>
-            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-            <returns>A task that represents the asynchronous write operation.</returns>
-            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="buffer"/> is null.</exception>
-            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative.</exception>
-            <exception cref="T:System.ArgumentException">Thrown if the sum of <paramref name="offset"/> and <paramref name="count"/> is greater than the buffer length.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionStream.FlushAsync(System.Threading.CancellationToken)">
-            <summary>
-            Asynchronously clears all buffers for this stream and causes any buffered data to be written to the underlying device.
-            </summary>
-            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-            <returns>A task that represents the asynchronous flush operation.</returns>
-        </member>
-        <member name="M:Nanook.GrindCore.CompressionStream.CompleteAsync(System.Threading.CancellationToken)">
-            <summary>
-            Asynchronously completes the compression or decompression operation, flushing all buffers and finalizing the stream without disposing anything.
-            </summary>
-            <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-            <returns>A task that represents the asynchronous complete operation.</returns>
-        </member>
         <member name="T:Nanook.GrindCore.CompressionStreamFactory">
             <summary>
             Factory class for creating <see cref="T:Nanook.GrindCore.CompressionStream"/> instances for various compression algorithms.
@@ -2018,46 +1924,22 @@
         </member>
         <member name="T:Nanook.GrindCore.DataBlock">
             <summary>
-            Represents a block of data for compression or decompression operations compatible with span and all versions of dotnet, using spans for efficient memory access.
+            Represents a block of data for compression or decompression operations, using arrays for compatibility.
             </summary>
         </member>
         <member name="F:Nanook.GrindCore.DataBlock.Data">
             <summary>
-            Gets the readonly memory span for this data block.
+            Gets the underlying data array.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.ReadOnlySpan{System.Byte},System.Int32,System.Int32)">
+        <member name="M:Nanook.GrindCore.DataBlock.#ctor">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.ReadOnlySpan`1"/>.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct as an empty block.
             </summary>
-            <param name="span">The source span.</param>
-            <param name="offset">The offset within the span.</param>
-            <param name="length">The length of the data block.</param>
-        </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.ReadOnlySpan{System.Byte})">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.ReadOnlySpan`1"/> covering the entire span.
-            </summary>
-            <param name="span">The source span.</param>
-        </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Span{System.Byte},System.Int32,System.Int32)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.Span`1"/>.
-            </summary>
-            <param name="span">The source span.</param>
-            <param name="offset">The offset within the span.</param>
-            <param name="length">The length of the data block.</param>
-        </member>
-        <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Span{System.Byte})">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a <see cref="T:System.Span`1"/> covering the entire span.
-            </summary>
-            <param name="span">The source span.</param>
         </member>
         <member name="M:Nanook.GrindCore.DataBlock.#ctor(System.Byte[],System.Int32,System.Int32)">
             <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a byte array, offset and length.
-            This overload ensures array-backed blocks get a writable span.
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.DataBlock"/> struct from a byte array, offset, and length.
             </summary>
             <param name="data">The source array.</param>
             <param name="offset">The offset within the array.</param>
@@ -2071,20 +1953,13 @@
         </member>
         <member name="P:Nanook.GrindCore.DataBlock.Offset">
             <summary>
-            Gets the offset within the underlying span or array.
+            Gets the offset within the underlying array.
             </summary>
         </member>
         <member name="P:Nanook.GrindCore.DataBlock.Length">
             <summary>
             Gets the length of the data block.
             </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.DataBlock.asWritableSpan">
-            <summary>
-            Exposes the mutable span for writing, if available.
-            Returns the span window for this DataBlock (already sliced to Offset/Length).
-            </summary>
-            <returns>The writable <see cref="T:System.Span`1"/> for this block.</returns>
         </member>
         <member name="M:Nanook.GrindCore.DataBlock.Read(System.Int32,System.Byte[],System.Int32,System.Int32)">
             <summary>
@@ -2112,7 +1987,6 @@
             <param name="sourceOffset">The offset within this block to start writing to.</param>
             <param name="buffer">The source <see cref="T:Nanook.GrindCore.CompressionBuffer"/>.</param>
             <param name="length">The number of bytes to write.</param>
-            <exception cref="T:System.NotSupportedException">Thrown if this block is not writable.</exception>
             <exception cref="T:System.ArgumentOutOfRangeException">Thrown if the source range is out of bounds.</exception>
         </member>
         <member name="M:Nanook.GrindCore.DataBlock.CopyTo(Nanook.GrindCore.DataBlock,System.Int32,System.Int32,System.Int32)">
@@ -4504,6 +4378,194 @@
             Disposes the <see cref="T:Nanook.GrindCore.Lz4.Lz4Stream"/> and its resources.
             </summary>
         </member>
+        <member name="T:Nanook.GrindCore.Lzma.LzmaBlock">
+            <summary>
+            Provides a block-based implementation of the LZMA compression algorithm.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.Lzma.LzmaBlock.RequiredCompressOutputSize">
+            <summary>
+            Gets the required output buffer size for compression, as determined by the LZMA algorithm.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaBlock.#ctor(Nanook.GrindCore.CompressionOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaBlock"/> class with the specified compression options.
+            When dictionary options are not explicitly provided, uses 7-Zip level-based defaults via C normalization.
+            </summary>
+            <param name="options">The compression options to use.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaBlock.OnCompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock,System.Int32@)">
+            <summary>
+            Compresses the source data block into the destination data block using LZMA.
+            </summary>
+            <param name="srcData">The source data block to compress.</param>
+            <param name="dstData">The destination data block to write compressed data to.</param>
+            <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+            <returns>The compression result code.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaBlock.OnDecompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock,System.Int32@)">
+            <summary>
+            Decompresses the source data block into the destination data block using LZMA.
+            </summary>
+            <param name="srcData">The source data block to decompress.</param>
+            <param name="dstData">The destination data block to write decompressed data to.</param>
+            <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+            <returns>The compression result code.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaBlock.OnDispose">
+            <summary>
+            Releases any resources used by the <see cref="T:Nanook.GrindCore.Lzma.LzmaBlock"/>.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.Lzma.LzmaDecoder">
+            <summary>
+            Provides a decoder for LZMA-compressed data, supporting block-based decompression.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.Lzma.LzmaDecoder.Properties">
+            <summary>
+            Gets the LZMA properties used for decoding.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaDecoder.#ctor(System.Byte[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaDecoder"/> class with the specified LZMA properties.
+            </summary>
+            <param name="properties">The LZMA properties required for decoding.</param>
+            <exception cref="T:System.Exception">Thrown if the decoder context cannot be allocated.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaDecoder.DecodeData(Nanook.GrindCore.CompressionBuffer,System.Int32@,Nanook.GrindCore.CompressionBuffer,System.Int32,System.Int32@)">
+            <summary>
+            Decodes LZMA-compressed data from the input buffer into the output buffer.
+            </summary>
+            <param name="inData">The input buffer containing compressed data.</param>
+            <param name="readSz">Outputs the number of bytes read from the input buffer.</param>
+            <param name="outData">The output buffer to write decompressed data to.</param>
+            <param name="outSize">The number of bytes available to write to the output buffer.</param>
+            <param name="status">Outputs the status of the decompression operation.</param>
+            <returns>The number of bytes written to the output buffer.</returns>
+            <exception cref="T:System.Exception">Thrown if decompression fails.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaDecoder.Dispose">
+            <summary>
+            Releases all resources used by the <see cref="T:Nanook.GrindCore.Lzma.LzmaDecoder"/>.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.Lzma.LzmaEncoder">
+            <summary>
+            Provides an encoder for LZMA-compressed data, supporting block-based compression.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.Lzma.LzmaEncoder.Properties">
+            <summary>
+            Gets the LZMA properties used for encoding.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.Lzma.LzmaEncoder.BlockSize">
+            <summary>
+            Gets the block size used for compression.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.Lzma.LzmaEncoder.InputBufferSize">
+            <summary>
+            Recommended input buffer size (native CStream input recommendation) used by the encoder.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.#ctor(Nanook.GrindCore.CompressionDictionaryOptions,System.Nullable{System.Int32},System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaEncoder"/> class with the specified compression parameters.
+            Dictionary size, fast-bytes (word size) and other tuning are taken from <paramref name="dictOptions"/> when provided.
+            </summary>
+            <param name="dictOptions">Dictionary and tuning options. When a field is set it will be applied to the native props.</param>
+            <param name="threadCount">Optional thread count override.</param>
+            <param name="level">Compression level fallback (used when dictOptions does not provide an explicit level). Default: 5.</param>
+            <exception cref="T:System.Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
+            <summary>
+            Encodes data from the input buffer into the output buffer using LZMA compression.
+            </summary>
+            <param name="inData">The input buffer containing data to compress.</param>
+            <param name="outData">The output buffer to write compressed data to.</param>
+            <param name="final">Indicates if this is the final block of data.</param>
+            <param name="cancel">A cancellable task for cooperative cancellation.</param>
+            <returns>The total number of bytes written to the output buffer.</returns>
+            <exception cref="T:System.ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
+            <exception cref="T:System.Exception">Thrown if compression fails.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.Dispose">
+            <summary>
+            Releases all resources used by the <see cref="T:Nanook.GrindCore.Lzma.LzmaEncoder"/>.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.Lzma.LzmaStream">
+            <summary>
+            Provides a stream implementation for LZMA compression and decompression.
+            Inherits common <see cref="T:System.IO.Stream"/> functionality from <see cref="T:Nanook.GrindCore.CompressionStream"/>.
+            Uses a customized LZMA implementation to allow the Stream.Write pattern for compression.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.Lzma.LzmaStream.BufferSizeInput">
+            <summary>
+            Gets the input buffer size for LZMA operations.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.Lzma.LzmaStream.BufferSizeOutput">
+            <summary>
+            Gets the output buffer size for LZMA operations.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaStream"/> class with the specified stream and options.
+            Dictionary size is taken from <see cref="P:Nanook.GrindCore.CompressionDictionaryOptions.DictionarySize"/>, then <see cref="P:Nanook.GrindCore.CompressionOptions.BufferSize"/>,
+            and finally falls back to the stream default <see cref="P:Nanook.GrindCore.Lzma.LzmaStream.BufferSizeInput"/>.
+            </summary>
+            <param name="stream">The underlying stream to read from or write to.</param>
+            <param name="options">The compression options to use.</param>
+            <exception cref="T:System.Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnRead(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Int32)">
+            <summary>
+            Reads data from the stream and decompresses it using LZMA.
+            Updates the position with the running total of bytes processed from the source stream.
+            </summary>
+            <param name="data">The buffer to read decompressed data into.</param>
+            <param name="cancel">A cancellable task for cooperative cancellation.</param>
+            <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+            <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
+            <returns>The number of bytes written to the buffer.</returns>
+            <exception cref="T:System.NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
+            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnWrite(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@)">
+            <summary>
+            Compresses data using LZMA and writes it to the stream.
+            Updates the position with the running total of bytes processed from the source stream.
+            </summary>
+            <param name="data">The buffer containing data to compress and write.</param>
+            <param name="cancel">A cancellable task for cooperative cancellation.</param>
+            <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+            <exception cref="T:System.NotSupportedException">Thrown if the stream is not in compression mode.</exception>
+            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnFlush(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Boolean,System.Boolean)">
+            <summary>
+            Flushes any remaining compressed data to the stream.
+            </summary>
+            <param name="data">The buffer containing data to flush.</param>
+            <param name="cancel">A cancellable task for cooperative cancellation.</param>
+            <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+            <param name="flush">Indicates if this is a flush operation.</param>
+            <param name="complete">Indicates that there is no more data to compress.</param>
+            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnDispose">
+            <summary>
+            Disposes the <see cref="T:Nanook.GrindCore.Lzma.LzmaStream"/> and its resources.
+            </summary>
+        </member>
         <member name="T:Nanook.GrindCore.Lzma.Lzma2Block">
             <summary>
             Provides a block-based implementation of the LZMA2 compression algorithm.
@@ -4757,194 +4819,6 @@
         <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.OnDispose">
             <summary>
             Disposes the <see cref="T:Nanook.GrindCore.Lzma.Lzma2Stream"/> and its resources.
-            </summary>
-        </member>
-        <member name="T:Nanook.GrindCore.Lzma.LzmaBlock">
-            <summary>
-            Provides a block-based implementation of the LZMA compression algorithm.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.Lzma.LzmaBlock.RequiredCompressOutputSize">
-            <summary>
-            Gets the required output buffer size for compression, as determined by the LZMA algorithm.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaBlock.#ctor(Nanook.GrindCore.CompressionOptions)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaBlock"/> class with the specified compression options.
-            When dictionary options are not explicitly provided, uses 7-Zip level-based defaults via C normalization.
-            </summary>
-            <param name="options">The compression options to use.</param>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaBlock.OnCompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock,System.Int32@)">
-            <summary>
-            Compresses the source data block into the destination data block using LZMA.
-            </summary>
-            <param name="srcData">The source data block to compress.</param>
-            <param name="dstData">The destination data block to write compressed data to.</param>
-            <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
-            <returns>The compression result code.</returns>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaBlock.OnDecompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock,System.Int32@)">
-            <summary>
-            Decompresses the source data block into the destination data block using LZMA.
-            </summary>
-            <param name="srcData">The source data block to decompress.</param>
-            <param name="dstData">The destination data block to write decompressed data to.</param>
-            <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
-            <returns>The compression result code.</returns>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaBlock.OnDispose">
-            <summary>
-            Releases any resources used by the <see cref="T:Nanook.GrindCore.Lzma.LzmaBlock"/>.
-            </summary>
-        </member>
-        <member name="T:Nanook.GrindCore.Lzma.LzmaDecoder">
-            <summary>
-            Provides a decoder for LZMA-compressed data, supporting block-based decompression.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.Lzma.LzmaDecoder.Properties">
-            <summary>
-            Gets the LZMA properties used for decoding.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaDecoder.#ctor(System.Byte[])">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaDecoder"/> class with the specified LZMA properties.
-            </summary>
-            <param name="properties">The LZMA properties required for decoding.</param>
-            <exception cref="T:System.Exception">Thrown if the decoder context cannot be allocated.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaDecoder.DecodeData(Nanook.GrindCore.CompressionBuffer,System.Int32@,Nanook.GrindCore.CompressionBuffer,System.Int32,System.Int32@)">
-            <summary>
-            Decodes LZMA-compressed data from the input buffer into the output buffer.
-            </summary>
-            <param name="inData">The input buffer containing compressed data.</param>
-            <param name="readSz">Outputs the number of bytes read from the input buffer.</param>
-            <param name="outData">The output buffer to write decompressed data to.</param>
-            <param name="outSize">The number of bytes available to write to the output buffer.</param>
-            <param name="status">Outputs the status of the decompression operation.</param>
-            <returns>The number of bytes written to the output buffer.</returns>
-            <exception cref="T:System.Exception">Thrown if decompression fails.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaDecoder.Dispose">
-            <summary>
-            Releases all resources used by the <see cref="T:Nanook.GrindCore.Lzma.LzmaDecoder"/>.
-            </summary>
-        </member>
-        <member name="T:Nanook.GrindCore.Lzma.LzmaEncoder">
-            <summary>
-            Provides an encoder for LZMA-compressed data, supporting block-based compression.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.Lzma.LzmaEncoder.Properties">
-            <summary>
-            Gets the LZMA properties used for encoding.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.Lzma.LzmaEncoder.BlockSize">
-            <summary>
-            Gets the block size used for compression.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.Lzma.LzmaEncoder.InputBufferSize">
-            <summary>
-            Recommended input buffer size (native CStream input recommendation) used by the encoder.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.#ctor(Nanook.GrindCore.CompressionDictionaryOptions,System.Nullable{System.Int32},System.Int32)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaEncoder"/> class with the specified compression parameters.
-            Dictionary size, fast-bytes (word size) and other tuning are taken from <paramref name="dictOptions"/> when provided.
-            </summary>
-            <param name="dictOptions">Dictionary and tuning options. When a field is set it will be applied to the native props.</param>
-            <param name="threadCount">Optional thread count override.</param>
-            <param name="level">Compression level fallback (used when dictOptions does not provide an explicit level). Default: 5.</param>
-            <exception cref="T:System.Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
-            <summary>
-            Encodes data from the input buffer into the output buffer using LZMA compression.
-            </summary>
-            <param name="inData">The input buffer containing data to compress.</param>
-            <param name="outData">The output buffer to write compressed data to.</param>
-            <param name="final">Indicates if this is the final block of data.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <returns>The total number of bytes written to the output buffer.</returns>
-            <exception cref="T:System.ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
-            <exception cref="T:System.Exception">Thrown if compression fails.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaEncoder.Dispose">
-            <summary>
-            Releases all resources used by the <see cref="T:Nanook.GrindCore.Lzma.LzmaEncoder"/>.
-            </summary>
-        </member>
-        <member name="T:Nanook.GrindCore.Lzma.LzmaStream">
-            <summary>
-            Provides a stream implementation for LZMA compression and decompression.
-            Inherits common <see cref="T:System.IO.Stream"/> functionality from <see cref="T:Nanook.GrindCore.CompressionStream"/>.
-            Uses a customized LZMA implementation to allow the Stream.Write pattern for compression.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.Lzma.LzmaStream.BufferSizeInput">
-            <summary>
-            Gets the input buffer size for LZMA operations.
-            </summary>
-        </member>
-        <member name="P:Nanook.GrindCore.Lzma.LzmaStream.BufferSizeOutput">
-            <summary>
-            Gets the output buffer size for LZMA operations.
-            </summary>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Nanook.GrindCore.Lzma.LzmaStream"/> class with the specified stream and options.
-            Dictionary size is taken from <see cref="P:Nanook.GrindCore.CompressionDictionaryOptions.DictionarySize"/>, then <see cref="P:Nanook.GrindCore.CompressionOptions.BufferSize"/>,
-            and finally falls back to the stream default <see cref="P:Nanook.GrindCore.Lzma.LzmaStream.BufferSizeInput"/>.
-            </summary>
-            <param name="stream">The underlying stream to read from or write to.</param>
-            <param name="options">The compression options to use.</param>
-            <exception cref="T:System.Exception">Thrown if <paramref name="options"/>.InitProperties is not set when decompressing.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnRead(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Int32)">
-            <summary>
-            Reads data from the stream and decompresses it using LZMA.
-            Updates the position with the running total of bytes processed from the source stream.
-            </summary>
-            <param name="data">The buffer to read decompressed data into.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
-            <param name="length"> The maximum number of bytes to read.If 0, the method will fill the buffer if possible.</param>
-            <returns>The number of bytes written to the buffer.</returns>
-            <exception cref="T:System.NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnWrite(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@)">
-            <summary>
-            Compresses data using LZMA and writes it to the stream.
-            Updates the position with the running total of bytes processed from the source stream.
-            </summary>
-            <param name="data">The buffer containing data to compress and write.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
-            <exception cref="T:System.NotSupportedException">Thrown if the stream is not in compression mode.</exception>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnFlush(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Boolean,System.Boolean)">
-            <summary>
-            Flushes any remaining compressed data to the stream.
-            </summary>
-            <param name="data">The buffer containing data to flush.</param>
-            <param name="cancel">A cancellable task for cooperative cancellation.</param>
-            <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
-            <param name="flush">Indicates if this is a flush operation.</param>
-            <param name="complete">Indicates that there is no more data to compress.</param>
-            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
-        </member>
-        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnDispose">
-            <summary>
-            Disposes the <see cref="T:Nanook.GrindCore.Lzma.LzmaStream"/> and its resources.
             </summary>
         </member>
         <member name="T:Nanook.GrindCore.MD.MD2">
