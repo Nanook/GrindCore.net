@@ -3,7 +3,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Nullable>enable</Nullable>
 		<NoWarn>CS8618,CS8602,CA2022,CA8618,CS1591</NoWarn>
-		<TargetFrameworks>net10.0;net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35</TargetFrameworks>
+		<TargetFrameworks>net10.0;net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35;net20</TargetFrameworks>
 		<AssemblyName>Nanook.GrindCore</AssemblyName>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -31,9 +31,14 @@
 	</PropertyGroup>
 
 	<!-- Hide a warning that appears when built with the tests as it defaults to x64 -->
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net35'">
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net35' OR '$(TargetFramework)' == 'net20'">
 		<ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
 	</PropertyGroup>
+
+	<!-- Include the LINQ bridge library for .NET Framework 2.0 support -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net20'">
+		<PackageReference Include="Net30.LinqBridge" Version="1.6.0.1" />
+	</ItemGroup>
 
 	<!-- CLASSIC will switch to net framework StreamBase and DataBlock for debugging -->
 	<!--<PropertyGroup>
