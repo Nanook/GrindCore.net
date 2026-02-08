@@ -95,7 +95,7 @@ namespace Nanook.GrindCore.Lzma
             _props.lc = _props.lp = _props.pb = _props.algo = _props.fb = _props.btMode = _props.numHashBytes = _props.numThreads = -1;
 
             // Fixed properties that we always want to set explicitly
-            _props.writeEndMark = 0; // default no end marker
+            _props.writeEndMark = 1; // default no end marker
             _props.affinity = 0;
             _props.reduceSize = ulong.MaxValue;
 
@@ -168,8 +168,9 @@ namespace Nanook.GrindCore.Lzma
                         SZ_Lzma_v25_01_Enc_WriteProperties(encoder, inPtr, &sz);
                     this.Properties = p.Take((int)sz).ToArray();
 
+                    // Pass writeEndMark = 1 to match _props.writeEndMark which signals writing an end marker
                     result = SZ_Lzma_v25_01_Enc_MemEncode(
-                        encoder, dstPtr, &compressedSize, srcPtr, (ulong)srcData.Length, 0, IntPtr.Zero);
+                        encoder, dstPtr, &compressedSize, srcPtr, (ulong)srcData.Length, 1, IntPtr.Zero);
                     
                     // Handle insufficient buffer error gracefully like LzmaEncoder
                     if (result == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
