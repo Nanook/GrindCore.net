@@ -52,8 +52,8 @@ namespace Nanook.GrindCore.Lzma
             outData.Tidy(); //ensure all the space is at the end making _buffer.AvailableWrite safe for interop
 
             // Get properties from DataBlock
-            ulong outSz = (ulong)outSize;
-            ulong inSz = (ulong)inData.AvailableRead;
+            UIntPtr outSz = (UIntPtr)outSize;
+            UIntPtr inSz = (UIntPtr)inData.AvailableRead;
 
             fixed (byte* outPtr = outData.Data) // Pin memory for the output inData
             fixed (byte* inPtr = inData.Data) // Pin memory for the input inData
@@ -66,10 +66,10 @@ namespace Nanook.GrindCore.Lzma
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");
 
-                readSz = (int)inSz; // Update inSize with the size consumed
+                readSz = (int)(ulong)inSz; // Update inSize with the size consumed
                 inData.Read(readSz);
-                outData.Write((int)outSz);
-                return (int)outSz; // Return the size of the output
+                outData.Write((int)(ulong)outSz);
+                return (int)(ulong)outSz; // Return the size of the output
             }
         }
 

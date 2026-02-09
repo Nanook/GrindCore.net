@@ -145,16 +145,16 @@ namespace Nanook.GrindCore
             public static extern void SZ_Lzma2_v25_01_Dec_Init(ref CLzma2Dec p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v25_01_Dec_DecodeToDic(ref CLzma2Dec p, ulong dicLimit, byte* src, ulong* srcLen, int finishMode, int* status);
+            public static extern int SZ_Lzma2_v25_01_Dec_DecodeToDic(ref CLzma2Dec p, UIntPtr dicLimit, byte* src, UIntPtr* srcLen, int finishMode, int* status);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v25_01_Dec_DecodeToBuf(ref CLzma2Dec p, byte* dest, ulong* destLen, byte* src, ulong* srcLen, int finishMode, int* status);
+            public static extern int SZ_Lzma2_v25_01_Dec_DecodeToBuf(ref CLzma2Dec p, byte* dest, UIntPtr* destLen, byte* src, UIntPtr* srcLen, int finishMode, int* status);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v25_01_Dec_Parse(ref CLzma2Dec p, ulong outSize, byte* src, ulong* srcLen, int checkFinishBlock);
+            public static extern int SZ_Lzma2_v25_01_Dec_Parse(ref CLzma2Dec p, UIntPtr outSize, byte* src, UIntPtr* srcLen, int checkFinishBlock);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v25_01_Decode(byte* dest, ulong* destLen, byte* src, ulong* srcLen, byte prop, int finishMode, int* status);
+            public static extern int SZ_Lzma2_v25_01_Decode(byte* dest, UIntPtr* destLen, byte* src, UIntPtr* srcLen, byte prop, int finishMode, int* status);
 
 
 
@@ -179,13 +179,13 @@ namespace Nanook.GrindCore
             public static extern byte SZ_Lzma2_v25_01_Enc_WriteProperties(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v25_01_Enc_Encode2(IntPtr p, byte* outBuf, ulong* outBufSize, byte* inData, ulong inDataSize, IntPtr progress);
+            public static extern int SZ_Lzma2_v25_01_Enc_Encode2(IntPtr p, byte* outBuf, UIntPtr* outBufSize, byte* inData, UIntPtr inDataSize, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCallPrepare(IntPtr p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, uint init);
+            public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCall(IntPtr p, byte* dest, UIntPtr* destLen, ref CBufferInStream srcStream, uint init);
 
 
 
@@ -208,13 +208,13 @@ namespace Nanook.GrindCore
             public static extern void SZ_Lzma_v25_01_Dec_Free(ref CLzmaDec p);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v25_01_Dec_DecodeToDic(ref CLzmaDec p, ulong dicLimit, byte* src, ulong* srcLen, int finishMode, int* status);
+            public static extern int SZ_Lzma_v25_01_Dec_DecodeToDic(ref CLzmaDec p, UIntPtr dicLimit, byte* src, UIntPtr* srcLen, int finishMode, int* status);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v25_01_Dec_DecodeToBuf(ref CLzmaDec p, byte* dest, ulong* destLen, byte* src, ulong* srcLen, int finishMode, int* status);
+            public static extern int SZ_Lzma_v25_01_Dec_DecodeToBuf(ref CLzmaDec p, byte* dest, UIntPtr* destLen, byte* src, UIntPtr* srcLen, int finishMode, int* status);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v25_01_Dec_LzmaDecode(byte* dest, ulong* destLen, byte* src, ulong* srcLen, byte* propData, uint propSize, int finishMode, int* status);
+            public static extern int SZ_Lzma_v25_01_Dec_LzmaDecode(byte* dest, UIntPtr* destLen, byte* src, UIntPtr* srcLen, byte* propData, uint propSize, int finishMode, int* status);
 
 
 
@@ -241,7 +241,7 @@ namespace Nanook.GrindCore
             public static extern void SZ_Lzma_v25_01_Enc_SetDataSize(IntPtr p, ulong expectedDataSize);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v25_01_Enc_WriteProperties(IntPtr p, byte* properties, ulong* size);
+            public static extern int SZ_Lzma_v25_01_Enc_WriteProperties(IntPtr p, byte* properties, UIntPtr* size);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern uint SZ_Lzma_v25_01_Enc_IsWriteEndMark(IntPtr p);
@@ -250,16 +250,16 @@ namespace Nanook.GrindCore
             public static extern int SZ_Lzma_v25_01_Enc_Encode(IntPtr p, IntPtr outStream, IntPtr inStream, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v25_01_Enc_MemEncode(IntPtr p, byte* dest, ulong* destLen, byte* src, ulong srcLen, int writeEndMark, IntPtr progress);
+            public static extern int SZ_Lzma_v25_01_Enc_MemEncode(IntPtr p, byte* dest, UIntPtr* destLen, byte* src, UIntPtr srcLen, int writeEndMark, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v25_01_Enc_LzmaEncode(byte* dest, ulong* destLen, byte* src, ulong srcLen, ref CLzmaEncProps props, byte* propsEncoded, ulong* propsSize, int writeEndMark, IntPtr progress);
+            public static extern int SZ_Lzma_v25_01_Enc_LzmaEncode(byte* dest, UIntPtr* destLen, byte* src, UIntPtr srcLen, ref CLzmaEncProps props, byte* propsEncoded, UIntPtr* propsSize, int writeEndMark, IntPtr progress);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lzma_v25_01_Enc_LzmaCodeMultiCallPrepare(IntPtr p, uint* blockSize, uint* dictSize, uint final);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(IntPtr p, byte* dest, ulong* destLen, ref CBufferInStream srcStream, int limit,uint* availableBytes, int final);
+            public static extern int SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(IntPtr p, byte* dest, UIntPtr* destLen, ref CBufferInStream srcStream, int limit,uint* availableBytes, int final);
         }
     }
 }

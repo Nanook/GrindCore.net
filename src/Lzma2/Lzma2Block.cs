@@ -135,9 +135,9 @@ namespace Nanook.GrindCore.Lzma
                 // Retrieve LZMA2 encoded property byte
                 this.Properties = new byte[] { (byte)SZ_Lzma2_v25_01_Enc_WriteProperties(encoder) };
 
-                ulong compressedSize = (ulong)dstCount;
+                UIntPtr compressedSize = (UIntPtr)dstCount;
                 int result = SZ_Lzma2_v25_01_Enc_Encode2(
-                    encoder, dstPtr, &compressedSize, srcPtr, (ulong)srcData.Length, IntPtr.Zero);
+                    encoder, dstPtr, &compressedSize, srcPtr, (UIntPtr)srcData.Length, IntPtr.Zero);
 
                 SZ_Lzma2_v25_01_Enc_Destroy(encoder);
 
@@ -145,7 +145,7 @@ namespace Nanook.GrindCore.Lzma
                 if (result == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
                 {
                     // Return partial result - this is normal for higher compression levels
-                    dstCount = (int)compressedSize;
+                    dstCount = (int)(ulong)compressedSize;
                     return CompressionResultCode.Success;
                 }
 
@@ -155,7 +155,7 @@ namespace Nanook.GrindCore.Lzma
                     return mapResult(result);
                 }
 
-                dstCount = (int)compressedSize;
+                dstCount = (int)(ulong)compressedSize;
                 return CompressionResultCode.Success;
             }
         }
@@ -181,8 +181,8 @@ namespace Nanook.GrindCore.Lzma
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                ulong srcSize = (ulong)srcData.Length;
-                ulong decompressedSize = (ulong)dstCount;
+                UIntPtr srcSize = (UIntPtr)srcData.Length;
+                UIntPtr decompressedSize = (UIntPtr)dstCount;
                 int status = 0;
 
                 int result = SZ_Lzma2_v25_01_Decode(
@@ -194,7 +194,7 @@ namespace Nanook.GrindCore.Lzma
                     return mapResult(result);
                 }
 
-                dstCount = (int)decompressedSize;
+                dstCount = (int)(ulong)decompressedSize;
                 return CompressionResultCode.Success;
             }
         }

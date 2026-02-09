@@ -107,11 +107,11 @@ namespace Nanook.GrindCore.Lzma
                 throw new Exception($"Failed to set LZMA encoder config {res}");
 
             byte[] p = BufferPool.Rent(0x10);
-            ulong sz = (ulong)p.Length;
+            UIntPtr sz = (UIntPtr)p.Length;
 
             fixed (byte* inPtr = p)
                 SZ_Lzma_v25_01_Enc_WriteProperties(_encoder, inPtr, &sz);
-            this.Properties = p.Take((int)sz).ToArray();
+            this.Properties = p.Take((int)(ulong)sz).ToArray();
             BufferPool.Return(p);
 
             uint bufferSize = 0;
@@ -162,7 +162,7 @@ namespace Nanook.GrindCore.Lzma
             bool finalfinal = false;
 
             int res = 0;
-            ulong outSz = 0;
+            UIntPtr outSz = (UIntPtr)0;
             int outTotal = 0;
 
             while (inData.AvailableRead != 0 || final)
@@ -198,7 +198,7 @@ namespace Nanook.GrindCore.Lzma
                     while (true)
                     {
                         byte* callPtr = baseOutPtr + outData.Size; // current write position
-                        outSz = (ulong)(outData.AvailableWrite);
+                        outSz = (UIntPtr)outData.AvailableWrite;
                         res = SZ_Lzma_v25_01_Enc_LzmaCodeMultiCall(_encoder, callPtr, &outSz, ref _inStream, final ? 0 : this.BlockSize, &available, finalfinal ? 1 : 0);
 
                         if (res != 0)
@@ -206,9 +206,9 @@ namespace Nanook.GrindCore.Lzma
                             // Handle insufficient buffer error gracefully
                             if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
                             {
-                                outTotal += (int)outSz;
+                                outTotal += (int)(ulong)outSz;
                                 _toFlush = available;
-                                outData.Write((int)outSz);
+                                outData.Write((int)(ulong)outSz);
                                 return outTotal;
                             }
 
@@ -216,12 +216,12 @@ namespace Nanook.GrindCore.Lzma
                         }
 
                         // Account for bytes produced and update state
-                        outTotal += (int)outSz;
+                        outTotal += (int)(ulong)outSz;
                         _toFlush = available;
-                        outData.Write((int)outSz);
+                        outData.Write((int)(ulong)outSz);
 
                         // If native produced no more output or the out buffer is full, stop looping.
-                        if (outSz == 0 || outData.AvailableWrite == 0)
+                        if ((ulong)outSz == 0 || outData.AvailableWrite == 0)
                             break;
 
                         // If not final and native still expects more input (remaining + toFlush < BlockSize), allow caller to feed more.
@@ -234,7 +234,7 @@ namespace Nanook.GrindCore.Lzma
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
 
-                if (final && (outSz != 0 || _toFlush == 0)) // the algo can return 0 bytes but still have data to flush
+                if (final && ((ulong)outSz != 0 || _toFlush == 0)) // the algo can return 0 bytes but still have data to flush
                     break;
             }
 

@@ -213,27 +213,27 @@ namespace Nanook.GrindCore.Lzma
 
         private int encodeDataMt(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
-            ulong outSz = (ulong)outData.AvailableWrite;
+            UIntPtr outSz = (UIntPtr)outData.AvailableWrite;
             uint available = (uint)inData.AvailableRead;
             fixed (byte* outPtr = outData.Data)
             fixed (byte* inPtr = inData.Data)
             {
                 *&outPtr += outData.Size;
                 *&inPtr += inData.Pos;
-                int res = SZ_Lzma2_v25_01_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (ulong)inData.AvailableRead, IntPtr.Zero);
+                int res = SZ_Lzma2_v25_01_Enc_Encode2(_encoder, outPtr, &outSz, inPtr, (UIntPtr)inData.AvailableRead, IntPtr.Zero);
 
-                outSz--; //remove the null terminator from block-based compression
+                outSz = (UIntPtr)((ulong)outSz - 1); //remove the null terminator from block-based compression
 
                 // Handle insufficient buffer error gracefully like LzmaEncoder
                 if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
                 {
                     // Return partial result - this is normal for higher compression levels
-                    outData.Write((int)outSz);
+                    outData.Write((int)(ulong)outSz);
                     inData.Read(Math.Min(inData.AvailableRead, (int)available));
-                    return (int)outSz;
+                    return (int)(ulong)outSz;
                 }
 
-                outData.Write((int)outSz);
+                outData.Write((int)(ulong)outSz);
 
                 if (res != 0)
                     throw new Exception($"Encode Error {res}");
@@ -241,14 +241,14 @@ namespace Nanook.GrindCore.Lzma
 
             inData.Read(inData.AvailableRead);
 
-            return (int)outSz;
+            return (int)(ulong)outSz;
         }
 
         private int encodeDataSolid(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             long inTotal = 0;
             int res = 0;
-            ulong outSz = 0;
+            UIntPtr outSz = (UIntPtr)0;
             int outTotal = 0;
             bool finalfinal = false;
             bool blkFinal = false;
@@ -287,22 +287,22 @@ namespace Nanook.GrindCore.Lzma
                 {
                     do
                     {
-                        outSz = (ulong)outData.AvailableWrite;
+                        outSz = (UIntPtr)outData.AvailableWrite;
                         byte* outPtr2 = *&outPtr + outData.Size;
                         _blockComplete = finalfinal || blkFinal;
                         res = SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, outPtr2, &outSz, ref _inStream, 0u);
-                        outTotal += (int)outSz;
+                        outTotal += (int)(ulong)outSz;
 
                         // Handle insufficient buffer error gracefully like LzmaEncoder
                         if (res == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
                         {
                             // Return partial result - this is normal for higher compression levels
-                            outData.Write((int)outSz);
+                            outData.Write((int)(ulong)outSz);
                             return outTotal;
                         }
 
-                        outData.Write((int)outSz);
-                    } while (res == 0 && outSz != 0 && (finalfinal || blkFinal));
+                        outData.Write((int)(ulong)outSz);
+                    } while (res == 0 && outSz != UIntPtr.Zero && (finalfinal || blkFinal));
 
                     if (blkFinal && !finalfinal)
                     {
@@ -311,7 +311,7 @@ namespace Nanook.GrindCore.Lzma
                     }
                 }
 
-                if (inSz == 0 && outSz == 0)
+                if (inSz == 0 && outSz == UIntPtr.Zero)
                     break;
 
                 if (res != 0)
@@ -338,7 +338,7 @@ namespace Nanook.GrindCore.Lzma
                 }
 
                 byte[] dummy = new byte[1]; // Ensure we have space for EOF marker
-                ulong outSize = 1;
+                UIntPtr outSize = (UIntPtr)1;
                 fixed (byte* d = dummy)
                 {
                     int res = SZ_Lzma2_v25_01_Enc_EncodeMultiCall(_encoder, d, &outSize, ref _inStream, 0u);

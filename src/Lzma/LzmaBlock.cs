@@ -159,24 +159,25 @@ namespace Nanook.GrindCore.Lzma
 
                 // Retrieve encoded properties
                 byte[] p = BufferPool.Rent(0x10);
-                ulong compressedSize = (ulong)dstCount;
+                UIntPtr compressedSize = (UIntPtr)dstCount;
                 try
                 {
-                    ulong sz = (ulong)p.Length;
+                    UIntPtr sz = (UIntPtr)p.Length;
 
                     fixed (byte* inPtr = p)
                         SZ_Lzma_v25_01_Enc_WriteProperties(encoder, inPtr, &sz);
-                    this.Properties = p.Take((int)sz).ToArray();
+
+                    this.Properties = p.Take((int)(ulong)sz).ToArray();
 
                     // Pass writeEndMark = 1 to match _props.writeEndMark which signals writing an end marker
                     result = SZ_Lzma_v25_01_Enc_MemEncode(
-                        encoder, dstPtr, &compressedSize, srcPtr, (ulong)srcData.Length, 1, IntPtr.Zero);
-                    
+                        encoder, dstPtr, &compressedSize, srcPtr, (UIntPtr)srcData.Length, 1, IntPtr.Zero);
+
                     // Handle insufficient buffer error gracefully like LzmaEncoder
                     if (result == -2147023537) // ERROR_INSUFFICIENT_BUFFER (0x8007054F)
                     {
                         // Return partial result - this is normal for block compression with higher levels
-                        dstCount = (int)compressedSize;
+                        dstCount = (int)(ulong)compressedSize;
                         return CompressionResultCode.Success;
                     }
                 }
@@ -192,7 +193,7 @@ namespace Nanook.GrindCore.Lzma
                     return mapResult(result);
                 }
 
-                dstCount = (int)compressedSize;
+                dstCount = (int)(ulong)compressedSize;
                 return CompressionResultCode.Success;
             }
         }
@@ -219,14 +220,14 @@ namespace Nanook.GrindCore.Lzma
                 *&srcPtr += srcData.Offset;
                 *&dstPtr += dstData.Offset;
 
-                ulong srcSize = (ulong)srcData.Length;
-                ulong decompressedSize = (ulong)dstCount;
+                UIntPtr srcSize = (UIntPtr)srcData.Length;
+                UIntPtr decompressedSize = (UIntPtr)dstCount;
                 int status = 0;
 
                 int result = SZ_Lzma_v25_01_Dec_LzmaDecode(
                     dstPtr, &decompressedSize, srcPtr, &srcSize, propPtr, (uint)this.Properties.Length, 1, &status);
 
-                if (result == 6 && decompressedSize < (ulong)dstCount)
+                if (result == 6 && (ulong)decompressedSize < (ulong)dstCount)
                     result = 0; // Allow for truncated input if we decompressed less than expected
 
                 if (result != 0)
@@ -235,7 +236,7 @@ namespace Nanook.GrindCore.Lzma
                     return mapResult(result);
                 }
 
-                dstCount = (int)decompressedSize;
+                dstCount = (int)(ulong)decompressedSize;
                 return CompressionResultCode.Success;
             }
         }

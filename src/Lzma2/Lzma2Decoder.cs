@@ -202,8 +202,8 @@ namespace Nanook.GrindCore.Lzma
         {
             outData.Tidy(); //ensure all the space is at the end making _buffer.AvailableWrite safe for interop
 
-            ulong inSz = (ulong)inSize;
-            ulong outSz = (ulong)outSize;
+            UIntPtr inSz = (UIntPtr)inSize;
+            UIntPtr outSz = (UIntPtr)outSize;
             status = 0; // defensive init
             fixed (byte* outPtr = outData.Data)
             fixed (byte* inPtr = inData.Data)
@@ -215,10 +215,10 @@ namespace Nanook.GrindCore.Lzma
                 if (res != 0)
                     throw new Exception($"Decode Error {res}");
 
-                outData.Write((int)outSz);
-                inData.Read((int)inSz);
-                inSize = (int)inSz;
-                return (int)outSz;
+                outData.Write((int)(ulong)outSz);
+                inData.Read((int)(ulong)inSz);
+                inSize = (int)(ulong)inSz;
+                return (int)(ulong)outSz;
             }
         }
 
