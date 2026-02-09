@@ -64,25 +64,26 @@ namespace Nanook.GrindCore.Lz4
                 GCHandle frameInfoHandle = GCHandle.Alloc(frameInfo, GCHandleType.Pinned);
                 IntPtr frameInfoPtr = frameInfoHandle.AddrOfPinnedObject();
 
-                ulong srcSize = (ulong)inData.AvailableRead;
+                UIntPtr srcSize = (UIntPtr)inData.AvailableRead;
 
                 fixed (SZ_Lz4F_v1_10_0_DecompressionContext* ctxPtr = &_context)
                 fixed (byte* srcPtr = inData.Data)
                 {
                     *&srcPtr += inData.Pos;
-                    ulong frameInfoSize = SZ_Lz4F_v1_10_0_GetFrameInfo(ctxPtr, frameInfoPtr, srcPtr, ref srcSize);
+                    UIntPtr frameInfoSize = SZ_Lz4F_v1_10_0_GetFrameInfo(ctxPtr, frameInfoPtr, srcPtr, ref srcSize);
 
-                    if ((long)frameInfoSize < 0)
-                        throw new Exception($"LZ4 Frame info error: {frameInfoSize}");
-                    inData.Read((int)srcSize);
-                    readSz += (int)srcSize;
+                    long frameInfoSizeL = (long)frameInfoSize.ToUInt64();
+                    if (frameInfoSizeL < 0)
+                        throw new Exception($"LZ4 Frame info error: {frameInfoSize.ToUInt64()}");
+                    inData.Read((int)srcSize.ToUInt64());
+                    readSz += (int)srcSize.ToUInt64();
                 }
 
                 frameInfoHandle.Free();
             }
 
-            ulong outSz = (ulong)outData.AvailableWrite;
-            ulong inSz = (ulong)inData.AvailableRead;
+            UIntPtr outSz = (UIntPtr)outData.AvailableWrite;
+            UIntPtr inSz = (UIntPtr)inData.AvailableRead;
 
             fixed (byte* inPtr = inData.Data)
             fixed (byte* outPtr = outData.Data)
@@ -90,14 +91,15 @@ namespace Nanook.GrindCore.Lz4
             {
                 *&inPtr += inData.Pos;
 
-                ulong decompressedSize = SZ_Lz4F_v1_10_0_Decompress(ctxPtr, outPtr, ref outSz, inPtr, ref inSz, IntPtr.Zero);
+                UIntPtr decompressedSize = SZ_Lz4F_v1_10_0_Decompress(ctxPtr, outPtr, ref outSz, inPtr, ref inSz, IntPtr.Zero);
 
-                if (decompressedSize < 0)
-                    throw new Exception($"LZ4 Frame decompression failed with error code {decompressedSize}");
+                long decompressedSizeL = (long)decompressedSize.ToUInt64();
+                if (decompressedSizeL < 0)
+                    throw new Exception($"LZ4 Frame decompression failed with error code {decompressedSize.ToUInt64()}");
 
-                inData.Read((int)inSz);
-                outData.Write((int)outSz);
-                readSz += (int)inSz;
+                inData.Read((int)inSz.ToUInt64());
+                outData.Write((int)outSz.ToUInt64());
+                readSz += (int)inSz.ToUInt64();
             }
 
             return outData.Size - initOutSz;

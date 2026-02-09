@@ -56,7 +56,10 @@ namespace Nanook.GrindCore.Lz4
                 compressionLevel = compressionLevel
             };
 
-            _buffer = BufferPool.Rent((int)SZ_Lz4F_v1_10_0_CompressFrameBound((ulong)BlockSize, IntPtr.Zero));
+            {
+                UIntPtr bound = SZ_Lz4F_v1_10_0_CompressFrameBound((UIntPtr)BlockSize, IntPtr.Zero);
+                _buffer = BufferPool.Rent((int)bound.ToUInt64());
+            }
             if (_buffer == null)
                 throw new Exception("Failed to allocate buffer for LZ4 compression");
 
@@ -77,15 +80,15 @@ namespace Nanook.GrindCore.Lz4
         {
             if (!_headerWritten)
             {
-                ulong headerSizeU;
+                UIntPtr headerSizeU;
                 fixed (LZ4F_preferences_t* prefsPtr = &_preferences)
                 fixed (SZ_Lz4F_v1_10_0_CompressionContext* ctxPtr = &_context)
                 {
                     headerSizeU = SZ_Lz4F_v1_10_0_CompressBegin(
-                        ctxPtr, _bufferPtr, (ulong)_buffer.Length, prefsPtr);
+                        ctxPtr, _bufferPtr, (UIntPtr)_buffer.Length, prefsPtr);
                 }
 
-                long headerSize = (long)headerSizeU;
+                long headerSize = (long)headerSizeU.ToUInt64();
                 if (headerSize < 0)
                     throw new Exception("Failed to write LZ4 frame header");
                 if (headerSize > int.MaxValue)
@@ -132,13 +135,13 @@ namespace Nanook.GrindCore.Lz4
                 fixed (SZ_Lz4F_v1_10_0_CompressionContext* ctxPtr = &_context)
                 {
                     *&inputPtr += inData.Pos;
-                    ulong compressedSizeU = SZ_Lz4F_v1_10_0_CompressUpdate(
-                        ctxPtr, _bufferPtr, (ulong)_buffer.Length,
-                        inputPtr, (ulong)inputSize, IntPtr.Zero);
+                    UIntPtr compressedSizeU = SZ_Lz4F_v1_10_0_CompressUpdate(
+                        ctxPtr, _bufferPtr, (UIntPtr)_buffer.Length,
+                        inputPtr, (UIntPtr)inputSize, IntPtr.Zero);
 
-                    long compressedSize = (long)compressedSizeU;
+                    long compressedSize = (long)compressedSizeU.ToUInt64();
                     if (compressedSize < 0)
-                        throw new Exception($"LZ4 Frame compression failed with error code {compressedSizeU}");
+                        throw new Exception($"LZ4 Frame compression failed with error code {compressedSizeU.ToUInt64()}");
                     if (compressedSize > int.MaxValue)
                         throw new Exception($"LZ4 Frame compression returned size too large: {compressedSize}");
 
@@ -164,38 +167,38 @@ namespace Nanook.GrindCore.Lz4
         {
             fixed (SZ_Lz4F_v1_10_0_CompressionContext* ctxPtr = &_context)
             {
-                ulong flushedSize = 0;
-                ulong endSize = 0;
+                UIntPtr flushedSize = UIntPtr.Zero;
+                UIntPtr endSize = UIntPtr.Zero;
 
                 // Write frame header if not already written
                 int headerBytes = writeHeader(outData, 0);
 
                 if (flush)
                 {
-                    ulong flushedSizeU = SZ_Lz4F_v1_10_0_Flush(ctxPtr, _bufferPtr, (ulong)_buffer.Length, IntPtr.Zero);
-                    long flushedSizeL = (long)flushedSizeU;
+                    UIntPtr flushedSizeU = SZ_Lz4F_v1_10_0_Flush(ctxPtr, _bufferPtr, (UIntPtr)_buffer.Length, IntPtr.Zero);
+                    long flushedSizeL = (long)flushedSizeU.ToUInt64();
                     if (flushedSizeL < 0)
                         throw new Exception("LZ4 Frame flush failed");
                     if (flushedSizeL > int.MaxValue)
                         throw new Exception($"LZ4 Frame flush returned size too large: {flushedSizeL}");
                     outData.Write(_buffer, 0, (int)flushedSizeL);
-                    flushedSize = (ulong)flushedSizeL;
+                    flushedSize = (UIntPtr)flushedSizeL;
                 }
 
                 if (complete)
                 {
-                    ulong endSizeU = SZ_Lz4F_v1_10_0_CompressEnd(ctxPtr, _bufferPtr, (ulong)_buffer.Length, IntPtr.Zero);
-                    long endSizeL = (long)endSizeU;
+                    UIntPtr endSizeU = SZ_Lz4F_v1_10_0_CompressEnd(ctxPtr, _bufferPtr, (UIntPtr)_buffer.Length, IntPtr.Zero);
+                    long endSizeL = (long)endSizeU.ToUInt64();
                     if (endSizeL <= 0)
                         throw new Exception("Failed to finalize LZ4 Frame compression");
                     if (endSizeL > int.MaxValue)
                         throw new Exception($"LZ4 Frame end returned size too large: {endSizeL}");
 
                     outData.Write(_buffer, 0, (int)endSizeL);
-                    endSize = (ulong)endSizeL;
+                    endSize = (UIntPtr)endSizeL;
                 }
 
-                return (long)((ulong)headerBytes + flushedSize + endSize);
+                return (long)((ulong)headerBytes + flushedSize.ToUInt64() + endSize.ToUInt64());
             }
         }
 
