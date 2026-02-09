@@ -43,6 +43,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+  	<PackageReference Include="xunit.extensibility.core" Version="2.9.3" />
 		<ProjectReference Include="..\..\src\GrindCore.net.csproj" />
 	</ItemGroup>
 
