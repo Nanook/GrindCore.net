@@ -22,7 +22,6 @@ using Xunit;
 
 namespace GrindCore.Tests
 {
-#if !IS_32BIT
     /// <summary>
     /// Tests for async compression and decompression operations to verify async I/O without blocking.
     /// The tests use conditional fallbacks so they can run on older TFMs (e.g., .NET Framework 4.8)
@@ -584,5 +583,4 @@ namespace GrindCore.Tests
         }
 
     }
-#endif
 }
