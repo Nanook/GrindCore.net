@@ -137,7 +137,7 @@ public class GZipStream : Stream, IStreamStack
             {
                 _fileName = _fileName.Replace('/', '\\');
             }
-            if (_fileName.EndsWith('\\'))
+            if (_fileName.EndsWith("\\"))
             {
                 throw new InvalidOperationException("Illegal filename");
             }

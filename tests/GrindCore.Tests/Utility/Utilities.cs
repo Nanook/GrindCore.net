@@ -177,7 +177,8 @@ namespace GrindCore.Tests.Utility
                                     totalInProcessedBytes += bytesRead;
                                 }
                                 decompOptions.InitProperties = compressionStream.Properties;
-                                await compressionStream.CompleteAsync();
+                                // Use CancellationToken.None for older TFMs where overload requires a token
+                                await compressionStream.CompleteAsync(CancellationToken.None);
                                 Assert.Equal(compMemoryStream.Position, compressionStream.Position); //compression position is correct
                                 Assert.Equal(data.Position, compressionStream.PositionFullSize); //compression position is correct
                             }

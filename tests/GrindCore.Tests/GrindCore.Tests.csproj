@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net10.0;net8.0;net6.0</TargetFrameworks>
+		<TargetFrameworks>net10.0;net8.0;net48</TargetFrameworks>
 		<NoWarn>CA2022,CS3021,CA2265,xUnit1026</NoWarn>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -30,20 +30,19 @@
 	</PropertyGroup>
 	
 	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-		<PackageReference Include="xunit" Version="2.9.2" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="3.0.2">
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+        <PackageReference Include="xunit" Version="2.4.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
+        <PackageReference Include="coverlet.collector" Version="8.0.0">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="coverlet.collector" Version="6.0.4">
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
+        <PackageReference Include="System.Memory" Version="4.5.4" Condition=" '$(TargetFramework)' == 'net48' " />
+        <PackageReference Include="System.Buffers" Version="4.5.1" Condition=" '$(TargetFramework)' == 'net48' " />
+        <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.7.0" Condition=" '$(TargetFramework)' == 'net48' " />
 	</ItemGroup>
 
 	<ItemGroup>
-  	<PackageReference Include="xunit.extensibility.core" Version="2.9.3" />
 		<ProjectReference Include="..\..\src\GrindCore.net.csproj" />
 	</ItemGroup>
 
