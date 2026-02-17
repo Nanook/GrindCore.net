@@ -41,9 +41,11 @@ namespace GrindCore.Tests
         #region Small Data Async Tests (64 KiB)
 
         [Theory]
+        #if !IS_32BIT
         [InlineData(CompressionAlgorithm.Lzma, CompressionLevel.Fastest)]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionLevel.Fastest)]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionLevel.Fastest)]
+        #endif
         [InlineData(CompressionAlgorithm.Lz4, CompressionLevel.Fastest)]
         [InlineData(CompressionAlgorithm.ZStd, CompressionLevel.Fastest)]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionLevel.Fastest)]
@@ -98,9 +100,11 @@ namespace GrindCore.Tests
         }
 
         [Theory]
+        #if !IS_32BIT
         [InlineData(CompressionAlgorithm.Lzma)]
         [InlineData(CompressionAlgorithm.Lzma2)]
         [InlineData(CompressionAlgorithm.FastLzma2)]
+        #endif
         [InlineData(CompressionAlgorithm.Lz4)]
         [InlineData(CompressionAlgorithm.ZStd)]
         [InlineData(CompressionAlgorithm.DeflateNg)]
