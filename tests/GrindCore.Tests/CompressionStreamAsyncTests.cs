@@ -194,15 +194,16 @@ namespace GrindCore.Tests
                             await hashStream.WriteAsync(buffer, 0, bytesRead);
                             totalRead += bytesRead;
                         }
+                        properties = compressionStream.Properties;
                     }
-                    
+
                     // Capture properties after completion but before disposal
                     if (compressedStream.Position > 0)
                     {
                         compressedStream.Position = 0;
                         // Read compressed stream to get properties if needed for LZMA
                         // For now we'll just use null since properties aren't accessible after disposal
-                        properties = null;  // Note: LZMA properties would need to be captured differently
+                        //properties = null;  // Note: LZMA properties would need to be captured differently
                     }
                     
                     totalCompressedBytes = compressedStream.Position;
@@ -449,7 +450,7 @@ namespace GrindCore.Tests
             Assert.Equal(_Data64KiB, memoryDecompressed);
         }
 
-        private static Stream createCompressionStream(
+        private static CompressionStream createCompressionStream(
             CompressionAlgorithm algorithm,
             Stream baseStream,
             CompressionMode mode,
