@@ -39,49 +39,49 @@ jobs:
           dotnet publish tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj -c Debug -r win-x86 -p:TargetFramework=net10.0 -p:TargetFrameworks=net10.0 -o output/win-x86 --self-contained false
 
       - name: Upload Linux ARM64 build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: linux-arm64-build
           path: output/linux-arm64/
 
       - name: Upload Linux ARM build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: linux-arm-build
           path: output/linux-arm/
 
       - name: Upload Linux x64 build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: linux-x64-build
           path: output/linux-x64/
 
       - name: Upload OSX ARM64 build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: osx-arm64-build
           path: output/osx-arm64/
 
       - name: Upload OSX x64 build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: osx-x64-build
           path: output/osx-x64/
 
       - name: Upload Windows arm64 build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: win-arm64-build
           path: output/win-arm64/
 
       - name: Upload Windows x64 build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: win-x64-build
           path: output/win-x64/
 
       - name: Upload Windows x86 build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: win-x86-build
           path: output/win-x86/
