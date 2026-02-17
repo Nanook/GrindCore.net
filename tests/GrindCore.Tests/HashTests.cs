@@ -17,17 +17,17 @@ namespace GrindCore.Tests
     /// </summary>
     public sealed class HashTests
     {
-        private static byte[] _dataEmpty;
-        private static byte[] _data64KiB;
+        private static byte[] _DataEmpty;
+        private static byte[] _Data64KiB;
 
         static HashTests()
         {
-            _dataEmpty = new byte[0];
-            _data64KiB = TestDataStream.Create(64 * 1024);
+            _DataEmpty = new byte[0];
+            _Data64KiB = TestDataStream.Create(64 * 1024);
         }
 
 #if WIN_X64
-        private static byte[]? _dataHalfGiB;
+        private static byte[]? _DataHalfGiB;
 
         /// <summary>
         /// Test and demonstrate an instance of a hashing algorithm, processing one 512MiB array of data.
@@ -51,14 +51,14 @@ namespace GrindCore.Tests
         [InlineData(HashType.XXHash64, DataStreamHashConstants.HashResult512MiBXXHash64)]
         public void Hash_ByteArray512MiB(HashType type, string expectedResult)
         {
-            if (_dataHalfGiB == null)
-                _dataHalfGiB = TestDataStream.Create(512 * 1024 * 1024);
+            if (_DataHalfGiB == null)
+                _DataHalfGiB = TestDataStream.Create(512 * 1024 * 1024);
 
             // create the hash using the factory, via switch (not reflection)
             using (HashAlgorithm algorithm = HashFactory.Create(type))
             {
                 // calculate the hash using standard dotnet HashAlgorithm base class functionality
-                string result = algorithm.ComputeHash(_dataHalfGiB).ToHexString();
+                string result = algorithm.ComputeHash(_DataHalfGiB).ToHexString();
                 Assert.Equal(expectedResult, result);
             }
         }
@@ -90,7 +90,7 @@ namespace GrindCore.Tests
             using (HashAlgorithm algorithm = HashFactory.Create(type))
             {
                 // calculate the hash using standard dotnet HashAlgorithm base class functionality
-                string result = algorithm.ComputeHash(_data64KiB).ToHexString();
+                string result = algorithm.ComputeHash(_Data64KiB).ToHexString();
                 Assert.Equal(expectedResult, result);
             }
         }
@@ -121,7 +121,7 @@ namespace GrindCore.Tests
             using (HashAlgorithm algorithm = HashFactory.Create(type))
             {
                 // calculate the hash using standard dotnet HashAlgorithm base class functionality
-                string result = algorithm.ComputeHash(_dataEmpty).ToHexString();
+                string result = algorithm.ComputeHash(_DataEmpty).ToHexString();
                 Assert.Equal(expectedResult, result);
             }
         }
@@ -154,10 +154,10 @@ namespace GrindCore.Tests
             using (HashAlgorithm hasher = HashFactory.Create(type))
             {
                 int offset = 0;
-                while (offset < _data64KiB.Length)
+                while (offset < _Data64KiB.Length)
                 {
-                    int size = Math.Min(chunkSize, _data64KiB.Length - offset);
-                    hasher.TransformBlock(_data64KiB, offset, size, null, 0);
+                    int size = Math.Min(chunkSize, _Data64KiB.Length - offset);
+                    hasher.TransformBlock(_Data64KiB, offset, size, null, 0);
                     offset += size;
                 }
                 hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
@@ -194,10 +194,10 @@ namespace GrindCore.Tests
             using (HashAlgorithm hasher = HashFactory.Create(type))
             {
                 int offset = 0;
-                while (offset < _data64KiB.Length)
+                while (offset < _Data64KiB.Length)
                 {
-                    int size = Math.Min(chunkSize, _data64KiB.Length - offset);
-                    hasher.TransformBlock(_data64KiB, offset, size, null, 0);
+                    int size = Math.Min(chunkSize, _Data64KiB.Length - offset);
+                    hasher.TransformBlock(_Data64KiB, offset, size, null, 0);
                     offset += size;
                 }
                 hasher.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
@@ -233,7 +233,7 @@ namespace GrindCore.Tests
             // Create the hash using the factory, via switch (not reflection)
             using (HashAlgorithm hasher = HashFactory.Create(type))
             {
-                using (Stream dataStream = new MemoryStream(_data64KiB))
+                using (Stream dataStream = new MemoryStream(_Data64KiB))
                 {
                     int bytesRead;
                     byte[] buffer = new byte[chunkSize];
@@ -275,7 +275,7 @@ namespace GrindCore.Tests
             {
                 using (CryptoStream cryptoStream = new CryptoStream(Stream.Null, hasher, CryptoStreamMode.Write))
                 {
-                    using (Stream dataStream = new MemoryStream(_data64KiB))
+                    using (Stream dataStream = new MemoryStream(_Data64KiB))
                     {
                         dataStream.CopyTo(cryptoStream);
                         cryptoStream.FlushFinalBlock();
@@ -313,7 +313,7 @@ namespace GrindCore.Tests
             // create the hash using the factory, via switch (not reflection)
             using (HashAlgorithm hasher = HashFactory.Create(type))
             {
-                using (Stream dataStream = new MemoryStream(_data64KiB))
+                using (Stream dataStream = new MemoryStream(_Data64KiB))
                 {
                     int bytesRead;
                     byte[] buffer = new byte[chunkSize];
@@ -353,49 +353,49 @@ namespace GrindCore.Tests
             switch (type)
             {
                 case HashType.Blake2sp:
-                    result = Blake2sp.Compute(_data64KiB);
+                    result = Blake2sp.Compute(_Data64KiB);
                     break;
                 case HashType.Blake3:
-                    result = Blake3.Compute(_data64KiB);
+                    result = Blake3.Compute(_Data64KiB);
                     break;
                 case HashType.XXHash32:
-                    result = XXHash32.ComputeBytes(_data64KiB);
+                    result = XXHash32.ComputeBytes(_Data64KiB);
                     break;
                 case HashType.XXHash64:
-                    result = XXHash64.ComputeBytes(_data64KiB);
+                    result = XXHash64.ComputeBytes(_Data64KiB);
                     break;
                 case HashType.MD2:
-                    result = MD2.Compute(_data64KiB);
+                    result = MD2.Compute(_Data64KiB);
                     break;
                 case HashType.MD4:
-                    result = MD4.Compute(_data64KiB);
+                    result = MD4.Compute(_Data64KiB);
                     break;
                 case HashType.MD5:
-                    result = MD5.Compute(_data64KiB);
+                    result = MD5.Compute(_Data64KiB);
                     break;
                 case HashType.SHA1:
-                    result = SHA1.Compute(_data64KiB);
+                    result = SHA1.Compute(_Data64KiB);
                     break;
                 case HashType.SHA2_256:
-                    result = SHA2_256.Compute(_data64KiB);
+                    result = SHA2_256.Compute(_Data64KiB);
                     break;
                 case HashType.SHA2_384:
-                    result = SHA2_384.Compute(_data64KiB);
+                    result = SHA2_384.Compute(_Data64KiB);
                     break;
                 case HashType.SHA2_512:
-                    result = SHA2_512.Compute(_data64KiB);
+                    result = SHA2_512.Compute(_Data64KiB);
                     break;
                 case HashType.SHA3_224:
-                    result = SHA3.Compute(_data64KiB, 224);
+                    result = SHA3.Compute(_Data64KiB, 224);
                     break;
                 case HashType.SHA3_256:
-                    result = SHA3.Compute(_data64KiB, 256);
+                    result = SHA3.Compute(_Data64KiB, 256);
                     break;
                 case HashType.SHA3_384:
-                    result = SHA3.Compute(_data64KiB, 384);
+                    result = SHA3.Compute(_Data64KiB, 384);
                     break;
                 case HashType.SHA3_512:
-                    result = SHA3.Compute(_data64KiB, 512);
+                    result = SHA3.Compute(_Data64KiB, 512);
                     break;
                 default:
                     throw new ArgumentException("Unsupported hash type", nameof(type));
@@ -430,49 +430,49 @@ namespace GrindCore.Tests
             switch (type)
             {
                 case HashType.Blake2sp:
-                    result = Blake2sp.Compute(_data64KiB, 8, 6);
+                    result = Blake2sp.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.Blake3:
-                    result = Blake3.Compute(_data64KiB, 8, 6);
+                    result = Blake3.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.XXHash32:
-                    result = XXHash32.ComputeBytes(_data64KiB, 8, 6);
+                    result = XXHash32.ComputeBytes(_Data64KiB, 8, 6);
                     break;
                 case HashType.XXHash64:
-                    result = XXHash64.ComputeBytes(_data64KiB, 8, 6);
+                    result = XXHash64.ComputeBytes(_Data64KiB, 8, 6);
                     break;
                 case HashType.MD2:
-                    result = MD2.Compute(_data64KiB, 8, 6);
+                    result = MD2.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.MD4:
-                    result = MD4.Compute(_data64KiB, 8, 6);
+                    result = MD4.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.MD5:
-                    result = MD5.Compute(_data64KiB, 8, 6);
+                    result = MD5.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.SHA1:
-                    result = SHA1.Compute(_data64KiB, 8, 6);
+                    result = SHA1.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.SHA2_256:
-                    result = SHA2_256.Compute(_data64KiB, 8, 6);
+                    result = SHA2_256.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.SHA2_384:
-                    result = SHA2_384.Compute(_data64KiB, 8, 6);
+                    result = SHA2_384.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.SHA2_512:
-                    result = SHA2_512.Compute(_data64KiB, 8, 6);
+                    result = SHA2_512.Compute(_Data64KiB, 8, 6);
                     break;
                 case HashType.SHA3_224:
-                    result = SHA3.Compute(_data64KiB, 8, 6, 224);
+                    result = SHA3.Compute(_Data64KiB, 8, 6, 224);
                     break;
                 case HashType.SHA3_256:
-                    result = SHA3.Compute(_data64KiB, 8, 6, 256);
+                    result = SHA3.Compute(_Data64KiB, 8, 6, 256);
                     break;
                 case HashType.SHA3_384:
-                    result = SHA3.Compute(_data64KiB, 8, 6, 384);
+                    result = SHA3.Compute(_Data64KiB, 8, 6, 384);
                     break;
                 case HashType.SHA3_512:
-                    result = SHA3.Compute(_data64KiB, 8, 6, 512);
+                    result = SHA3.Compute(_Data64KiB, 8, 6, 512);
                     break;
                 default:
                     throw new ArgumentException("Unsupported hash type", nameof(type));

@@ -14,17 +14,17 @@ namespace GrindCore.Tests
 {
     public sealed class CompressionBlockTests
     {
-        private static byte[] _dataEmpty;
-        private static byte[] _data64KiB;
-        private static byte[] _dataNC64KiB;
-        private static byte[] _text64KiB;
+        private static byte[] _DataEmpty;
+        private static byte[] _Data64KiB;
+        private static byte[] _DataNC64KiB;
+        private static byte[] _Text64KiB;
 
         static CompressionBlockTests()
         {
-            _dataEmpty = new byte[0];
-            _data64KiB = TestDataStream.Create(64 * 1024);
-            _dataNC64KiB = TestNonCompressibleDataStream.Create(64 * 1024);
-            _text64KiB = TestPseudoTextStream.Create(64 * 1024);
+            _DataEmpty = new byte[0];
+            _Data64KiB = TestDataStream.Create(64 * 1024);
+            _DataNC64KiB = TestNonCompressibleDataStream.Create(64 * 1024);
+            _Text64KiB = TestPseudoTextStream.Create(64 * 1024);
         }
 
         /// <summary>
@@ -72,14 +72,14 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, CompressionVersion.ZSTD_v1_5_2, 0x195, "3545b23ad651d5d4")]
         public void Data_ByteArray64KiB_BlockCompress(CompressionAlgorithm algorithm, CompressionType type, string? version, int size, string expected)
         {
-            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _data64KiB.Length, false, CompressionVersion.Create(algorithm, version)))
+            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _Data64KiB.Length, false, CompressionVersion.Create(algorithm, version)))
             {
                 byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
-                byte[] decompressed = BufferPool.Rent(_data64KiB.Length);
+                byte[] decompressed = BufferPool.Rent(_Data64KiB.Length);
 
                 int compressedLength = compressed.Length;
                 int decompressedLength = decompressed.Length;
-                var compressResult = block.Compress(_data64KiB, 0, _data64KiB.Length, compressed, 0, ref compressedLength);
+                var compressResult = block.Compress(_Data64KiB, 0, _Data64KiB.Length, compressed, 0, ref compressedLength);
                 var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
 
                 Assert.Equal(CompressionResultCode.Success, compressResult);
@@ -97,8 +97,8 @@ namespace GrindCore.Tests
                 Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, {(version == null ? "null" : $"\"{version}\"")}, 0x{sz:x}, \"{compHash:x16}\")]");
                 Assert.Equal(size, sz);
                 Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), compHash);
-                Assert.Equal(_data64KiB.Length, dsz);
-                Assert.Equal(XXHash64.Compute(_data64KiB, 0, _data64KiB.Length), decompHash);
+                Assert.Equal(_Data64KiB.Length, dsz);
+                Assert.Equal(XXHash64.Compute(_Data64KiB, 0, _Data64KiB.Length), decompHash);
             }
         }
 
@@ -135,11 +135,11 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x1000a, "4b9f7d6be30a4eca")]
         public void DataNonCompressible_ByteArray64KiB_BlockCompress(CompressionAlgorithm algorithm, CompressionType type, int size, string expected)
         {
-            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _dataNC64KiB.Length, false, CompressionVersion.Create(algorithm)))
+            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _DataNC64KiB.Length, false, CompressionVersion.Create(algorithm)))
             {
                 byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
                 int compressedLength = compressed.Length;
-                var compressResult = block.Compress(_dataNC64KiB, 0, _dataNC64KiB.Length, compressed, 0, ref compressedLength);
+                var compressResult = block.Compress(_DataNC64KiB, 0, _DataNC64KiB.Length, compressed, 0, ref compressedLength);
                 Assert.Equal(CompressionResultCode.Success, compressResult);
                 int sz = compressedLength;
 
@@ -192,14 +192,14 @@ namespace GrindCore.Tests
 #endif
         public void Text_ByteArray64KiB(CompressionAlgorithm algorithm, CompressionType type, string? version, int size, string expected)
         {
-            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _text64KiB.Length, false, CompressionVersion.Create(algorithm, version)))
+            using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _Text64KiB.Length, false, CompressionVersion.Create(algorithm, version)))
             {
                 byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);
-                byte[] decompressed = BufferPool.Rent(_text64KiB.Length);
+                byte[] decompressed = BufferPool.Rent(_Text64KiB.Length);
 
                 int compressedLength = compressed.Length;
                 int decompressedLength = decompressed.Length;
-                var compressResult = block.Compress(_text64KiB, 0, _text64KiB.Length, compressed, 0, ref compressedLength);
+                var compressResult = block.Compress(_Text64KiB, 0, _Text64KiB.Length, compressed, 0, ref compressedLength);
                 var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
 
                 Assert.Equal(CompressionResultCode.Success, compressResult);
@@ -217,8 +217,8 @@ namespace GrindCore.Tests
                 Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, {(version == null ? "null" : $"\"{version}\"")}, 0x{sz:x}, \"{compHash:x16}\")]");
                 Assert.Equal(size, sz);
                 Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), compHash);
-                Assert.Equal(_text64KiB.Length, dsz);
-                Assert.Equal(XXHash64.Compute(_text64KiB, 0, _data64KiB.Length), decompHash);
+                Assert.Equal(_Text64KiB.Length, dsz);
+                Assert.Equal(XXHash64.Compute(_Text64KiB, 0, _Data64KiB.Length), decompHash);
             }
         }
 
@@ -267,7 +267,7 @@ namespace GrindCore.Tests
 
                 int compressedLength = compressed.Length;
                 int decompressedLength = 0;
-                var compressResult = block.Compress(_text64KiB, 0, 0, compressed, 0, ref compressedLength);
+                var compressResult = block.Compress(_Text64KiB, 0, 0, compressed, 0, ref compressedLength);
                 var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
 
                 Assert.Equal(CompressionResultCode.Success, compressResult);
@@ -293,18 +293,18 @@ namespace GrindCore.Tests
         [Fact]
         public void Data_ByteArray64KiB_Zlib_Compress()
         {
-            byte[] compressed = new byte[_data64KiB.Length * 2];
-            int sz = ZLib.Compress(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length);
+            byte[] compressed = new byte[_Data64KiB.Length * 2];
+            int sz = ZLib.Compress(compressed, 0, compressed.Length, _Data64KiB, 0, _Data64KiB.Length);
             ulong result = XXHash64.Compute(compressed, 0, sz);
-            ulong inHash = XXHash64.Compute(_data64KiB);
+            ulong inHash = XXHash64.Compute(_Data64KiB);
             Assert.Equal(0x305, sz);
             Assert.Equal(ulong.Parse("a3c36ab37f8f236d", System.Globalization.NumberStyles.HexNumber), result);
 
-            byte[] decompressed = new byte[_data64KiB.Length * 2];
+            byte[] decompressed = new byte[_Data64KiB.Length * 2];
             sz = ZLib.Uncompress(decompressed, 0, decompressed.Length, compressed, 0, sz);
 
-            Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
+            Assert.Equal(_Data64KiB.Length, sz);
+            Assert.Equal(XXHash64.Compute(_Data64KiB), XXHash64.Compute(decompressed, 0, sz));
         }
 
         [Theory]
@@ -322,19 +322,19 @@ namespace GrindCore.Tests
         public void Data_ByteArray64KiB_Zlib_Compress2(int level, int size, string expected)
         {
             CompressionVersion version = CompressionVersion.Create(CompressionAlgorithm.ZLib, CompressionVersion.ZLIB_v1_3_1); //latest regular zlib
-            byte[] compressed = new byte[_data64KiB.Length * 2];
-            int sz = ZLib.Compress2(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, version);
+            byte[] compressed = new byte[_Data64KiB.Length * 2];
+            int sz = ZLib.Compress2(compressed, 0, compressed.Length, _Data64KiB, 0, _Data64KiB.Length, level, version);
             ulong result = XXHash64.Compute(compressed, 0, sz);
             Trace.WriteLine($"[InlineData({level}, 0x{sz:x}, \"{result:x16}\")]");
 
             Assert.Equal(size, sz);
             Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
 
-            byte[] decompressed = new byte[_data64KiB.Length * 2];
+            byte[] decompressed = new byte[_Data64KiB.Length * 2];
             sz = ZLib.Uncompress2(decompressed, 0, decompressed.Length, compressed, 0, sz, version);
 
-            Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
+            Assert.Equal(_Data64KiB.Length, sz);
+            Assert.Equal(XXHash64.Compute(_Data64KiB), XXHash64.Compute(decompressed, 0, sz));
         }
 
         [Theory]
@@ -352,19 +352,19 @@ namespace GrindCore.Tests
         public void Data_ByteArray64KiB_ZlibNg_Compress2(int level, int size, string expected)
         {
             CompressionVersion version = CompressionVersion.Create(CompressionAlgorithm.ZLibNg, ""); //latestng
-            byte[] compressed = new byte[_data64KiB.Length * 2];
-            int sz = ZLib.Compress2(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, version);
+            byte[] compressed = new byte[_Data64KiB.Length * 2];
+            int sz = ZLib.Compress2(compressed, 0, compressed.Length, _Data64KiB, 0, _Data64KiB.Length, level, version);
             ulong result = XXHash64.Compute(compressed, 0, sz);
             Trace.WriteLine($"[InlineData({level}, 0x{sz:x}, \"{result:x16}\")]");
 
             Assert.Equal(size, sz);
             Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
 
-            byte[] decompressed = new byte[_data64KiB.Length * 2];
+            byte[] decompressed = new byte[_Data64KiB.Length * 2];
             sz = ZLib.Uncompress2(decompressed, 0, decompressed.Length, compressed, 0, sz, version);
 
-            Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
+            Assert.Equal(_Data64KiB.Length, sz);
+            Assert.Equal(XXHash64.Compute(_Data64KiB), XXHash64.Compute(decompressed, 0, sz));
         }
 
         [Theory]
@@ -446,19 +446,19 @@ namespace GrindCore.Tests
         {
             CompressionVersion version = CompressionVersion.ZLib(ZLibVersion.Latest); //latest regular zlib
             int windowBits = header ? Interop.ZLib.ZLib_DefaultWindowBits : Interop.ZLib.Deflate_DefaultWindowBits;
-            byte[] compressed = new byte[_data64KiB.Length * 2];
-            int sz = ZLib.Compress3(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, windowBits, strategy, version);
+            byte[] compressed = new byte[_Data64KiB.Length * 2];
+            int sz = ZLib.Compress3(compressed, 0, compressed.Length, _Data64KiB, 0, _Data64KiB.Length, level, windowBits, strategy, version);
             ulong result = XXHash64.Compute(compressed, 0, sz);
             Assert.Equal(size, sz);
             Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
 
             Trace.WriteLine($"[InlineData({level}, {strategy}, {header.ToString().ToLower()}, 0x{sz:x}, \"{result}:x16\")] //{(new string[] { "Normal", "Filtered", "Huffman", "RLE" }[strategy])}");
 
-            byte[] decompressed = new byte[_data64KiB.Length * 2];
+            byte[] decompressed = new byte[_Data64KiB.Length * 2];
             sz = ZLib.Uncompress3(decompressed, 0, decompressed.Length, compressed, 0, sz, windowBits, version);
 
-            Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
+            Assert.Equal(_Data64KiB.Length, sz);
+            Assert.Equal(XXHash64.Compute(_Data64KiB), XXHash64.Compute(decompressed, 0, sz));
 
         }
 
@@ -550,19 +550,19 @@ namespace GrindCore.Tests
             CompressionVersion version = CompressionVersion.ZLibNgLatest(); //latest zlib-ng
 
             int windowBits = header ? Interop.ZLib.ZLib_DefaultWindowBits : Interop.ZLib.Deflate_DefaultWindowBits;
-            byte[] compressed = new byte[_data64KiB.Length * 2];
-            int sz = ZLib.Compress3(compressed, 0, compressed.Length, _data64KiB, 0, _data64KiB.Length, level, windowBits, strategy, version);
+            byte[] compressed = new byte[_Data64KiB.Length * 2];
+            int sz = ZLib.Compress3(compressed, 0, compressed.Length, _Data64KiB, 0, _Data64KiB.Length, level, windowBits, strategy, version);
             ulong result = XXHash64.Compute(compressed, 0, sz);
 
             Trace.WriteLine($"[InlineData({level}, {strategy}, {header.ToString().ToLower()}, 0x{sz:x}, \"{result}:x16\")] //{(new string[] { "Normal", "Filtered", "Huffman", "RLE" }[strategy])}");
             Assert.Equal(size, sz);
             Assert.Equal(ulong.Parse(expected, System.Globalization.NumberStyles.HexNumber), result);
 
-            byte[] decompressed = new byte[_data64KiB.Length * 2];
+            byte[] decompressed = new byte[_Data64KiB.Length * 2];
             sz = ZLib.Uncompress3(decompressed, 0, decompressed.Length, compressed, 0, sz, windowBits, version);
 
-            Assert.Equal(_data64KiB.Length, sz);
-            Assert.Equal(XXHash64.Compute(_data64KiB), XXHash64.Compute(decompressed, 0, sz));
+            Assert.Equal(_Data64KiB.Length, sz);
+            Assert.Equal(XXHash64.Compute(_Data64KiB), XXHash64.Compute(decompressed, 0, sz));
 
         }
 
@@ -579,7 +579,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest)]
         public void OversizedDecompressBuffer_DoesNotError_ReturnsCorrectSize(CompressionAlgorithm algorithm, CompressionType type)
         {
-            var data = _data64KiB;
+            var data = _Data64KiB;
             using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, data.Length, false, CompressionVersion.Create(algorithm)))
             {
                 byte[] compressed = BufferPool.Rent(block.RequiredCompressOutputSize);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace GrindCore.Tests
@@ -10,6 +11,7 @@ namespace GrindCore.Tests
         static int Main(string[] args)
         {
             int result = 0;
+
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
                 Console.WriteLine($"Unhandled exception: {e.ExceptionObject}");
@@ -27,133 +29,84 @@ namespace GrindCore.Tests
 
                 foreach (var type in types)
                 {
-                    // Check if the type is a test class (contains methods with [Theory] attribute)
+                    // Find methods marked with [Theory]
                     var theoryMethods = type.GetMethods()
-                        .Where(m => m.GetCustomAttributes().Any(a => a.GetType().Name == "TheoryAttribute"));
+                        .Where(m => m.GetCustomAttributesData()
+                            .Any(ad => ad.AttributeType.Name == "TheoryAttribute" || ad.AttributeType.FullName == "Xunit.TheoryAttribute"))
+                        .ToArray();
 
-                    if (theoryMethods.Any())
+                    if (!theoryMethods.Any())
+                        continue;
+
+                    Console.WriteLine($"Class: {type.Name}");
+
+                    foreach (var method in theoryMethods)
                     {
-                        // Create an instance of the test class
-                        Console.WriteLine($"Class: {type.Name}");
-                        try
+                        var inlineAttributeDatas = method.GetCustomAttributesData()
+                            .Where(ad => ad.AttributeType.Name == "InlineDataAttribute" || ad.AttributeType.FullName == "Xunit.InlineDataAttribute")
+                            .ToList();
+
+                        foreach (var cad in inlineAttributeDatas)
                         {
-                            object? testClassInstance = Activator.CreateInstance(type);
-                            if (testClassInstance == null)
+                            // Convert constructor arguments to parameter array
+                            object?[] parameters = cad.ConstructorArguments.Select(a => convertArgStatic(a)).ToArray();
+
+                            // InlineDataAttribute commonly stores a single object[] as the ctor argument; unwrap if necessary
+                            if (parameters.Length == 1 && parameters[0] is object[] inner)
+                                parameters = inner;
+
+                            object? testClassInstance = null;
+                            try
                             {
-                                result = 1;
-                                Console.WriteLine($"Fail: {type.Name} could not be loaded");
-                            }
-                            else
-                            {
-                                foreach (var method in theoryMethods)
+                                // xUnit instantiates a new instance per test for non-static methods
+                                if (!method.IsStatic)
                                 {
-                                    // Get the InlineData attributes for the method
-                                    var inlineDataAttributes = method.GetCustomAttributes().Where(a => a.GetType().Name == "InlineDataAttribute").Cast<Attribute>();
-
-                                    foreach (var inlineData in inlineDataAttributes)
+                                    testClassInstance = Activator.CreateInstance(type);
+                                    if (testClassInstance == null)
                                     {
-                                        // Attempt to invoke the theory with InlineData attributes
-                                        // by reading the attribute constructor arguments via
-                                        // CustomAttributeData. This works across xUnit versions
-                                        // because it doesn't rely on concrete attribute types.
-                                        try
-                                        {
-                                            var cadList = method.GetCustomAttributesData()
-                                                .Where(a => a.AttributeType.Name == "InlineDataAttribute")
-                                                .ToList();
-
-                                            foreach (var cad in cadList)
-                                            {
-                                                // Extract constructor args. For params object[] the
-                                                // value may be a collection of CustomAttributeTypedArgument.
-                                                object[] ctorArgs;
-                                                if (cad.ConstructorArguments.Count == 1 &&
-                                                    cad.ConstructorArguments[0].Value is System.Collections.Generic.IList<CustomAttributeTypedArgument> inner)
-                                                {
-                                                    ctorArgs = inner.Select(a => a.Value).ToArray();
-                                                }
-                                                else
-                                                {
-                                                    ctorArgs = cad.ConstructorArguments.Select(a => a.Value).ToArray();
-                                                }
-
-                                                // Convert arguments to expected parameter types where possible
-                                                var parameters = method.GetParameters();
-                                                if (parameters.Length != ctorArgs.Length)
-                                                {
-                                                    Console.WriteLine($"Skipping invocation of {method.Name} due to parameter count mismatch (expected {parameters.Length}, got {ctorArgs.Length})");
-                                                    continue;
-                                                }
-
-                                                object?[] invokeArgs = new object?[ctorArgs.Length];
-                                                for (int i = 0; i < ctorArgs.Length; i++)
-                                                {
-                                                    var targetType = parameters[i].ParameterType;
-                                                    var val = ctorArgs[i];
-                                                    if (val == null)
-                                                    {
-                                                        invokeArgs[i] = null;
-                                                    }
-                                                    else if (targetType.IsInstanceOfType(val))
-                                                    {
-                                                        invokeArgs[i] = val;
-                                                    }
-                                                    else
-                                                    {
-                                                        try
-                                                        {
-                                                            if (targetType.IsEnum && val is IConvertible)
-                                                            {
-                                                                invokeArgs[i] = Enum.ToObject(targetType, val);
-                                                            }
-                                                            else
-                                                            {
-                                                                invokeArgs[i] = Convert.ChangeType(val, targetType);
-                                                            }
-                                                        }
-                                                        catch
-                                                        {
-                                                            invokeArgs[i] = val; // fallback - hope it's assignable at runtime
-                                                        }
-                                                    }
-                                                }
-
-                                                object? invokeOn = method.IsStatic ? null : testClassInstance;
-                                                try
-                                                {
-                                                    var resultObj = method.Invoke(invokeOn, invokeArgs);
-                                                    // If the test method returns a Task, wait for it
-                                                    if (resultObj is System.Threading.Tasks.Task t)
-                                                    {
-                                                        t.GetAwaiter().GetResult();
-                                                    }
-                                                    Console.WriteLine($"Invoked {method.Name}({string.Join(", ", invokeArgs.Select(a => a?.ToString() ?? "null"))}) - PASS");
-                                                }
-                                                catch (TargetInvocationException tie)
-                                                {
-                                                    Console.WriteLine($"Invoked {method.Name}({string.Join(", ", invokeArgs.Select(a => a?.ToString() ?? "null"))}) - FAIL");
-                                                    Console.WriteLine($"Test {method.Name} threw: {tie.InnerException?.Message}");
-                                                    printExceptionDetails(tie.InnerException ?? tie);
-                                                    result = 1;
-                                                }
-                                            }
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            Console.WriteLine($"Skipping invocation of {method.Name} due to runtime test runner differences: {ex.Message}");
-                                        }
-
+                                        result = 1;
+                                        Console.WriteLine($"Fail: {type.Name} could not be constructed");
+                                        continue;
                                     }
                                 }
+
+                                // Invoke the test method
+                                object? ret = method.Invoke(testClassInstance, parameters);
+
+                                // If method returned a Task, wait synchronously
+                                if (ret is Task t)
+                                    t.GetAwaiter().GetResult();
+
+                                Console.WriteLine($"Pass: {method.Name}({string.Join(", ", parameters)})");
                             }
-                        }
-                        finally
-                        {
-                            GC.Collect();
-                            GC.WaitForPendingFinalizers();
-                            GC.Collect();
-                            GC.WaitForPendingFinalizers();
-                            GC.Collect();
+                            catch (TargetInvocationException tie)
+                            {
+                                // Unwrap and report inner exception
+                                Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
+                                result = 1;
+                                printExceptionDetails(tie.InnerException ?? tie);
+                                return result;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
+                                result = 1;
+                                printExceptionDetails(ex);
+                                return result;
+                            }
+                            finally
+                            {
+                                // Dispose instance if necessary and release references
+                                if (testClassInstance is IDisposable d)
+                                    d.Dispose();
+                                testClassInstance = null;
+
+                                // Perform a single GC pass to encourage prompt cleanup. Repeated aggressive
+                                // collections can cause instability on some platforms; keep this minimal.
+                                GC.Collect();
+                                GC.WaitForPendingFinalizers();
+                                GC.Collect();
+                            }
                         }
                     }
                 }
@@ -177,6 +130,21 @@ namespace GrindCore.Tests
                 Console.WriteLine("Inner Exception:");
                 printExceptionDetails(ex.InnerException);
             }
+        }
+
+        // Helper moved out of local scope to avoid local-function capture issues
+        private static object? convertArgStatic(CustomAttributeTypedArgument a)
+        {
+            if (a.Value == null)
+                return null;
+            if (a.Value is System.Collections.ObjectModel.ReadOnlyCollection<CustomAttributeTypedArgument> rc)
+            {
+                var arr = new object[rc.Count];
+                for (int i = 0; i < rc.Count; i++)
+                    arr[i] = convertArgStatic(rc[i])!;
+                return arr;
+            }
+            return a.Value;
         }
     }
 }
