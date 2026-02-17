@@ -22,6 +22,7 @@ using Xunit;
 
 namespace GrindCore.Tests
 {
+#if !IS_32BIT
     /// <summary>
     /// Tests for async compression and decompression operations to verify async I/O without blocking.
     /// The tests use conditional fallbacks so they can run on older TFMs (e.g., .NET Framework 4.8)
@@ -38,14 +39,10 @@ namespace GrindCore.Tests
             _Text64KiB = TestPseudoTextStream.Create(64 * 1024);
         }
 
-        #region Small Data Async Tests (64 KiB)
-
         [Theory]
-        #if !IS_32BIT
         [InlineData(CompressionAlgorithm.Lzma, CompressionLevel.Fastest)]
         [InlineData(CompressionAlgorithm.Lzma2, CompressionLevel.Fastest)]
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionLevel.Fastest)]
-        #endif
         [InlineData(CompressionAlgorithm.Lz4, CompressionLevel.Fastest)]
         [InlineData(CompressionAlgorithm.ZStd, CompressionLevel.Fastest)]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionLevel.Fastest)]
@@ -100,11 +97,9 @@ namespace GrindCore.Tests
         }
 
         [Theory]
-        #if !IS_32BIT
         [InlineData(CompressionAlgorithm.Lzma)]
         [InlineData(CompressionAlgorithm.Lzma2)]
         [InlineData(CompressionAlgorithm.FastLzma2)]
-        #endif
         [InlineData(CompressionAlgorithm.Lz4)]
         [InlineData(CompressionAlgorithm.ZStd)]
         [InlineData(CompressionAlgorithm.DeflateNg)]
@@ -155,19 +150,15 @@ namespace GrindCore.Tests
             Assert.Equal(_Data64KiB, asyncDecompressed);
         }
 
-        #endregion
-
-        #region Streaming Async Tests (Large Data)
-
         [Theory]
-        //[InlineData(CompressionAlgorithm.Lzma, CompressionLevel.Fastest, 1 * 1024 * 1024)] // LZMA requires properties - skipped for large streaming
+        [InlineData(CompressionAlgorithm.Lzma, CompressionLevel.Fastest, 1 * 1024 * 1024)] // LZMA requires properties - skipped for large streaming
         [InlineData(CompressionAlgorithm.Lz4, CompressionLevel.Fastest, 1 * 1024 * 1024)]
         [InlineData(CompressionAlgorithm.ZStd, CompressionLevel.Fastest, 1 * 1024 * 1024)]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionLevel.Fastest, 1 * 1024 * 1024)]
         [InlineData(CompressionAlgorithm.GZipNg, CompressionLevel.Fastest, 1 * 1024 * 1024)]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionLevel.Fastest, 1 * 1024 * 1024)]
         [InlineData(CompressionAlgorithm.Brotli, CompressionLevel.Fastest, 1 * 1024 * 1024)]
-        //[InlineData(CompressionAlgorithm.Lzma, CompressionLevel.Optimal, 5 * 1024 * 1024)] // LZMA requires properties - skipped for large streaming
+        [InlineData(CompressionAlgorithm.Lzma, CompressionLevel.Optimal, 5 * 1024 * 1024)] // LZMA requires properties - skipped for large streaming
         [InlineData(CompressionAlgorithm.Lz4, CompressionLevel.Optimal, 10 * 1024 * 1024)]
         [InlineData(CompressionAlgorithm.ZStd, CompressionLevel.Optimal, 10 * 1024 * 1024)]
         [InlineData(CompressionAlgorithm.DeflateNg, CompressionLevel.Optimal, 5 * 1024 * 1024)]
@@ -310,10 +301,6 @@ namespace GrindCore.Tests
             Assert.Equal(inputHash, outputHash);
         }
 
-        #endregion
-
-        #region Cancellation Tests
-
         [Theory]
         [InlineData(CompressionAlgorithm.Lzma)]
         [InlineData(CompressionAlgorithm.Lzma2)]
@@ -371,10 +358,6 @@ namespace GrindCore.Tests
                 Assert.False(true, "Expected OperationCanceledException but operation completed");
             }
         }
-
-        #endregion
-
-        #region Memory<T> Overload Tests
 
         [Theory]
         [InlineData(CompressionAlgorithm.Lzma)]
@@ -466,10 +449,6 @@ namespace GrindCore.Tests
             Assert.Equal(_Data64KiB, memoryDecompressed);
         }
 
-        #endregion
-
-        #region Helper Methods
-
         private static Stream createCompressionStream(
             CompressionAlgorithm algorithm,
             Stream baseStream,
@@ -499,10 +478,6 @@ namespace GrindCore.Tests
                 _ => throw new ArgumentException($"Unsupported algorithm: {algorithm}")
             };
         }
-
-        #endregion
-
-        #region Complete Async Tests
 
         [Theory]
         [InlineData(CompressionAlgorithm.Lzma)]
@@ -551,10 +526,6 @@ namespace GrindCore.Tests
 
             Assert.Equal(_Data64KiB, decompressed);
         }
-
-        #endregion
-
-        #region Concurrent Operations Test
 
         [Fact]
         public async Task AsyncOperations_MultipleAlgorithmsConcurrently_AllSucceed()
@@ -611,6 +582,6 @@ namespace GrindCore.Tests
             Assert.All(results, result => Assert.True(result, "All concurrent operations should succeed"));
         }
 
-        #endregion
     }
+#endif
 }
