@@ -85,14 +85,14 @@ namespace GrindCore.Tests
                                 Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
                                 result = 1;
                                 printExceptionDetails(tie.InnerException ?? tie);
-                                return result;
+                                //return result;
                             }
                             catch (Exception ex)
                             {
                                 Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
                                 result = 1;
                                 printExceptionDetails(ex);
-                                return result;
+                                //return result;
                             }
                             finally
                             {
@@ -103,6 +103,8 @@ namespace GrindCore.Tests
 
                                 // Perform a single GC pass to encourage prompt cleanup. Repeated aggressive
                                 // collections can cause instability on some platforms; keep this minimal.
+                                GC.Collect();
+                                GC.WaitForPendingFinalizers();
                                 GC.Collect();
                                 GC.WaitForPendingFinalizers();
                                 GC.Collect();
