@@ -157,22 +157,7 @@ namespace Nanook.GrindCore
 
         protected int BaseRead(CompressionBuffer inData, int size)
         {
-            // Compute requested limited size using long math to avoid overflow on 32-bit targets
-            long rawLimited = Math.Min((long)size, (PositionLimit ?? long.MaxValue) - _positionBase);
-            int limited = (int)Math.Min(rawLimited, int.MaxValue);
-
-            // Defensive clamps to avoid IndexOutOfRange on platforms with different integer sizes or unexpected limits
-            if (limited < 0)
-            {
-                Trace.WriteLine($"[Diagnostics] BaseRead: computed negative limited={limited}. Clamping to 0. PosBase={_positionBase}, size={size}, rawLimited={rawLimited}, IntPtr.Size={IntPtr.Size}");
-                limited = 0;
-            }
-            int availableSpace = inData.Data.Length - inData.Size;
-            if (limited > availableSpace)
-            {
-                Trace.WriteLine($"[Diagnostics] BaseRead: limiting requested {limited} to availableSpace={availableSpace}. inData.Pos={inData.Pos}, inData.Size={inData.Size}");
-                limited = Math.Max(0, availableSpace);
-            }
+            int limited = (int)Math.Min(size, (PositionLimit ?? long.MaxValue) - _positionBase);
             int p = inData.Pos;
             int sz = inData.Size;
             inData.Tidy(limited);
@@ -213,22 +198,7 @@ namespace Nanook.GrindCore
 
         protected int BaseWrite(CompressionBuffer outData, int length)
         {
-            // Compute requested limited size using long math to avoid overflow on 32-bit targets
-            long rawLimited = Math.Min((long)length, (PositionLimit ?? long.MaxValue) - _position);
-            int limited = (int)Math.Min(rawLimited, int.MaxValue);
-
-            // Defensive clamps to avoid IndexOutOfRange on platforms with different integer sizes or unexpected limits
-            if (limited < 0)
-            {
-                Trace.WriteLine($"[Diagnostics] BaseWrite: computed negative limited={limited}. Clamping to 0. Position={_position}, length={length}, rawLimited={rawLimited}, IntPtr.Size={IntPtr.Size}");
-                limited = 0;
-            }
-            int availableSpace = outData.Data.Length - outData.Pos;
-            if (limited > availableSpace)
-            {
-                Trace.WriteLine($"[Diagnostics] BaseWrite: limiting requested {limited} to availableSpace={availableSpace}. outData.Pos={outData.Pos}, outData.Data.Length={outData.Data.Length}");
-                limited = Math.Max(0, availableSpace);
-            }
+            int limited = (int)Math.Min(length, (PositionLimit ?? long.MaxValue) - _position);
             if (_RunningOnAsyncWrapper.Value || _baseStreamAsyncOnly)
             {
                 // Prefer async base APIs when running on the async-wrapper worker or when
