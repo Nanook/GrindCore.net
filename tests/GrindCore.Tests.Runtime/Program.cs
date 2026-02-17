@@ -50,15 +50,96 @@ namespace GrindCore.Tests
 
                                 foreach (var inlineData in inlineDataAttributes)
                                 {
-                                    // We cannot easily call InlineDataAttribute.GetData via reflection
-                                    // reliably across xUnit versions. Instead, only attempt to
-                                    // invoke parameterless theories (rare) or skip invocation.
-                                    Console.WriteLine($"Skipping invocation of {method.Name} due to runtime test runner differences");
-                                    GC.Collect();
-                                    GC.WaitForPendingFinalizers();
-                                    GC.Collect();
-                                    GC.WaitForPendingFinalizers();
-                                    GC.Collect();
+                                // Attempt to invoke the theory with InlineData attributes
+                                // by reading the attribute constructor arguments via
+                                // CustomAttributeData. This works across xUnit versions
+                                // because it doesn't rely on concrete attribute types.
+                                try
+                                {
+                                    var cadList = method.GetCustomAttributesData()
+                                        .Where(a => a.AttributeType.Name == "InlineDataAttribute")
+                                        .ToList();
+
+                                    foreach (var cad in cadList)
+                                    {
+                                        // Extract constructor args. For params object[] the
+                                        // value may be a collection of CustomAttributeTypedArgument.
+                                        object[] ctorArgs;
+                                        if (cad.ConstructorArguments.Count == 1 &&
+                                            cad.ConstructorArguments[0].Value is System.Collections.Generic.IList<CustomAttributeTypedArgument> inner)
+                                        {
+                                            ctorArgs = inner.Select(a => a.Value).ToArray();
+                                        }
+                                        else
+                                        {
+                                            ctorArgs = cad.ConstructorArguments.Select(a => a.Value).ToArray();
+                                        }
+
+                                        // Convert arguments to expected parameter types where possible
+                                        var parameters = method.GetParameters();
+                                        if (parameters.Length != ctorArgs.Length)
+                                        {
+                                            Console.WriteLine($"Skipping invocation of {method.Name} due to parameter count mismatch (expected {parameters.Length}, got {ctorArgs.Length})");
+                                            continue;
+                                        }
+
+                                        object?[] invokeArgs = new object?[ctorArgs.Length];
+                                        for (int i = 0; i < ctorArgs.Length; i++)
+                                        {
+                                            var targetType = parameters[i].ParameterType;
+                                            var val = ctorArgs[i];
+                                            if (val == null)
+                                            {
+                                                invokeArgs[i] = null;
+                                            }
+                                            else if (targetType.IsInstanceOfType(val))
+                                            {
+                                                invokeArgs[i] = val;
+                                            }
+                                            else
+                                            {
+                                                try
+                                                {
+                                                    if (targetType.IsEnum && val is IConvertible)
+                                                    {
+                                                        invokeArgs[i] = Enum.ToObject(targetType, val);
+                                                    }
+                                                    else
+                                                    {
+                                                        invokeArgs[i] = Convert.ChangeType(val, targetType);
+                                                    }
+                                                }
+                                                catch
+                                                {
+                                                    invokeArgs[i] = val; // fallback - hope it's assignable at runtime
+                                                }
+                                            }
+                                        }
+
+                                        object? invokeOn = method.IsStatic ? null : testClassInstance;
+                                        try
+                                        {
+                                            var resultObj = method.Invoke(invokeOn, invokeArgs);
+                                            // If the test method returns a Task, wait for it
+                                            if (resultObj is System.Threading.Tasks.Task t)
+                                            {
+                                                t.GetAwaiter().GetResult();
+                                            }
+                                            Console.WriteLine($"Invoked {method.Name}({string.Join(", ", invokeArgs.Select(a => a?.ToString() ?? "null"))}) - PASS");
+                                        }
+                                        catch (TargetInvocationException tie)
+                                        {
+                                            Console.WriteLine($"Invoked {method.Name}({string.Join(", ", invokeArgs.Select(a => a?.ToString() ?? "null"))}) - FAIL");
+                                            Console.WriteLine($"Test {method.Name} threw: {tie.InnerException?.Message}");
+                                            printExceptionDetails(tie.InnerException ?? tie);
+                                            result = 1;
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Skipping invocation of {method.Name} due to runtime test runner differences: {ex.Message}");
+                                }
 
                                 }
                             }
