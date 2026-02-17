@@ -14,35 +14,43 @@ on:
       linux-arm64:
         description: 'Run tests on linux-arm64'
         required: false
-        default: 'true'
+        type: boolean
+        default: true
       linux-arm:
         description: 'Run tests on linux-arm'
         required: false
-        default: 'true'
+        type: boolean
+        default: true
       linux-x64:
         description: 'Run tests on linux-x64'
         required: false
-        default: 'true'
+        type: boolean
+        default: true
       osx-arm64:
         description: 'Run tests on osx-arm64'
         required: false
-        default: 'true'
+        type: boolean
+        default: true
       osx-x64:
         description: 'Run tests on osx-x64'
         required: false
-        default: 'true'
+        type: boolean
+        default: true
       win-arm64:
         description: 'Run tests on win-arm64'
         required: false
-        default: 'true'
+        type: boolean
+        default: true
       win-x64:
         description: 'Run tests on win-x64'
         required: false
-        default: 'true'
+        type: boolean
+        default: true
       win-x86:
         description: 'Run tests on win-x86'
         required: false
-        default: 'true'
+        type: boolean
+        default: true
 
 jobs:
   build_all_platforms:
