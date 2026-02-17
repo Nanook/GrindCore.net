@@ -10,6 +10,39 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      linux-arm64:
+        description: 'Run tests on linux-arm64'
+        required: false
+        default: 'true'
+      linux-arm:
+        description: 'Run tests on linux-arm'
+        required: false
+        default: 'true'
+      linux-x64:
+        description: 'Run tests on linux-x64'
+        required: false
+        default: 'true'
+      osx-arm64:
+        description: 'Run tests on osx-arm64'
+        required: false
+        default: 'true'
+      osx-x64:
+        description: 'Run tests on osx-x64'
+        required: false
+        default: 'true'
+      win-arm64:
+        description: 'Run tests on win-arm64'
+        required: false
+        default: 'true'
+      win-x64:
+        description: 'Run tests on win-x64'
+        required: false
+        default: 'true'
+      win-x86:
+        description: 'Run tests on win-x86'
+        required: false
+        default: 'true'
 
 jobs:
   build_all_platforms:
@@ -88,6 +121,7 @@ jobs:
 
   test_linux_arm64:
     needs: build_all_platforms
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['linux-arm64'] == 'true' }}
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout code
@@ -116,6 +150,7 @@ jobs:
 
   test_linux_arm:
     needs: build_all_platforms
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['linux-arm'] == 'true' }}
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout code
@@ -152,6 +187,7 @@ jobs:
 
   test_linux_x64:
     needs: build_all_platforms
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['linux-x64'] == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Setup .NET
@@ -177,6 +213,7 @@ jobs:
 
   test_osx_arm64:
     needs: build_all_platforms
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['osx-arm64'] == 'true' }}
     runs-on: macos-latest
     steps:
       - name: Setup .NET
@@ -202,6 +239,7 @@ jobs:
 
   test_osx_x64:
     needs: build_all_platforms
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['osx-x64'] == 'true' }}
     runs-on: macos-latest
     steps:
       - name: Install .NET x64 Runtime
@@ -231,6 +269,7 @@ jobs:
 
   test_win_arm64:
     needs: build_all_platforms
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['win-arm64'] == 'true' }}
     runs-on: [self-hosted, Windows, ARM64]
     steps:
       - name: Clean windows workspace (remove entire repo folder)
@@ -254,6 +293,7 @@ jobs:
 
   test_win_x64:
     needs: build_all_platforms
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['win-x64'] == 'true' }}
     runs-on: windows-latest
     steps:
       - name: Setup .NET 10.0
@@ -278,6 +318,7 @@ jobs:
 
   test_win_x86:
     needs: build_all_platforms
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['win-x86'] == 'true' }}
     runs-on: windows-latest
     steps:
       - name: Setup .NET 10.0
