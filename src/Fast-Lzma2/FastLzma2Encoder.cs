@@ -61,7 +61,7 @@ namespace Nanook.GrindCore.FastLzma2
 
             _flushed = false;
 
-            foreach (var kv in compressParams.Values)
+            foreach (var kv in compressParams._values)
             {
                 if (kv.Value != null)
                     this.setParameter(kv.Key, (UIntPtr)kv.Value);

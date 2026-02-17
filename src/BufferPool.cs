@@ -14,18 +14,18 @@ namespace Nanook.GrindCore
     /// </summary>
     public static class BufferPool
     {
-        private static readonly Dictionary<byte[], DateTime> _pool = new Dictionary<byte[], DateTime>();
-        private static readonly object _lock = new object();
-        private static readonly int _staleThresholdSeconds = 5;
-        private static readonly Thread _cleanupThread;
+        private static readonly Dictionary<byte[], DateTime> _Pool = new Dictionary<byte[], DateTime>();
+        private static readonly object _Lock = new object();
+        private static readonly int _StaleThresholdSeconds = 5;
+        private static readonly Thread _CleanupThread;
 
         /// <summary>
         /// Initializes the <see cref="BufferPool"/> class and starts the background cleanup thread.
         /// </summary>
         static BufferPool()
         {
-            _cleanupThread = new Thread(CleanupStaleBuffers) { IsBackground = true };
-            _cleanupThread.Start();
+            _CleanupThread = new Thread(cleanupStaleBuffers) { IsBackground = true };
+            _CleanupThread.Start();
         }
 
         /// <summary>
@@ -39,11 +39,11 @@ namespace Nanook.GrindCore
             if (size < 0)
                 throw new ArgumentOutOfRangeException(nameof(size), "Buffer size must be positive.");
 
-            lock (_lock)
+            lock (_Lock)
             {
                 byte[]? closestBuffer = null;
 
-                foreach (var entry in _pool.Keys)
+                foreach (var entry in _Pool.Keys)
                 {
                     if (entry.Length == size) //entry.Length >= size && (closestBuffer == null || entry.Length < closestBuffer.Length))
                         closestBuffer = entry;
@@ -51,7 +51,7 @@ namespace Nanook.GrindCore
 
                 if (closestBuffer != null)
                 {
-                    _pool.Remove(closestBuffer);
+                    _Pool.Remove(closestBuffer);
                     return closestBuffer;
                 }
 
@@ -67,34 +67,34 @@ namespace Nanook.GrindCore
         {
             if (buffer == null)
                 return;
-            lock (_lock)
+            lock (_Lock)
             {
-                _pool[buffer] = DateTime.UtcNow;
+                _Pool[buffer] = DateTime.UtcNow;
             }
         }
 
         /// <summary>
         /// Periodically removes stale buffers from the pool that have not been used for a threshold period.
         /// </summary>
-        private static void CleanupStaleBuffers()
+        private static void cleanupStaleBuffers()
         {
             while (true)
             {
                 Thread.Sleep(1000);
                 DateTime now = DateTime.UtcNow;
 
-                lock (_lock)
+                lock (_Lock)
                 {
                     var staleBuffers = new List<byte[]>();
 
-                    foreach (var entry in _pool)
+                    foreach (var entry in _Pool)
                     {
-                        if ((now - entry.Value).TotalSeconds > _staleThresholdSeconds)
+                        if ((now - entry.Value).TotalSeconds > _StaleThresholdSeconds)
                             staleBuffers.Add(entry.Key);
                     }
 
                     foreach (var staleBuffer in staleBuffers)
-                        _pool.Remove(staleBuffer);
+                        _Pool.Remove(staleBuffer);
                 }
             }
         }

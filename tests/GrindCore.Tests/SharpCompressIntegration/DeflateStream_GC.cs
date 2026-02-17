@@ -99,7 +99,7 @@ public class DeflateStream : Stream, IStreamStack
     {
         get
         {
-            EnsureModeInitialized();
+            ensureModeInitialized();
             if (_internalBuffer == null)
                 _internalBuffer = new MemoryStream(_grindCoreStream!.InternalBuffer);
             return _internalBuffer;
@@ -262,7 +262,7 @@ public class DeflateStream : Stream, IStreamStack
         if (_readToCompressMode)
         {
             // In read-to-compress mode, ensure any pending data is compressed
-            EnsureCompressionComplete();
+            ensureCompressionComplete();
         }
         else if (!_isEncoder)
         {
@@ -294,7 +294,7 @@ public class DeflateStream : Stream, IStreamStack
         // Initialize read-to-compress mode on first read if in compression mode
         if (!_modeInitialized && _isEncoder)
         {
-            InitializeReadToCompressMode();
+            initializeReadToCompressMode();
         }
         else if (!_modeInitialized)
         {
@@ -303,7 +303,7 @@ public class DeflateStream : Stream, IStreamStack
 
         if (_readToCompressMode)
         {
-            return ReadCompressed(buffer, offset, count);
+            return readCompressed(buffer, offset, count);
         }
 
         return _grindCoreStream!.Read(buffer, offset, count);
@@ -325,7 +325,7 @@ public class DeflateStream : Stream, IStreamStack
         // Initialize read-to-compress mode on first read if in compression mode
         if (!_modeInitialized && _isEncoder)
         {
-            InitializeReadToCompressMode();
+            initializeReadToCompressMode();
         }
         else if (!_modeInitialized)
         {
@@ -335,7 +335,7 @@ public class DeflateStream : Stream, IStreamStack
         if (_readToCompressMode)
         {
             var buffer = new byte[1];
-            int bytesRead = ReadCompressed(buffer, 0, 1);
+            int bytesRead = readCompressed(buffer, 0, 1);
             return bytesRead > 0 ? buffer[0] : -1;
         }
 
@@ -372,7 +372,7 @@ public class DeflateStream : Stream, IStreamStack
         // Initialize write-to-compress mode on first write if in compression mode
         if (!_modeInitialized && _isEncoder)
         {
-            InitializeWriteToCompressMode();
+            initializeWriteToCompressMode();
         }
         else if (!_modeInitialized)
         {
@@ -403,7 +403,7 @@ public class DeflateStream : Stream, IStreamStack
         // Initialize write-to-compress mode on first write if in compression mode
         if (!_modeInitialized && _isEncoder)
         {
-            InitializeWriteToCompressMode();
+            initializeWriteToCompressMode();
         }
         else if (!_modeInitialized)
         {
@@ -421,19 +421,19 @@ public class DeflateStream : Stream, IStreamStack
     /// <summary>
     /// Ensures the mode is initialized before accessing GrindCore stream properties.
     /// </summary>
-    private void EnsureModeInitialized()
+    private void ensureModeInitialized()
     {
         if (!_modeInitialized && _isEncoder)
         {
             // Default to write-to-compress mode if accessing properties before any operations
-            InitializeWriteToCompressMode();
+            initializeWriteToCompressMode();
         }
     }
 
     /// <summary>
     /// Initializes the stream for read-to-compress mode.
     /// </summary>
-    private void InitializeReadToCompressMode()
+    private void initializeReadToCompressMode()
     {
         if (_modeInitialized)
             return;
@@ -457,7 +457,7 @@ public class DeflateStream : Stream, IStreamStack
     /// <summary>
     /// Initializes the stream for write-to-compress mode.
     /// </summary>
-    private void InitializeWriteToCompressMode()
+    private void initializeWriteToCompressMode()
     {
         if (_modeInitialized)
             return;
@@ -480,7 +480,7 @@ public class DeflateStream : Stream, IStreamStack
     /// <summary>
     /// Handles reading compressed data in read-to-compress mode.
     /// </summary>
-    private int ReadCompressed(byte[] buffer, int offset, int count)
+    private int readCompressed(byte[] buffer, int offset, int count)
     {
         // Ensure we have compressed data available
         if (_compressionBuffer!.Position >= _compressionBuffer.Length && !_compressionComplete)
@@ -498,7 +498,7 @@ public class DeflateStream : Stream, IStreamStack
             else
             {
                 // No more input data - finalize compression
-                EnsureCompressionComplete();
+                ensureCompressionComplete();
             }
         }
 
@@ -517,7 +517,7 @@ public class DeflateStream : Stream, IStreamStack
     /// <summary>
     /// Ensures compression is complete by finalizing the compressor.
     /// </summary>
-    private void EnsureCompressionComplete()
+    private void ensureCompressionComplete()
     {
         if (!_compressionComplete)
         {

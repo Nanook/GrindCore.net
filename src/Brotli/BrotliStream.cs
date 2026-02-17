@@ -238,5 +238,146 @@ namespace Nanook.GrindCore.Brotli
                 try { _decoder.Dispose(); } catch { }
             try { _buffer.Dispose(); } catch { }
         }
+
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+        /// <summary>
+        /// Asynchronously reads and decompresses data from the underlying stream into the provided buffer.
+        /// </summary>
+        /// <param name="data">The buffer to read decompressed data into.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+        /// <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        internal override async System.Threading.Tasks.ValueTask<(int result, int bytesRead)> OnReadAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            int length = 0)
+        {
+            if (IsCompress)
+                throw new InvalidOperationException(SR.BrotliStream_Compress_UnsupportedOperation);
+
+            int bytesReadFromStream = 0;
+            int bytesWritten;
+            int bytesConsumed;
+            while (!tryDecompress(data, out bytesConsumed, out bytesWritten))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distinction)
+
+                int available = _buffer.AvailableWrite;
+                int bytesRead = await BaseReadAsync(_buffer, available, cancellationToken).ConfigureAwait(false);
+                if (bytesRead <= 0)
+                {
+                    if (/*s_useStrictValidation &&*/ _nonEmptyInput && available != 0)
+                        throw new InvalidDataException(SR.BrotliStream_Decompress_TruncatedData);
+                    break;
+                }
+
+                _nonEmptyInput = true;
+
+                // The stream is either malicious or poorly implemented and returned a number of
+                // bytes larger than the _outBuffer supplied to it.
+                if (bytesRead > available)
+                    throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
+            }
+
+            bytesReadFromStream += bytesConsumed; //read from the compressed stream (that were used - important distinction)
+
+            return (bytesWritten, bytesReadFromStream);
+        }
+
+        /// <summary>
+        /// Asynchronously writes compressed data from the provided buffer to the underlying stream.
+        /// </summary>
+        /// <param name="data">The buffer containing data to write.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal override async System.Threading.Tasks.ValueTask<int> OnWriteAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken)
+        {
+            return await OnWriteAsync(data, cancellationToken, false).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Asynchronously writes compressed data from the provided buffer to the underlying stream, with an option to indicate the final block.
+        /// </summary>
+        /// <param name="data">The buffer containing data to write to the stream.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="isFinalBlock">Indicates whether this is the final block of data.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal async System.Threading.Tasks.ValueTask<int> OnWriteAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            bool isFinalBlock)
+        {
+            if (!IsCompress)
+                throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
+
+            int bytesWrittenToStream = 0;
+
+            OperationStatus lastResult = OperationStatus.DestinationTooSmall;
+            while (lastResult == OperationStatus.DestinationTooSmall)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                int bytesConsumed;
+                int bytesWritten;
+                lastResult = _encoder.EncodeData(data, _buffer, out bytesConsumed, out bytesWritten, isFinalBlock);
+                if (lastResult == OperationStatus.InvalidData)
+                    throw new InvalidOperationException(SR.BrotliStream_Compress_InvalidData);
+
+                bytesWrittenToStream += bytesWritten;
+
+                if (bytesWritten > 0)
+                    await BaseWriteAsync(_buffer, bytesWritten, cancellationToken).ConfigureAwait(false); //read the output bytes and write to BaseStream
+            }
+
+            return bytesWrittenToStream;
+        }
+
+        /// <summary>
+        /// Asynchronously flushes the compression buffers and finalizes stream writes and positions.
+        /// </summary>
+        /// <param name="data">The buffer containing data to flush.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal override async System.Threading.Tasks.ValueTask<int> OnFlushAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            bool flush,
+            bool complete)
+        {
+            int bytesWrittenToStream = 0;
+
+            if (IsCompress)
+            {
+                if (_encoder._state == null || _encoder._state.IsClosed)
+                    return 0;
+
+                bytesWrittenToStream = await OnWriteAsync(data, cancellationToken, true).ConfigureAwait(false); //data may have 0 bytes
+
+                OperationStatus lastResult = OperationStatus.DestinationTooSmall;
+                while (flush && lastResult == OperationStatus.DestinationTooSmall)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    int bytesWritten = 0;
+
+                    lastResult = _encoder.Flush(_buffer, out bytesWritten);
+                    if (lastResult == OperationStatus.InvalidData)
+                        throw new InvalidDataException(SR.BrotliStream_Compress_InvalidData);
+
+                    bytesWrittenToStream += bytesWritten;
+
+                    if (bytesWritten > 0)
+                        await BaseWriteAsync(_buffer, bytesWritten, cancellationToken).ConfigureAwait(false); //read the output bytes and write to BaseStream
+                }
+            }
+
+            return bytesWrittenToStream;
+        }
+#endif
     }
 }

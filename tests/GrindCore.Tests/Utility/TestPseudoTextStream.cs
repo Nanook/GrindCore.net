@@ -9,8 +9,8 @@ namespace GrindCore.Tests.Utility
     /// </summary>
     internal class TestPseudoTextStream : Stream
     {
-        private static readonly char[] _vowels = { 'a', 'e', 'i', 'o', 'u' };
-        private static readonly char[] _consonants = "bcdfghjklmnpqrstvwxyz".ToCharArray();
+        private static readonly char[] _Vowels = { 'a', 'e', 'i', 'o', 'u' };
+        private static readonly char[] _Consonants = "bcdfghjklmnpqrstvwxyz".ToCharArray();
 
         private long _position = 0;
 
@@ -52,7 +52,7 @@ namespace GrindCore.Tests.Utility
             int bytesRead = 0;
             while (bytesRead < count)
             {
-                string word = GenerateDeterministicWord(_position + bytesRead);
+                string word = generateDeterministicWord(_position + bytesRead);
                 byte[] wordBytes = Encoding.ASCII.GetBytes(word + " ");
 
                 int bytesToCopy = Math.Min(wordBytes.Length, count - bytesRead);
@@ -65,7 +65,7 @@ namespace GrindCore.Tests.Utility
             return bytesRead;
         }
 
-        private string GenerateDeterministicWord(long seed)
+        private string generateDeterministicWord(long seed)
         {
             int length = (int)(seed % 7) + 2; // 2 to 8 letters
             int vowelCount = (int)((seed / 7) % 4) + 2; // 2 to 5 vowels
@@ -77,12 +77,12 @@ namespace GrindCore.Tests.Utility
             {
                 if (vowelsAdded < vowelCount && ((seed >> i) & 1) == 0)
                 {
-                    word.Append(_vowels[(int)(seed >> (i + 1)) % _vowels.Length]);
+                    word.Append(_Vowels[(int)(seed >> (i + 1)) % _Vowels.Length]);
                     vowelsAdded++;
                 }
                 else
                 {
-                    word.Append(_consonants[(int)(seed >> (i + 1)) % _consonants.Length]);
+                    word.Append(_Consonants[(int)(seed >> (i + 1)) % _Consonants.Length]);
                 }
             }
 

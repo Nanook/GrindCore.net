@@ -31,17 +31,11 @@ namespace GrindCore.Tests
 
                         int dLen = decompressed.Length;
                         var dr = block.Decompress(compressed, 0, cLen, decompressed, 0, ref dLen);
-                        if (dr != CompressionResultCode.Success)
-                        {
-                            Assert.True(false, $"Decompress returned error {dr} on iteration {i} (len={len}) cLen={cLen}");
-                        }
+                        Assert.True(dr == CompressionResultCode.Success, $"Decompress returned error {dr} on iteration {i} (len={len}) cLen={cLen}");
 
-                        if (dLen != len)
-                        {
-                            ulong srcHash = XXHash64.Compute(src, 0, src.Length);
-                            ulong decHash = XXHash64.Compute(decompressed, 0, dLen);
-                            Assert.True(false, $"Decompressed length mismatch on iteration {i} expected={len} got={dLen} cLen={cLen} srcHash={srcHash:x16} decHash={decHash:x16}");
-                        }
+                        ulong srcHash = XXHash64.Compute(src, 0, src.Length);
+                        ulong decHash = XXHash64.Compute(decompressed, 0, dLen);
+                        Assert.True(dLen == len, $"Decompressed length mismatch on iteration {i} expected={len} got={dLen} cLen={cLen} srcHash={srcHash:x16} decHash={decHash:x16}");
                     }
                     finally
                     {

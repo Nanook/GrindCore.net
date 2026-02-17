@@ -7,7 +7,7 @@
 		<AssemblyName>Nanook.GrindCore</AssemblyName>
 		<LangVersion>latest</LangVersion>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-		<Version>0.6.6</Version>
+		<Version>0.7.0</Version>
 		<RootNamespace>Nanook.GrindCore</RootNamespace>
 		<Configurations>Debug;Release;ReleaseTest</Configurations>
 		<RuntimeIdentifiers>win-x64;win-x86;win-arm64;linux-x64;linux-x86;linux-arm64;linux-arm;osx-x64;osx-arm64</RuntimeIdentifiers>
@@ -16,7 +16,7 @@
 		<Authors>Nanook</Authors>
 		<Description>Native Compression and Hashing library built the System.IO.Compression way.</Description>
 		<PackageTags>
-			ZStd;LZ4;LZMA;LZMA2;GZip;ZLib;ZLib-NG;Deflate;Brotli;;Fast-LZMA2;
+			ZStd;LZ4;LZMA;LZMA2;GZip;ZLib;ZLib-NG;Deflate;Brotli;Fast-LZMA2;
 			Blake3;Blake2sp;MD5;MD4;MD2;SHA1;SHA2;SHA256;SHA384;SHA512;SHA3;SHA3-224;SHA3-256;SHA3-384;SHA3-512;
 			XXHash;XXH32;XXH64;Multi-Framework;Multi-Platform;Cross-Platform;DotNet;Library;AOT;Native;Compression;
 			Fast;High-Performance;Efficient;ZStandard;Hashing;Stream;Block

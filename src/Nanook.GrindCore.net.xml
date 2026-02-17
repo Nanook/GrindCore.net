@@ -196,7 +196,7 @@
             Releases all resources used by the current Brotli decoder instance.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.Brotli.BrotliDecoder.EnsureNotDisposed">
+        <member name="M:Nanook.GrindCore.Brotli.BrotliDecoder.ensureNotDisposed">
             <summary>
             Throws an <see cref="T:System.ObjectDisposedException"/> if the decoder has been disposed.
             </summary>
@@ -411,6 +411,42 @@
             Releases the unmanaged resources used by the <see cref="T:Nanook.GrindCore.Brotli.BrotliStream"/> and optionally releases the managed resources.
             </summary>
         </member>
+        <member name="M:Nanook.GrindCore.Brotli.BrotliStream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads and decompresses data from the underlying stream into the provided buffer.
+            </summary>
+            <param name="data">The buffer to read decompressed data into.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+            <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Brotli.BrotliStream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes compressed data from the provided buffer to the underlying stream.
+            </summary>
+            <param name="data">The buffer containing data to write.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Brotli.BrotliStream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean)">
+            <summary>
+            Asynchronously writes compressed data from the provided buffer to the underlying stream, with an option to indicate the final block.
+            </summary>
+            <param name="data">The buffer containing data to write to the stream.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="isFinalBlock">Indicates whether this is the final block of data.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Brotli.BrotliStream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes the compression buffers and finalizes stream writes and positions.
+            </summary>
+            <param name="data">The buffer containing data to flush.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="flush">Indicates if this is a flush operation.</param>
+            <param name="complete">Indicates that there is no more data to compress.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
         <member name="T:Nanook.GrindCore.Brotli.BrotliEncoderParameter">
             <summary>
             Specifies Brotli encoder parameters.
@@ -569,7 +605,7 @@
             </summary>
             <param name="buffer">The buffer to return. If null, the call is ignored.</param>
         </member>
-        <member name="M:Nanook.GrindCore.BufferPool.CleanupStaleBuffers">
+        <member name="M:Nanook.GrindCore.BufferPool.cleanupStaleBuffers">
             <summary>
             Periodically removes stale buffers from the pool that have not been used for a threshold period.
             </summary>
@@ -1496,6 +1532,54 @@
             Performs custom cleanup for managed resources.
             </summary>
         </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.BaseReadAsync(Nanook.GrindCore.CompressionBuffer,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously reads data from the base stream.
+            </summary>
+            <param name="inData">The buffer to read into.</param>
+            <param name="size">The number of bytes to read.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes read.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.BaseWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes data to the base stream.
+            </summary>
+            <param name="outData">The buffer containing data to write.</param>
+            <param name="length">The number of bytes to write.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes written.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Virtual async method for reading compressed data. Derived classes can override for true async I/O.
+            Default implementation runs the synchronous OnRead on the thread pool.
+            </summary>
+            <param name="data">The compression buffer to read into.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="length">Optional length hint for the read operation.</param>
+            <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Virtual async method for writing compressed data. Derived classes can override for true async I/O.
+            Default implementation runs the synchronous OnWrite on the thread pool.
+            </summary>
+            <param name="data">The compression buffer containing data to write.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionStream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Virtual async method for flushing compression buffers. Derived classes can override for true async I/O.
+            Default implementation runs the synchronous OnFlush on the thread pool.
+            </summary>
+            <param name="data">The compression buffer to flush.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="flush">Indicates if this is a flush operation.</param>
+            <param name="complete">Indicates that there is no more data to compress.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
         <member name="M:Nanook.GrindCore.CompressionStream.onFlush(Nanook.GrindCore.CancellableTask,System.Boolean,System.Boolean)">
             <summary>
             Flushes compression buffers and finalizes stream writes and positions. 
@@ -2016,6 +2100,33 @@
             Disposes the <see cref="T:Nanook.GrindCore.Copy.CopyStream"/> and its resources.
             </summary>
         </member>
+        <member name="M:Nanook.GrindCore.Copy.CopyStream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads data from the stream and writes it to the buffer.
+            </summary>
+            <param name="inData">The buffer to read data into.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+            <returns>A tuple containing (bytes read, bytes read from stream).</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Copy.CopyStream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes data from the buffer to the stream.
+            </summary>
+            <param name="outData">The buffer containing data to write.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Copy.CopyStream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes any remaining data in the buffer to the stream.
+            </summary>
+            <param name="outData">The buffer containing data to flush.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="flush">Indicates if this is a flush operation.</param>
+            <param name="complete">Indicates that there is no more data to compress.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
         <member name="T:Nanook.GrindCore.DataBlock">
             <summary>
             Represents a block of data for compression or decompression operations compatible with span and all versions of dotnet, using spans for efficient memory access.
@@ -2501,6 +2612,40 @@
             Releases all resources used by the <see cref="T:Nanook.GrindCore.DeflateZLib.DeflateStream"/>.
             </summary>
         </member>
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateStream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads and decompresses data from the underlying stream into the provided buffer.
+            </summary>
+            <param name="data">The buffer to read decompressed data into.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+            <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateStream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously compresses and writes data from the buffer to the underlying stream.
+            </summary>
+            <param name="outData">The buffer containing data to compress and write.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateStream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes any remaining compressed data to the underlying stream.
+            </summary>
+            <param name="outData">The buffer containing data to flush.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="flush">Indicates if this is a flush operation.</param>
+            <param name="complete">Indicates that there is no more data to compress.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.DeflateZLib.DeflateStream.writeDeflaterOutputAsync(System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes any available compressed data from the deflater to the underlying stream.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes written to the underlying stream.</returns>
+        </member>
         <member name="P:Nanook.GrindCore.DeflateZLib.DeflateStream.inflatorIsFinished">
             <summary>
             Returns true if the inflator has finished processing the stream.
@@ -2616,13 +2761,13 @@
             Gets or sets the number of bytes available at <see cref="P:Nanook.GrindCore.DeflateZLib.ZLibNative.ZLibStreamHandle.NextOut"/>.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.DeflateZLib.ZLibNative.ZLibStreamHandle.EnsureNotDisposed">
+        <member name="M:Nanook.GrindCore.DeflateZLib.ZLibNative.ZLibStreamHandle.ensureNotDisposed">
             <summary>
             Throws if the stream has been disposed.
             </summary>
             <exception cref="T:System.ObjectDisposedException">Thrown if the stream is disposed.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.DeflateZLib.ZLibNative.ZLibStreamHandle.EnsureState(Nanook.GrindCore.DeflateZLib.ZLibNative.ZLibStreamHandle.State)">
+        <member name="M:Nanook.GrindCore.DeflateZLib.ZLibNative.ZLibStreamHandle.ensureState(Nanook.GrindCore.DeflateZLib.ZLibNative.ZLibStreamHandle.State)">
             <summary>
             Throws if the stream is not in the required state.
             </summary>
@@ -2733,7 +2878,7 @@
             Represents a set of parameters for configuring Fast-LZMA2 compression.
             </summary>
         </member>
-        <member name="F:Nanook.GrindCore.FastLzma2.CompressionParameters.Values">
+        <member name="F:Nanook.GrindCore.FastLzma2.CompressionParameters._values">
             <summary>
             Gets the dictionary of parameter values for Fast-LZMA2 compression.
             </summary>
@@ -3107,6 +3252,33 @@
             <summary>
             Releases all resources used by the <see cref="T:Nanook.GrindCore.FastLzma2.FastLzma2Stream"/>.
             </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Stream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads and decompresses data from the underlying stream into the provided buffer using Fast-LZMA2.
+            </summary>
+            <param name="data">The buffer to read decompressed data into.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+            <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Stream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes data from the provided buffer to the underlying stream using Fast-LZMA2 compression.
+            </summary>
+            <param name="data">The buffer containing data to compress and write.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.FastLzma2.FastLzma2Stream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes the compression buffers and finalizes the stream, writing any remaining compressed data.
+            </summary>
+            <param name="data">The buffer containing data to flush.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="flush">Indicates if this is a flush operation.</param>
+            <param name="complete">Indicates that there is no more data to compress.</param>
+            <returns>The number of bytes written to the stream.</returns>
         </member>
         <member name="T:Nanook.GrindCore.FastLzma2.FL2InBuffer">
             <summary>
@@ -4499,6 +4671,24 @@
             <param name="complete">Indicates that there is no more data to compress.</param>
             <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
         </member>
+        <member name="M:Nanook.GrindCore.Lz4.Lz4Stream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads data from the stream and decompresses it using LZ4.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lz4.Lz4Stream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously compresses data using LZ4 and writes it to the stream.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lz4.Lz4Stream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes any remaining compressed data to the stream.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
         <member name="M:Nanook.GrindCore.Lz4.Lz4Stream.OnDispose">
             <summary>
             Disposes the <see cref="T:Nanook.GrindCore.Lz4.Lz4Stream"/> and its resources.
@@ -4759,6 +4949,33 @@
             Disposes the <see cref="T:Nanook.GrindCore.Lzma.Lzma2Stream"/> and its resources.
             </summary>
         </member>
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads data from the stream and decompresses it using LZMA2.
+            </summary>
+            <param name="data">The buffer to read decompressed data into.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+            <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously compresses data using LZMA2 and writes it to the stream.
+            </summary>
+            <param name="data">The buffer containing data to compress and write.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Stream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes any remaining compressed data to the stream and finalizes the compression if requested.
+            </summary>
+            <param name="data">The buffer containing data to flush.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="flush">Indicates if this is a flush operation.</param>
+            <param name="complete">Indicates that there is no more data to compress.</param>
+            <returns>The number of bytes written to the stream.</returns>
+        </member>
         <member name="T:Nanook.GrindCore.Lzma.LzmaBlock">
             <summary>
             Provides a block-based implementation of the LZMA compression algorithm.
@@ -4941,6 +5158,24 @@
             <param name="flush">Indicates if this is a flush operation.</param>
             <param name="complete">Indicates that there is no more data to compress.</param>
             <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads data from the stream and decompresses it using LZMA.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously compresses data using LZMA and writes it to the stream.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes any remaining compressed data to the stream.
+            This override provides true async I/O without blocking.
+            </summary>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.LzmaStream.OnDispose">
             <summary>
@@ -6122,6 +6357,24 @@
             <param name="flush">Indicates if this is a flush operation.</param>
             <param name="complete">Indicates that there is no more data to compress.</param>
             <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdStream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads data from the stream and decompresses it using ZStd.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdStream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously compresses data using ZStd and writes it to the stream.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdStream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes any remaining compressed data to the stream and finalizes the compression if requested.
+            This override provides true async I/O without blocking.
+            </summary>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdStream.OnDispose">
             <summary>

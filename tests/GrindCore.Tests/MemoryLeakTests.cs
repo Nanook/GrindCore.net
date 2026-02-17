@@ -23,11 +23,11 @@ namespace GrindCore.Tests
     /// </summary>
     public sealed class MemoryLeakTests
     {
-        private static byte[] _data;
+        private static byte[] _Data;
 
         static MemoryLeakTests()
         {
-            _data = TestDataStream.Create(64 * 1024);
+            _Data = TestDataStream.Create(64 * 1024);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace GrindCore.Tests
                 // Run the hash function 1000 more times
                 for (int c = 0; c < 1000; c++)
                 {
-                    string result = HashFactory.Compute(type, _data).ToHexString();
+                    string result = HashFactory.Compute(type, _Data).ToHexString();
                     Assert.Equal(expectedResult, result);
                 }
 
@@ -104,9 +104,9 @@ namespace GrindCore.Tests
                 // Run the hash function 1000 more times
                 for (int c = 0; c < 1000; c++)
                 {
-                    using (var data = new MemoryStream(_data))
+                    using (var data = new MemoryStream(_Data))
                     {
-                        TestResults r = Utl.TestStreamBlocks(data, algorithm, type, _data.Length, _data.Length, (int)compressedSize);
+                        TestResults r = Utl.TestStreamBlocks(data, algorithm, type, _Data.Length, _Data.Length, (int)compressedSize);
 
                         //Trace.WriteLine($"[InlineData(CompressionAlgorithm.{algorithm}, CompressionType.{type}, 0x{r.CompressedBytes:x}, \"{r.CompressedHash}\")]");
                         Assert.Equal(compressedSize, r.CompressedBytes); //test compressed data size matches expected

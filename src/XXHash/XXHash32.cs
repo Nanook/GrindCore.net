@@ -11,7 +11,7 @@ namespace Nanook.GrindCore.XXHash
     public unsafe class XXHash32 : HashAlgorithmGC
     {
         private XXH32_CTX _ctx;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
+        private const int _BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
         private uint _finalHash;
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace Nanook.GrindCore.XXHash
             while (remainingSize > 0)
             {
                 // Determine the size of the current chunk to process
-                int bytesRead = Math.Min(remainingSize, BufferSize);
+                int bytesRead = Math.Min(remainingSize, _BufferSize);
                 // Update the hash context with the current chunk
                 XXHash.SZ_XXH32_Update(ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
                 // Decrease the remaining size by the number of bytes read

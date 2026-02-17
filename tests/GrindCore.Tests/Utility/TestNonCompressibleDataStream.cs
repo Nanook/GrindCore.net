@@ -19,7 +19,7 @@ namespace GrindCore.Tests.Utility
         {
             _seed = Encoding.UTF8.GetBytes("FixedSeedForDeterministicOutput");
             _currentHash = new byte[32]; // SHA-256 produces 32-byte hashes
-            GenerateNextBlock();
+            generateNextBlock();
             _index = 0;
         }
 
@@ -65,7 +65,7 @@ namespace GrindCore.Tests.Utility
 
                 if (_index >= _currentHash.Length)
                 {
-                    GenerateNextBlock();
+                    generateNextBlock();
                     _index = 0;
                 }
 
@@ -75,7 +75,7 @@ namespace GrindCore.Tests.Utility
             return bytesRead;
         }
 
-        private void GenerateNextBlock()
+        private void generateNextBlock()
         {
             using (SHA256 sha256 = SHA256.Create())
             {

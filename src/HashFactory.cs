@@ -12,7 +12,7 @@ namespace Nanook.GrindCore
     /// </summary>
     public class HashFactory
     {
-        private static readonly Dictionary<HashType, Func<HashAlgorithmGC>> hashCreators = new Dictionary<HashType, Func<HashAlgorithmGC>>()
+        private static readonly Dictionary<HashType, Func<HashAlgorithmGC>> _HashCreators = new Dictionary<HashType, Func<HashAlgorithmGC>>()
         {
             { HashType.Blake2sp, () => Blake2sp.Create() },
             { HashType.Blake3, () => Blake3.Create() },
@@ -39,7 +39,7 @@ namespace Nanook.GrindCore
         /// <exception cref="ArgumentException">Thrown if the specified hash type is not supported.</exception>
         public static HashAlgorithmGC Create(HashType type)
         {
-            if (hashCreators.TryGetValue(type, out var creator))
+            if (_HashCreators.TryGetValue(type, out var creator))
                 return creator();
 
             throw new ArgumentException("Unsupported hash type", nameof(type));

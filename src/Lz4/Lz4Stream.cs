@@ -191,6 +191,93 @@ namespace Nanook.GrindCore.Lz4
             }
         }
 
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+        /// <summary>
+        /// Asynchronously reads data from the stream and decompresses it using LZ4.
+        /// This override provides true async I/O without blocking.
+        /// </summary>
+        internal override async System.Threading.Tasks.ValueTask<(int result, int bytesRead)> OnReadAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            int length = 0)
+        {
+            if (!this.CanRead)
+                throw new NotSupportedException("Not for Compression mode");
+
+            int bytesReadFromStream = 0;
+            int total = 0;
+
+            while (data.AvailableWrite > total)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (_buffer.AvailableRead == 0)
+                    await BaseReadAsync(_buffer, _buffer.AvailableWrite, cancellationToken).ConfigureAwait(false);
+
+                if (_buffer.AvailableRead == 0)
+                    return (total, bytesReadFromStream);
+
+                int decoded = (int)_decoder.DecodeData(_buffer, out int readSz, data);
+                bytesReadFromStream += readSz;
+                total += decoded;
+            }
+
+            return (total, bytesReadFromStream);
+        }
+
+        /// <summary>
+        /// Asynchronously compresses data using LZ4 and writes it to the stream.
+        /// This override provides true async I/O without blocking.
+        /// </summary>
+        internal override async System.Threading.Tasks.ValueTask<int> OnWriteAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken)
+        {
+            if (!this.CanWrite)
+                throw new NotSupportedException("Not for Decompression mode");
+
+            int bytesWrittenToStream = 0;
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int avRead = data.AvailableRead;
+            long size = _encoder.EncodeData(data, _buffer, false, new CancellableTask(cancellationToken));
+
+            if (size > 0)
+            {
+                _buffer.Tidy(); //reset, no data to shuffle
+                await BaseWriteAsync(_buffer, _buffer.AvailableRead, cancellationToken).ConfigureAwait(false);
+                bytesWrittenToStream += (int)size;
+            }
+            return bytesWrittenToStream;
+        }
+
+        /// <summary>
+        /// Asynchronously flushes any remaining compressed data to the stream.
+        /// This override provides true async I/O without blocking.
+        /// </summary>
+        internal override async System.Threading.Tasks.ValueTask<int> OnFlushAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            bool flush,
+            bool complete)
+        {
+            int bytesWrittenToStream = 0;
+
+            if (IsCompress)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                long size = data.AvailableRead == 0 ? 0 : _encoder.EncodeData(data, _buffer, true, new CancellableTask(cancellationToken));
+                size += _encoder.Flush(_buffer, flush, complete);
+                if (size > 0)
+                {
+                    await BaseWriteAsync(_buffer, _buffer.AvailableRead, cancellationToken).ConfigureAwait(false);
+                    bytesWrittenToStream = (int)size;
+                }
+            }
+            return bytesWrittenToStream;
+        }
+#endif
+
         /// <summary>
         /// Disposes the <see cref="Lz4Stream"/> and its resources.
         /// </summary>

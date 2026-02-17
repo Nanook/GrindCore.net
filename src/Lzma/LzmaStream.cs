@@ -216,6 +216,118 @@ namespace Nanook.GrindCore.Lzma
             }
         }
 
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+        /// <summary>
+        /// Asynchronously reads data from the stream and decompresses it using LZMA.
+        /// This override provides true async I/O without blocking.
+        /// </summary>
+        internal override async System.Threading.Tasks.ValueTask<(int result, int bytesRead)> OnReadAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            int length = 0)
+        {
+            if (!CanRead)
+                throw new NotSupportedException("Not for Compression mode");
+
+            int bytesReadFromStream = 0;
+            int decoded = -1;
+            int total = 0;
+            int read = -1;
+
+            if (length == 0 || length > data.AvailableWrite)
+                length = data.AvailableWrite;
+
+            while (decoded != 0 && total < length)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (decoded <= 0 && _buffer.AvailableRead == 0)
+                    read = await BaseReadAsync(_buffer, _buffer.AvailableWrite, cancellationToken).ConfigureAwait(false);
+                if (_buffer.AvailableRead == 0)
+                    return (total, bytesReadFromStream);
+                decoded = _decoder.DecodeData(_buffer, out var readSz, data, length - total, out var _);
+                bytesReadFromStream += readSz;
+                total += decoded;
+            }
+            return (total, bytesReadFromStream);
+        }
+
+        /// <summary>
+        /// Asynchronously compresses data using LZMA and writes it to the stream.
+        /// This override provides true async I/O without blocking.
+        /// </summary>
+        internal override async System.Threading.Tasks.ValueTask<int> OnWriteAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken)
+        {
+            if (!this.CanWrite)
+                throw new NotSupportedException("Not for Decompression mode");
+
+            int bytesWrittenToStream = 0;
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Loop: encode then flush output immediately, repeating while input remains.
+            while (data.AvailableRead > 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                int before = data.AvailableRead;
+                long produced = _encoder.EncodeData(data, _outBuffer, false, new CancellableTask(cancellationToken));
+
+                if (_outBuffer.AvailableRead > 0)
+                {
+                    await BaseWriteAsync(_outBuffer, _outBuffer.AvailableRead, cancellationToken).ConfigureAwait(false);
+                    bytesWrittenToStream += (int)produced;
+                }
+
+                int after = data.AvailableRead;
+                int consumed = before - after;
+
+                // If neither input was consumed nor output produced, break to avoid busy-loop.
+                if (consumed == 0 && produced == 0)
+                    break;
+            }
+            return bytesWrittenToStream;
+        }
+
+        /// <summary>
+        /// Asynchronously flushes any remaining compressed data to the stream.
+        /// This override provides true async I/O without blocking.
+        /// </summary>
+        internal override async System.Threading.Tasks.ValueTask<int> OnFlushAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            bool flush,
+            bool complete)
+        {
+            int bytesWrittenToStream = 0;
+            if (IsCompress)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Call EncodeData repeatedly until encoder indicates no more output.
+                const int MAX_ITER = 10000;
+                int iter = 0;
+                while (true)
+                {
+                    int beforeIterAvail = data.AvailableRead;
+                    if (++iter > MAX_ITER)
+                        throw new Exception("LZMA encoder did not make progress (iteration limit reached)");
+
+                    long size = _encoder.EncodeData(data, _outBuffer, true, new CancellableTask(cancellationToken));
+                    if (size == 0 && _outBuffer.AvailableRead == 0)
+                        break;
+
+                    if (_outBuffer.AvailableRead > 0)
+                    {
+                        await BaseWriteAsync(_outBuffer, _outBuffer.AvailableRead, cancellationToken).ConfigureAwait(false);
+                        bytesWrittenToStream += (int)size;
+                    }
+                }
+            }
+            return bytesWrittenToStream;
+        }
+#endif
+
         /// <summary>
         /// Disposes the <see cref="LzmaStream"/> and its resources.
         /// </summary>

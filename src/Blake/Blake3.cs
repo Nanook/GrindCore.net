@@ -9,9 +9,9 @@ namespace Nanook.GrindCore.Blake
     /// </summary>
     public unsafe class Blake3 : HashAlgorithmGC
     {
-        private const int _hashSizeBytes = 32;
+        private const int _HashSizeBytes = 32;
         private Interop.Blake3Hasher _hasher;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
+        private const int _BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Blake3"/> class.
@@ -64,7 +64,7 @@ namespace Nanook.GrindCore.Blake
             fixed (byte* dataPtr = data)
                 processData(dataPtr, offset, length, &hasher);
             // Finalize hash
-            byte[] result = new byte[_hashSizeBytes];
+            byte[] result = new byte[_HashSizeBytes];
             fixed (byte* resultPtr = result)
                 Interop.Blake.SZ_blake3_hasher_finalize(&hasher, resultPtr, (UIntPtr)result.Length);
             return result;
@@ -83,7 +83,7 @@ namespace Nanook.GrindCore.Blake
             while (remainingSize > 0)
             {
                 // Determine the size of the current chunk to process
-                int bytesRead = Math.Min(remainingSize, BufferSize);
+                int bytesRead = Math.Min(remainingSize, _BufferSize);
                 // Update the hash context with the current chunk
                 Interop.Blake.SZ_blake3_hasher_update(hasher, (IntPtr)(dataPtr + offset + (length - remainingSize)), (UIntPtr)bytesRead);
                 // Decrease the remaining size by the number of bytes read
@@ -129,7 +129,7 @@ namespace Nanook.GrindCore.Blake
         protected override byte[] HashFinal()
         {
             // Finalize hash
-            byte[] result = new byte[_hashSizeBytes];
+            byte[] result = new byte[_HashSizeBytes];
             fixed (byte* resultPtr = result)
             fixed (Interop.Blake3Hasher* hasherPtr = &_hasher)
                 Interop.Blake.SZ_blake3_hasher_finalize(hasherPtr, resultPtr, (UIntPtr)result.Length);

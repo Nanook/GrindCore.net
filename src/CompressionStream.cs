@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -14,6 +14,9 @@ using static Nanook.GrindCore.Interop;
 
 namespace Nanook.GrindCore
 {
+    // (No top-level AsyncLocal shim here; compatibility is handled below where
+    // the runtime-specific AsyncLocal/ThreadStatic variant is declared.)
+
     /// <summary>
     /// Provides a base stream for compression and decompression operations.
     /// </summary>
@@ -21,6 +24,7 @@ namespace Nanook.GrindCore
     {
         private bool _disposed;
         private bool _complete;
+        private bool _baseStreamAsyncOnly = false; // Track if base stream only supports async operations
         /// <summary>
         /// Gets or sets a value indicating whether the base stream should be left open after the compression stream is disposed.
         /// </summary>
@@ -120,6 +124,25 @@ namespace Nanook.GrindCore
         private long _positionBase; //real amount read from or written to base stream - used for limiting (should equal _position when writing)
         private long _positionFullSize; //count of bytes read/written to decompressed byte arrays
 
+        // When the default async virtuals wrap the synchronous implementations via
+        // Task.Run we set this flag on the worker thread so lower-level I/O helpers
+        // can avoid calling the synchronous BaseStream APIs and instead use the
+        // async variants. On modern runtimes we use AsyncLocal so the flag flows
+        // into the Task.Run execution context. For older TFMs that don't have
+        // System.Threading.AsyncLocal we provide a lightweight compatibility shim
+        // that uses thread-static storage.
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER || NET5_0_OR_GREATER || NET6_0_OR_GREATER || NET7_0_OR_GREATER || NET8_0_OR_GREATER || NET9_0_OR_GREATER || NET10_0_OR_GREATER
+        private static readonly System.Threading.AsyncLocal<bool> _RunningOnAsyncWrapper = new System.Threading.AsyncLocal<bool>();
+#else
+        [ThreadStatic]
+        private static bool _RunningOnAsyncWrapperThread;
+        private sealed class AsyncLocalCompat
+        {
+            public bool Value { get => _RunningOnAsyncWrapperThread; set => _RunningOnAsyncWrapperThread = value; }
+        }
+        private static readonly AsyncLocalCompat _RunningOnAsyncWrapper = new AsyncLocalCompat();
+#endif
+
         /// <summary>
         /// Gets the total number of bytes read or written to decompressed byte arrays. The Decompressed/FullSize position, Position holds the Compressed position.
         /// </summary>
@@ -138,7 +161,28 @@ namespace Nanook.GrindCore
             int p = inData.Pos;
             int sz = inData.Size;
             inData.Tidy(limited);
-            int read = BaseStream.Read(inData.Data, inData.Size, limited);
+            // If the current execution is running inside the async wrapper thread
+            // (Task.Run used by default OnReadAsync) then prefer the async BaseStream
+            // APIs to avoid touching sync-only streams used in tests.
+            int read;
+            if (_RunningOnAsyncWrapper.Value || _baseStreamAsyncOnly)
+            {
+                // Prefer async base APIs when running on the async-wrapper worker or when
+                // we've previously detected the base stream is async-only. Mark the
+                // sticky flag so future sync entrypoints avoid touching sync APIs.
+                _baseStreamAsyncOnly = true;
+#if NET45_OR_GREATER || NETSTANDARD || NETCOREAPP
+                read = BaseStream.ReadAsync(inData.Data, inData.Size, limited).GetAwaiter().GetResult();
+#else
+                // Async ReadAsync not available on older targets; fall back to sync read.
+                read = BaseStream.Read(inData.Data, inData.Size, limited);
+#endif
+            }
+            else
+            {
+                // Not running on the async wrapper and base not marked async-only: call sync API.
+                read = BaseStream.Read(inData.Data, inData.Size, limited);
+            }
             if (read == 0) //restore
             {
                 inData.Pos = p;
@@ -155,7 +199,21 @@ namespace Nanook.GrindCore
         protected int BaseWrite(CompressionBuffer outData, int length)
         {
             int limited = (int)Math.Min(length, (PositionLimit ?? long.MaxValue) - _position);
-            BaseStream.Write(outData.Data, outData.Pos, limited);
+            if (_RunningOnAsyncWrapper.Value || _baseStreamAsyncOnly)
+            {
+                // Prefer async base APIs when running on the async-wrapper worker or when
+                // we've previously detected the base stream is async-only. Mark the
+                // sticky flag so future sync entrypoints avoid touching sync APIs.
+                _baseStreamAsyncOnly = true;
+#if NET45_OR_GREATER || NETSTANDARD || NETCOREAPP
+                BaseStream.WriteAsync(outData.Data, outData.Pos, limited).GetAwaiter().GetResult();
+#else
+                // Async WriteAsync not available on older targets; fall back to sync write.
+                BaseStream.Write(outData.Data, outData.Pos, limited);
+#endif
+            }
+            else // Not running on the async wrapper and base not marked async-only: call sync API.
+                BaseStream.Write(outData.Data, outData.Pos, limited);
             outData.Read(limited);
             _positionBase = _position += limited;
             return limited;
@@ -404,6 +462,213 @@ namespace Nanook.GrindCore
         /// </summary>
         protected abstract void OnDispose();
 
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+        /// <summary>
+        /// Asynchronously reads data from the base stream.
+        /// </summary>
+        /// <param name="inData">The buffer to read into.</param>
+        /// <param name="size">The number of bytes to read.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The number of bytes read.</returns>
+        protected async ValueTask<int> BaseReadAsync(CompressionBuffer inData, int size, CancellationToken cancellationToken = default)
+        {
+            if (this.BaseStream == null || !this.BaseStream.CanRead)
+                return 0;
+
+            int limited = (int)Math.Min(size, (PositionLimit ?? long.MaxValue) - _positionBase);
+            int p = inData.Pos;
+            int sz = inData.Size;
+            inData.Tidy(limited);
+
+            // We're running an async read path - mark the base stream as async-capable
+            // so future synchronous helpers avoid touching sync APIs on async-only
+            // streams. This avoids catching exceptions from sync calls.
+            _baseStreamAsyncOnly = true;
+            int read = await this.BaseStream.ReadAsync(inData.Data.AsMemory(inData.Size, limited), cancellationToken).ConfigureAwait(false);
+
+            if (read == 0)
+            {
+                inData.Pos = p;
+                inData.Size = sz;
+            }
+            else
+            {
+                inData.Write(read);
+                _positionBase += read;
+            }
+            return read;
+        }
+
+        /// <summary>
+        /// Asynchronously writes data to the base stream.
+        /// </summary>
+        /// <param name="outData">The buffer containing data to write.</param>
+        /// <param name="length">The number of bytes to write.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The number of bytes written.</returns>
+        protected async ValueTask<int> BaseWriteAsync(CompressionBuffer outData, int length, CancellationToken cancellationToken = default)
+        {
+            if (this.BaseStream == null || !this.BaseStream.CanWrite)
+                return 0;
+
+            int limited = (int)Math.Min(length, (PositionLimit ?? long.MaxValue) - _position);
+            // Mark base as async-capable to avoid sync calls later.
+            _baseStreamAsyncOnly = true;
+            await this.BaseStream.WriteAsync(outData.Data.AsMemory(outData.Pos, limited), cancellationToken).ConfigureAwait(false);
+            outData.Read(limited);
+            _positionBase = _position += limited;
+            return limited;
+        }
+
+        /// <summary>
+        /// Virtual async method for reading compressed data. Derived classes can override for true async I/O.
+        /// Default implementation runs the synchronous OnRead on the thread pool.
+        /// </summary>
+        /// <param name="data">The compression buffer to read into.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="length">Optional length hint for the read operation.</param>
+        /// <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        internal virtual async ValueTask<(int result, int bytesRead)> OnReadAsync(
+            CompressionBuffer data,
+            CancellationToken cancellationToken,
+            int length = 0)
+        {
+            // Run the synchronous implementation on the thread-pool, but mark the
+            // worker thread so lower-level helpers use the async BaseStream APIs
+            // instead of attempting synchronous I/O which may throw on Async-only
+            // streams used by tests.
+            // Set the AsyncLocal flag before scheduling the work so the worker
+            // context sees the flag and lower-level helpers will prefer async
+            // BaseStream APIs. Clear the flag after the task completes.
+            _RunningOnAsyncWrapper.Value = true;
+            try
+            {
+                return await Task.Run(() =>
+                {
+                    int result = OnRead(data, new CancellableTask(cancellationToken), out int bytesRead, length);
+                    return (result, bytesRead);
+                }, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _RunningOnAsyncWrapper.Value = false;
+            }
+        }
+
+        /// <summary>
+        /// Virtual async method for writing compressed data. Derived classes can override for true async I/O.
+        /// Default implementation runs the synchronous OnWrite on the thread pool.
+        /// </summary>
+        /// <param name="data">The compression buffer containing data to write.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal virtual async ValueTask<int> OnWriteAsync(
+            CompressionBuffer data,
+            CancellationToken cancellationToken)
+        {
+            return await Task.Run(() =>
+            {
+                OnWrite(data, new CancellableTask(cancellationToken), out int bytesWritten);
+                return bytesWritten;
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Virtual async method for flushing compression buffers. Derived classes can override for true async I/O.
+        /// Default implementation runs the synchronous OnFlush on the thread pool.
+        /// </summary>
+        /// <param name="data">The compression buffer to flush.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal virtual async ValueTask<int> OnFlushAsync(
+            CompressionBuffer data,
+            CancellationToken cancellationToken,
+            bool flush,
+            bool complete)
+        {
+            return await Task.Run(() =>
+            {
+                OnFlush(data, new CancellableTask(cancellationToken), out int bytesWritten, flush, complete);
+                return bytesWritten;
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        private async ValueTask<int> onReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            int total = 0;
+            int read = -1;
+            int bufferLength = buffer.Length;
+
+            while (read != 0 && total != bufferLength)
+            {
+                read = (int)Math.Min(Math.Min(_buffer.AvailableRead, bufferLength - total), (PositionFullSizeLimit ?? long.MaxValue) - _positionFullSize);
+                if (read != 0)
+                {
+                    _buffer.Read(buffer.Span.Slice(total, read));
+                    _positionFullSize += read;
+                    total += read;
+                }
+                if (total < bufferLength)
+                {
+                    var (result, bytesReadFromStream) = await OnReadAsync(_buffer, cancellationToken, bufferLength).ConfigureAwait(false);
+                    read = result;
+                    _position += bytesReadFromStream;
+                }
+            }
+            return total;
+        }
+
+        private async ValueTask onWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        {
+            int total = 0;
+            int size = 0;
+            int bufferLength = buffer.Length;
+
+            while (total != bufferLength)
+            {
+                size = Math.Min(bufferLength - total, (int)Math.Min(_buffer.AvailableWrite, (PositionFullSizeLimit ?? long.MaxValue) - _positionFullSize));
+                if (size != 0)
+                {
+                    _buffer.Write(buffer.Span.Slice(total, size));
+                    total += size;
+                }
+                await onWriteAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private async ValueTask onWriteAsync(CancellationToken cancellationToken)
+        {
+            if ((BufferThreshold != 0 && _buffer.AvailableRead >= BufferThreshold) || _buffer.AvailableWrite == 0)
+            {
+                int size2 = _buffer.AvailableRead;
+                await OnWriteAsync(_buffer, cancellationToken).ConfigureAwait(false);
+
+                int consumed = size2 - _buffer.AvailableRead;
+                _positionFullSize += consumed;
+
+                if (consumed == 0)
+                    return;
+            }
+        }
+
+        private async ValueTask onFlushAsync(CancellationToken cancellationToken, bool flush, bool complete)
+        {
+            if (!_complete)
+            {
+                _complete = complete;
+                if (IsCompress)
+                {
+                    int size = _buffer.AvailableRead;
+                    await OnFlushAsync(_buffer, cancellationToken, flush, complete).ConfigureAwait(false);
+                    _positionFullSize += size;
+                    await BaseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+#endif
+
         private int onRead(DataBlock dataBlock, CancellableTask cancel)
         {
             int total = 0;
@@ -445,7 +710,7 @@ namespace Nanook.GrindCore
 
         private void onWrite(CancellableTask cancel)
         {
-             // If a threshold is set (non-zero) then trigger when AvailableRead >= threshold.
+            // If a threshold is set (non-zero) then trigger when AvailableRead >= threshold.
             // If threshold == 0, only trigger when the buffer is full (AvailableWrite == 0).
             if ((BufferThreshold != 0 && _buffer.AvailableRead >= BufferThreshold) || _buffer.AvailableWrite == 0)
             {
@@ -458,8 +723,8 @@ namespace Nanook.GrindCore
                 // If OnWrite made no progress (didn't consume any buffered input), avoid a tight retry loop.
                 // Return to the caller so they can handle back-pressure (e.g., flush or grow buffers).
                 if (consumed == 0)
-                     return;
-             }
+                    return;
+            }
         }
 
         /// <summary>
@@ -559,6 +824,22 @@ namespace Nanook.GrindCore
             if (buffer.Length - offset < count)
                 throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
 
+            // If we've previously detected the underlying stream only supports
+            // async operations, avoid calling sync paths and use the async
+            // implementation instead to prevent NotSupportedException on
+            // Async-only test streams (observed on .NET Framework 4.8).
+            if (_baseStreamAsyncOnly)
+            {
+                // If async overrides are available, use them; otherwise fall back to
+                // the synchronous path to avoid referencing unavailable APIs on
+                // older TFMs.
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP || CLASSIC
+                return ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+#else
+                return onRead(new DataBlock(buffer, offset, count), new CancellableTask());
+#endif
+            }
+
             return onRead(new DataBlock(buffer, offset, count), new CancellableTask());
         }
 
@@ -581,6 +862,23 @@ namespace Nanook.GrindCore
                 throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
             if (buffer.Length - offset < count)
                 throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
+
+            // If we've previously detected the underlying stream only supports
+            // async operations, avoid calling sync paths and use the async
+            // implementation instead to prevent NotSupportedException on
+            // Async-only test streams (observed on .NET Framework 4.8).
+            if (_baseStreamAsyncOnly)
+            {
+                // If async overrides are available, use them; otherwise fall back to
+                // sync write path to avoid referencing unavailable APIs on older TFMs.
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP || CLASSIC
+                WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+                return;
+#else
+                onWrite(new DataBlock(buffer, offset, count), new CancellableTask());
+                return;
+#endif
+            }
 
             onWrite(new DataBlock(buffer, offset, count), new CancellableTask());
         }
@@ -638,17 +936,7 @@ namespace Nanook.GrindCore
             if (buffer.Length < 0)
                 throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer length must be non-negative.");
 
-            if (SynchronizationContext.Current == null)
-            {
-                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
-                return onRead(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
-            }
-
-            return await Task.Run(() =>
-            {
-                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
-                return onRead(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
-            }, cancellationToken).ConfigureAwait(false);
+            return await onReadAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -663,18 +951,7 @@ namespace Nanook.GrindCore
             if (buffer.Length < 0)
                 throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer length must be non-negative.");
 
-            if (SynchronizationContext.Current == null)
-            {
-                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
-                onWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
-                return;
-            }
-
-            await Task.Run(() =>
-            {
-                DataBlock dataBlock = new DataBlock(buffer.Span, 0, buffer.Length); // Use DataBlock for internal logic
-                onWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
-            }, cancellationToken).ConfigureAwait(false);
+            await onWriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -682,7 +959,7 @@ namespace Nanook.GrindCore
         /// </summary>
         public virtual async ValueTask CompleteAsync()
         {
-            await this.CompleteAsync(new CancellationToken());
+            await onFlushAsync(CancellationToken.None, false, true).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -724,17 +1001,27 @@ namespace Nanook.GrindCore
             if (buffer.Length - offset < count)
                 throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
 
-            if (SynchronizationContext.Current == null)
+            // Caller requested async I/O. Mark the base stream as async-capable
+            // proactively so any continuations that run after the wrapper clears
+            // won't accidentally invoke sync-only APIs on Async-only streams.
+            _baseStreamAsyncOnly = true;
+            // Always execute the synchronous onRead on the thread-pool so we can
+            // mark the worker thread and ensure lower-level BaseStream helpers use
+            // async I/O. This avoids calling synchronous BaseStream methods on
+            // Async-only test streams when the public async APIs are used.
+            _RunningOnAsyncWrapper.Value = true;
+            try
             {
-                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
-                return onRead(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
+                return await Task.Run(() =>
+                {
+                    DataBlock dataBlock = new DataBlock(buffer, offset, count);
+                    return onRead(dataBlock, new CancellableTask(cancellationToken));
+                }, cancellationToken).ConfigureAwait(false);
             }
-
-            return await Task.Run(() =>
+            finally
             {
-                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
-                return onRead(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
-            }, cancellationToken).ConfigureAwait(false);
+                _RunningOnAsyncWrapper.Value = false;
+            }
         }
 
         /// <summary>
@@ -759,18 +1046,25 @@ namespace Nanook.GrindCore
             if (buffer.Length - offset < count)
                 throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
 
-            if (SynchronizationContext.Current == null)
+            // Caller requested async I/O. Mark the base stream as async-capable
+            // proactively so any continuations that run after the wrapper clears
+            // won't accidentally invoke sync-only APIs on Async-only streams.
+            _baseStreamAsyncOnly = true;
+            // Run the synchronous onWrite on the thread-pool so helpers prefer
+            // async BaseStream APIs while the worker is running.
+            _RunningOnAsyncWrapper.Value = true;
+            try
             {
-                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
-                onWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
-                return;
+                await Task.Run(() =>
+                {
+                    DataBlock dataBlock = new DataBlock(buffer, offset, count);
+                    onWrite(dataBlock, new CancellableTask(cancellationToken));
+                }, cancellationToken).ConfigureAwait(false);
             }
-
-            await Task.Run(() =>
+            finally
             {
-                DataBlock dataBlock = new DataBlock(buffer, offset, count); // Use DataBlock for internal logic
-                onWrite(dataBlock, new CancellableTask(cancellationToken)); // Wrap the token to simplify frameworks that don't support it
-            }, cancellationToken).ConfigureAwait(false);
+                _RunningOnAsyncWrapper.Value = false;
+            }
         }
 
         /// <summary>
@@ -782,7 +1076,7 @@ namespace Nanook.GrindCore
         {
             if (SynchronizationContext.Current == null)
             {
-                onFlush(new CancellableTask(cancellationToken), true, false); // Wrap the token to simplify frameworks that don't support it
+                onFlush(new CancellableTask(cancellationToken), true, false);
                 return;
             }
 
@@ -801,7 +1095,7 @@ namespace Nanook.GrindCore
         {
             if (SynchronizationContext.Current == null)
             {
-                onFlush(new CancellableTask(cancellationToken), false, true); // Wrap the token to simplify frameworks that don't support it
+                onFlush(new CancellableTask(cancellationToken), false, true);
                 return;
             }
 

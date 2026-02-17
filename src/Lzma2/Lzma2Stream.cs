@@ -242,5 +242,124 @@ namespace Nanook.GrindCore.Lzma
                 try { _decoder.Dispose(); } catch { }
             try { _buffer.Dispose(); } catch { }
         }
+
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+        /// <summary>
+        /// Asynchronously reads data from the stream and decompresses it using LZMA2.
+        /// </summary>
+        /// <param name="data">The buffer to read decompressed data into.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+        /// <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        internal override async System.Threading.Tasks.ValueTask<(int result, int bytesRead)> OnReadAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            int length = 0)
+        {
+            if (!CanRead)
+                throw new NotSupportedException("Not for Compression mode");
+
+            int bytesReadFromStream = 0;
+            int total = 0;
+            int read = -1;
+            int decoded = -1;
+            if (length == 0 || length > data.AvailableWrite)
+                length = data.AvailableWrite;
+
+            while (!_ended && decoded != 0 && total < length)
+            {
+                read = 0;
+                cancellationToken.ThrowIfCancellationRequested();
+                if (_buffer.AvailableRead == 0)
+                {
+                    read = await BaseReadAsync(_buffer, 1, cancellationToken).ConfigureAwait(false);
+                    if (read == 1)
+                    {
+                        if (_buffer.Data[_buffer.Size - 1] != 0)
+                        {
+                            int hdrSz = _decoder.GetHeaderSize(_buffer.Data[_buffer.Size - 1]);
+                            read += await BaseReadAsync(_buffer, hdrSz - 1, cancellationToken).ConfigureAwait(false);
+                            Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read), hdrSz);
+                            if (info.BlockSize > read)
+                                read += await BaseReadAsync(_buffer, info.BlockSize - read, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                            _ended = true;
+                    }
+                }
+                if (_buffer.AvailableRead == 0)
+                    return (total, bytesReadFromStream);
+                int inSz = _buffer.AvailableRead;
+                decoded = _decoder.DecodeData(_buffer, ref inSz, data, length - total, out var _);
+                bytesReadFromStream += inSz;
+                total += decoded;
+                _ended = _ended && decoded == 0;
+            }
+            return (total, bytesReadFromStream);
+        }
+
+        /// <summary>
+        /// Asynchronously compresses data using LZMA2 and writes it to the stream.
+        /// </summary>
+        /// <param name="data">The buffer containing data to compress and write.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal override async System.Threading.Tasks.ValueTask<int> OnWriteAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken)
+        {
+            if (!this.CanWrite)
+                throw new NotSupportedException("Not for Decompression mode");
+
+            int bytesWrittenToStream = 0;
+            cancellationToken.ThrowIfCancellationRequested();
+            int avRead = data.AvailableRead;
+            long size = _encoder.EncodeData(data, _buffer, false, new CancellableTask(cancellationToken));
+
+            if (size > 0)
+            {
+                await BaseWriteAsync(_buffer, _buffer.AvailableRead, cancellationToken).ConfigureAwait(false);
+                bytesWrittenToStream += (int)size;
+            }
+            return bytesWrittenToStream;
+        }
+
+        /// <summary>
+        /// Asynchronously flushes any remaining compressed data to the stream and finalizes the compression if requested.
+        /// </summary>
+        /// <param name="data">The buffer containing data to flush.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal override async System.Threading.Tasks.ValueTask<int> OnFlushAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            bool flush,
+            bool complete)
+        {
+            int bytesWrittenToStream = 0;
+            if (IsCompress)
+            {
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    long size = _encoder.EncodeData(data, _buffer, true, new CancellableTask(cancellationToken));
+                    if (size == 0)
+                        break;
+                    await BaseWriteAsync(_buffer, _buffer.AvailableRead, cancellationToken).ConfigureAwait(false);
+                    bytesWrittenToStream += (int)size;
+                }
+                if (complete)
+                {
+                    _buffer.Pos = 0;
+                    _buffer.Size = 0;
+                    _buffer.Write(new byte[1] { 0x00 }, 0, 1);
+                    bytesWrittenToStream += await BaseWriteAsync(_buffer, 1, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            return bytesWrittenToStream;
+        }
+#endif
     }
 }

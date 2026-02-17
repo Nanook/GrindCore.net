@@ -128,7 +128,7 @@ public class LzmaStream : Stream, IStreamStack
 
         var options = new Nanook.GrindCore.CompressionOptions
         {
-            Type = ConvertToCompressionType(properties), //Convert LzmaEncoderProperties to GrindCore compression level
+            Type = convertToCompressionType(properties), //Convert LzmaEncoderProperties to GrindCore compression level
             LeaveOpen = _leaveOpen
         };
 
@@ -152,7 +152,7 @@ public class LzmaStream : Stream, IStreamStack
         Properties = _grindCoreStream.Properties;
     }
 
-    private static Nanook.GrindCore.CompressionType ConvertToCompressionType(LzmaEncoderProperties properties)
+    private static Nanook.GrindCore.CompressionType convertToCompressionType(LzmaEncoderProperties properties)
     {
         // The algorithm/level is stored at index 4 in the Properties array
         if (properties.Properties != null && properties.Properties.Length > 4)

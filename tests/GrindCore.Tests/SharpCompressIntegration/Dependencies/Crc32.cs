@@ -10,7 +10,7 @@ public static class Crc32
     public const uint DefaultPolynomial = 0xedb88320u;
     public const uint DefaultSeed = 0xffffffffu;
 
-    private static uint[] defaultTable;
+    private static uint[] _DefaultTable;
 
     public static uint Compute(byte[] buffer) => Compute(DefaultSeed, buffer);
 
@@ -18,13 +18,13 @@ public static class Crc32
         Compute(DefaultPolynomial, seed, buffer);
 
     public static uint Compute(uint polynomial, uint seed, byte[] buffer) =>
-        ~CalculateHash(InitializeTable(polynomial), seed, buffer);
+        ~calculateHash(initializeTable(polynomial), seed, buffer);
 
-    private static uint[] InitializeTable(uint polynomial)
+    private static uint[] initializeTable(uint polynomial)
     {
-        if (polynomial == DefaultPolynomial && defaultTable != null)
+        if (polynomial == DefaultPolynomial && _DefaultTable != null)
         {
-            return defaultTable;
+            return _DefaultTable;
         }
 
         var createTable = new uint[256];
@@ -48,13 +48,13 @@ public static class Crc32
 
         if (polynomial == DefaultPolynomial)
         {
-            defaultTable = createTable;
+            _DefaultTable = createTable;
         }
 
         return createTable;
     }
 
-    private static uint CalculateHash(uint[] table, uint seed, ReadOnlySpan<byte> buffer)
+    private static uint calculateHash(uint[] table, uint seed, ReadOnlySpan<byte> buffer)
     {
         var crc = seed;
         var len = buffer.Length;

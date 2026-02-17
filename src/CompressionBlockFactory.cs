@@ -15,7 +15,7 @@ namespace Nanook.GrindCore
     /// </summary>
     public class CompressionBlockFactory
     {
-        private static readonly Dictionary<CompressionAlgorithm, Func<CompressionOptions, CompressionBlock>> blockCreators = new Dictionary<CompressionAlgorithm, Func<CompressionOptions, CompressionBlock>>()
+        private static readonly Dictionary<CompressionAlgorithm, Func<CompressionOptions, CompressionBlock>> _BlockCreators = new Dictionary<CompressionAlgorithm, Func<CompressionOptions, CompressionBlock>>()
         {
             { CompressionAlgorithm.Copy, (options) => new CopyBlock(options) },
             { CompressionAlgorithm.Brotli, (options) => new BrotliBlock(options) },
@@ -76,7 +76,7 @@ namespace Nanook.GrindCore
         {
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
-            if (blockCreators.TryGetValue(algorithm, out var creator))
+            if (_BlockCreators.TryGetValue(algorithm, out var creator))
                 return creator(options);
 
             throw new ArgumentException("Unsupported stream algorithm", nameof(algorithm));

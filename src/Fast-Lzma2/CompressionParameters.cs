@@ -11,7 +11,7 @@ namespace Nanook.GrindCore.FastLzma2
         /// <summary>
         /// Gets the dictionary of parameter values for Fast-LZMA2 compression.
         /// </summary>
-        internal readonly Dictionary<FL2Parameter, int?> Values = new Dictionary<FL2Parameter, int?>();
+        internal readonly Dictionary<FL2Parameter, int?> _values = new Dictionary<FL2Parameter, int?>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CompressionParameters"/> class with the specified thread count and optional dictionary size.
@@ -27,15 +27,15 @@ namespace Nanook.GrindCore.FastLzma2
 
         private int? getValue(FL2Parameter parameter)
         {
-            return Values.ContainsKey(parameter) ? Values[parameter] : null;
+            return _values.ContainsKey(parameter) ? _values[parameter] : null;
         }
 
         private void setValue(FL2Parameter parameter, int? value)
         {
             if (value == null)
-                Values.Remove(parameter);
+                _values.Remove(parameter);
             else
-                Values[parameter] = value;
+                _values[parameter] = value;
         }
 
         /// <summary>

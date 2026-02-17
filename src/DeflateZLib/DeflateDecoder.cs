@@ -13,8 +13,8 @@ namespace Nanook.GrindCore.DeflateZLib
     /// </summary>
     internal sealed class DeflateDecoder : IDisposable
     {
-        private const int MinWindowBits = -15; // WindowBits must be between -8..-15 to ignore the header, 8..15 for zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
-        private const int MaxWindowBits = 47;
+        private const int _MinWindowBits = -15; // WindowBits must be between -8..-15 to ignore the header, 8..15 for zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
+        private const int _MaxWindowBits = 47;
 
         private bool _nonEmptyInput;                        // Whether there is any non empty input
         private bool _finished;                             // Whether the end of the stream has been reached
@@ -38,7 +38,7 @@ namespace Nanook.GrindCore.DeflateZLib
         /// <exception cref="ZLibException">Thrown if the underlying zlib stream cannot be created.</exception>
         internal DeflateDecoder(CompressionVersion version, int windowBits, long uncompressedSize = -1)
         {
-            Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
+            Debug.Assert(windowBits >= _MinWindowBits && windowBits <= _MaxWindowBits);
             _version = version;
             _finished = false;
             _nonEmptyInput = false;

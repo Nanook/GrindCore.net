@@ -12,7 +12,7 @@ namespace Nanook.GrindCore.SHA
     {
         private int _hashSizeBytes;
         private Interop.SHA3_CTX _ctx;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
+        private const int _BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SHA3"/> class with the specified bit size.
@@ -98,7 +98,7 @@ namespace Nanook.GrindCore.SHA
             while (remainingSize > 0)
             {
                 // Determine the size of the current chunk to process
-                int bytesRead = Math.Min(remainingSize, BufferSize);
+                int bytesRead = Math.Min(remainingSize, _BufferSize);
                 // Update the hash context with the current chunk
                 Interop.SHA.SZ_SHA3_Update(ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
                 // Decrease the remaining size by the number of bytes read

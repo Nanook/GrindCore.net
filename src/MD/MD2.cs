@@ -11,10 +11,10 @@ namespace Nanook.GrindCore.MD
     /// </summary>
     public unsafe class MD2 : HashAlgorithmGC
     {
-        private const int _hashSizeBytes = 16;
+        private const int _HashSizeBytes = 16;
         private Interop.MD2_CTX _ctx;
         private HashBuffer _buffer;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
+        private const int _BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MD2"/> class.
@@ -22,8 +22,8 @@ namespace Nanook.GrindCore.MD
         public MD2()
         {
             // Set the hash size value to 128 bits (16 bytes) for MD2
-            HashSizeValue = _hashSizeBytes << 3;
-            _buffer = new HashBuffer(_hashSizeBytes);
+            HashSizeValue = _HashSizeBytes << 3;
+            _buffer = new HashBuffer(_HashSizeBytes);
             Initialize();
         }
 
@@ -62,8 +62,8 @@ namespace Nanook.GrindCore.MD
                 throw new ArgumentException("The sum of offset and length is greater than the buffer length.");
 
             Interop.MD2_CTX ctx = new Interop.MD2_CTX();
-            HashBuffer buffer = new HashBuffer(_hashSizeBytes);
-            byte[] result = new byte[_hashSizeBytes]; // MD2_DIGEST_LENGTH is 16
+            HashBuffer buffer = new HashBuffer(_HashSizeBytes);
+            byte[] result = new byte[_HashSizeBytes]; // MD2_DIGEST_LENGTH is 16
 
             // Pin the data array and result in memory to obtain pointers
             fixed (byte* resultPtr = result)
@@ -94,7 +94,7 @@ namespace Nanook.GrindCore.MD
             while (remainingSize > 0)
             {
                 // Determine the size of the current chunk to process
-                int bytesRead = Math.Min(remainingSize, BufferSize);
+                int bytesRead = Math.Min(remainingSize, _BufferSize);
                 // Process the _outBuffer with the current chunk
                 buffer.Process(data, offset, bytesRead, (d, o, s) => bufferProcess(ctx, d, o, s));
                 // Decrease the remaining size by the number of bytes read
@@ -155,7 +155,7 @@ namespace Nanook.GrindCore.MD
                 while (remainingSize > 0)
                 {
                     // Determine the size of the current chunk to process
-                    int bytesRead = Math.Min(remainingSize, BufferSize);
+                    int bytesRead = Math.Min(remainingSize, _BufferSize);
                     // Update the hash context with the current chunk
                     Interop.MD.SZ_MD2_Update(ctx, dataPtr + offset + (size - remainingSize), (nuint)bytesRead);
                     // Decrease the remaining size by the number of bytes read
@@ -194,7 +194,7 @@ namespace Nanook.GrindCore.MD
                     bufferPadProcess(ctxPtr, d, o, s);
             });
 
-            byte[] result = new byte[_hashSizeBytes]; // MD2_DIGEST_LENGTH is 16
+            byte[] result = new byte[_HashSizeBytes]; // MD2_DIGEST_LENGTH is 16
                                                       // Pin the result array in memory to obtain a pointer
             fixed (byte* resultPtr = result)
             fixed (Interop.MD2_CTX* ctxPtr = &_ctx)

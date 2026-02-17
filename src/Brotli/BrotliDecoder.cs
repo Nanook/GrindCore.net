@@ -38,7 +38,7 @@ namespace Nanook.GrindCore.Brotli
         /// <exception cref="ObjectDisposedException">Thrown if the decoder has been disposed.</exception>
         internal void EnsureInitialized()
         {
-            EnsureNotDisposed();
+            ensureNotDisposed();
             if (_state == null)
                 InitializeDecoder();
         }
@@ -56,7 +56,7 @@ namespace Nanook.GrindCore.Brotli
         /// Throws an <see cref="ObjectDisposedException"/> if the decoder has been disposed.
         /// </summary>
         /// <exception cref="ObjectDisposedException">Thrown if the decoder has been disposed.</exception>
-        private void EnsureNotDisposed()
+        private void ensureNotDisposed()
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(BrotliDecoder), SR.BrotliDecoder_Disposed);

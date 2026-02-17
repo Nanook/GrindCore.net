@@ -9,9 +9,9 @@ namespace Nanook.GrindCore.SHA
     /// </summary>
     public unsafe class SHA2_384 : HashAlgorithmGC
     {
-        private const int _hashSizeBytes = 48;
+        private const int _HashSizeBytes = 48;
         private Interop.SHA384_CTX _ctx;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
+        private const int _BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SHA2_384"/> class.
@@ -19,7 +19,7 @@ namespace Nanook.GrindCore.SHA
         public SHA2_384()
         {
             // Set the hash size value to 384 bits (48 bytes) for SHA2_384
-            HashSizeValue = _hashSizeBytes << 3;
+            HashSizeValue = _HashSizeBytes << 3;
             Initialize();
         }
 
@@ -58,7 +58,7 @@ namespace Nanook.GrindCore.SHA
                 throw new ArgumentException("The sum of offset and length is greater than the buffer length.");
 
             Interop.SHA384_CTX ctx = new Interop.SHA384_CTX();
-            byte[] result = new byte[_hashSizeBytes]; // SHA384_DIGEST_LENGTH is 48 bytes
+            byte[] result = new byte[_HashSizeBytes]; // SHA384_DIGEST_LENGTH is 48 bytes
 
             // Pin the data array and result in memory to obtain pointers
             fixed (byte* dataPtr = data)
@@ -87,7 +87,7 @@ namespace Nanook.GrindCore.SHA
             while (remainingSize > 0)
             {
                 // Determine the size of the current chunk to process
-                int bytesRead = Math.Min(remainingSize, BufferSize);
+                int bytesRead = Math.Min(remainingSize, _BufferSize);
                 // Update the hash context with the current chunk
                 Interop.SHA.SZ_SHA384_Update(ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
                 // Decrease the remaining size by the number of bytes read
@@ -132,7 +132,7 @@ namespace Nanook.GrindCore.SHA
         /// <returns>The computed hash code.</returns>
         protected override byte[] HashFinal()
         {
-            byte[] result = new byte[_hashSizeBytes]; // SHA384_DIGEST_LENGTH is 48 bytes
+            byte[] result = new byte[_HashSizeBytes]; // SHA384_DIGEST_LENGTH is 48 bytes
             // Pin the result array in memory to obtain a pointer
             fixed (byte* resultPtr = result)
             fixed (Interop.SHA384_CTX* ctxPtr = &_ctx)

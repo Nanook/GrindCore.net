@@ -6,9 +6,9 @@ namespace Nanook.GrindCore.SHA
 {
     public unsafe class SHA2_256 : HashAlgorithmGC
     {
-        private const int _hashSizeBytes = 32;
+        private const int _HashSizeBytes = 32;
         private Interop.CSha256 _ctx;
-        private const int BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
+        private const int _BufferSize = 256 * 1024 * 1024; // 256 MiB _outBuffer
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SHA2_256"/> class.
@@ -16,7 +16,7 @@ namespace Nanook.GrindCore.SHA
         public SHA2_256()
         {
             // Set the hash size value to 256 bits (32 bytes) for SHA2_256
-            HashSizeValue = _hashSizeBytes << 3;
+            HashSizeValue = _HashSizeBytes << 3;
             Initialize();
         }
 
@@ -55,7 +55,7 @@ namespace Nanook.GrindCore.SHA
                 throw new ArgumentException("The sum of offset and length is greater than the buffer length.");
 
             Interop.CSha256 ctx = new Interop.CSha256();
-            byte[] result = new byte[_hashSizeBytes]; // SHA256_DIGEST_LENGTH is 32 bytes
+            byte[] result = new byte[_HashSizeBytes]; // SHA256_DIGEST_LENGTH is 32 bytes
 
             // Pin the data array and result in memory to obtain pointers
             fixed (byte* dataPtr = data)
@@ -85,7 +85,7 @@ namespace Nanook.GrindCore.SHA
             while (remainingSize > 0)
             {
                 // Determine the size of the current chunk to process
-                int bytesRead = Math.Min(remainingSize, BufferSize);
+                int bytesRead = Math.Min(remainingSize, _BufferSize);
                 // Update the hash context with the current chunk
                 Interop.SHA.SZ_Sha256_Update(ctx, dataPtr + offset + (length - remainingSize), (nuint)bytesRead);
                 // Decrease the remaining size by the number of bytes read
@@ -134,7 +134,7 @@ namespace Nanook.GrindCore.SHA
         /// <returns>The computed hash code.</returns>
         protected override byte[] HashFinal()
         {
-            byte[] result = new byte[_hashSizeBytes]; // SHA256_DIGEST_LENGTH is 32 bytes
+            byte[] result = new byte[_HashSizeBytes]; // SHA256_DIGEST_LENGTH is 32 bytes
             // Pin the result array in memory to obtain a pointer
             fixed (byte* resultPtr = result)
             fixed (Interop.CSha256* ctxPtr = &_ctx)

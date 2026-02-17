@@ -168,5 +168,99 @@ namespace Nanook.GrindCore.FastLzma2
             else
                 try { _decoder.Dispose(); } catch { }
         }
+
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+        /// <summary>
+        /// Asynchronously reads and decompresses data from the underlying stream into the provided buffer using Fast-LZMA2.
+        /// </summary>
+        /// <param name="data">The buffer to read decompressed data into.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+        /// <returns>A tuple containing (bytes decompressed, bytes read from stream).</returns>
+        internal override async System.Threading.Tasks.ValueTask<(int result, int bytesRead)> OnReadAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            int length = 0)
+        {
+            // FastLzma2Decoder uses a delegate callback for BaseRead, so we wrap the async version
+            // The decoder itself is synchronous, but we can make the I/O async
+            return await System.Threading.Tasks.Task.Run(() =>
+            {
+                // Create async-aware read delegate
+                Func<CompressionBuffer, int, int> asyncReadWrapper = (buffer, size) =>
+                {
+                    return BaseReadAsync(buffer, size, cancellationToken).GetAwaiter().GetResult();
+                };
+                
+                int result = _decoder.DecodeData(data, asyncReadWrapper, new CancellableTask(cancellationToken), out int bytesRead);
+                return (result, bytesRead);
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Asynchronously writes data from the provided buffer to the underlying stream using Fast-LZMA2 compression.
+        /// </summary>
+        /// <param name="data">The buffer containing data to compress and write.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal override async System.Threading.Tasks.ValueTask<int> OnWriteAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken)
+        {
+            int bytesWrittenToStream = 0;
+            int avRead = data.AvailableRead;
+            if (avRead == 0)
+                return 0;
+
+            // Create async-aware write delegate
+            Func<CompressionBuffer, int, int> asyncWriteWrapper = (buffer, length) =>
+            {
+                return BaseWriteAsync(buffer, length, cancellationToken).GetAwaiter().GetResult();
+            };
+
+            await System.Threading.Tasks.Task.Run(() =>
+            {
+                _encoder.EncodeData(data, appending: true, asyncWriteWrapper, new CancellableTask(cancellationToken), out bytesWrittenToStream);
+            }, cancellationToken).ConfigureAwait(false);
+
+            return bytesWrittenToStream;
+        }
+
+        /// <summary>
+        /// Asynchronously flushes the compression buffers and finalizes the stream, writing any remaining compressed data.
+        /// </summary>
+        /// <param name="data">The buffer containing data to flush.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="flush">Indicates if this is a flush operation.</param>
+        /// <param name="complete">Indicates that there is no more data to compress.</param>
+        /// <returns>The number of bytes written to the stream.</returns>
+        internal override async System.Threading.Tasks.ValueTask<int> OnFlushAsync(
+            CompressionBuffer data,
+            System.Threading.CancellationToken cancellationToken,
+            bool flush,
+            bool complete)
+        {
+            int bytesWrittenToStream = 0;
+
+            if (IsCompress)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Create async-aware write delegate
+                Func<CompressionBuffer, int, int> asyncWriteWrapper = (buffer, length) =>
+                {
+                    return BaseWriteAsync(buffer, length, cancellationToken).GetAwaiter().GetResult();
+                };
+
+                await System.Threading.Tasks.Task.Run(() =>
+                {
+                    OnWrite(data, new CancellableTask(cancellationToken), out bytesWrittenToStream);
+                    _encoder.Flush(asyncWriteWrapper, new CancellableTask(cancellationToken), out var bytesWrittenToStream2);
+                    bytesWrittenToStream += bytesWrittenToStream2;
+                }, cancellationToken).ConfigureAwait(false);
+            }
+            return bytesWrittenToStream;
+        }
+#endif
     }
 }

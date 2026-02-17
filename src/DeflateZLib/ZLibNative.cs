@@ -103,7 +103,7 @@ namespace Nanook.GrindCore.DeflateZLib
             /// Throws if the stream has been disposed.
             /// </summary>
             /// <exception cref="ObjectDisposedException">Thrown if the stream is disposed.</exception>
-            private void EnsureNotDisposed()
+            private void ensureNotDisposed()
             {
                 if (InitializationState == State.Disposed)
                     throw new ObjectDisposedException(nameof(ZLibStreamHandle));
@@ -114,7 +114,7 @@ namespace Nanook.GrindCore.DeflateZLib
             /// </summary>
             /// <param name="requiredState">The required state.</param>
             /// <exception cref="InvalidOperationException">Thrown if the stream is not in the required state.</exception>
-            private void EnsureState(State requiredState)
+            private void ensureState(State requiredState)
             {
                 if (InitializationState != requiredState)
                     throw new InvalidOperationException("InitializationState != " + requiredState.ToString());
@@ -131,8 +131,8 @@ namespace Nanook.GrindCore.DeflateZLib
             /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode DeflateInit2_(Interop.ZLib.CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
             {
-                EnsureNotDisposed();
-                EnsureState(State.NotInitialized);
+                ensureNotDisposed();
+                ensureState(State.NotInitialized);
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
@@ -157,8 +157,8 @@ namespace Nanook.GrindCore.DeflateZLib
             /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode Deflate(FlushCode flush)
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForDeflate);
+                ensureNotDisposed();
+                ensureState(State.InitializedForDeflate);
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
@@ -178,8 +178,8 @@ namespace Nanook.GrindCore.DeflateZLib
             /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode DeflateEnd()
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForDeflate);
+                ensureNotDisposed();
+                ensureState(State.InitializedForDeflate);
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
@@ -203,8 +203,8 @@ namespace Nanook.GrindCore.DeflateZLib
             /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode InflateInit2_(int windowBits)
             {
-                EnsureNotDisposed();
-                EnsureState(State.NotInitialized);
+                ensureNotDisposed();
+                ensureState(State.NotInitialized);
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
@@ -228,8 +228,8 @@ namespace Nanook.GrindCore.DeflateZLib
             /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
+                ensureNotDisposed();
+                ensureState(State.InitializedForInflate);
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
@@ -249,8 +249,8 @@ namespace Nanook.GrindCore.DeflateZLib
             /// <exception cref="Exception">Thrown if the version is not supported.</exception>
             public unsafe ErrorCode InflateEnd()
             {
-                EnsureNotDisposed();
-                EnsureState(State.InitializedForInflate);
+                ensureNotDisposed();
+                ensureState(State.InitializedForInflate);
 
                 fixed (Interop.ZStream* stream = &_zStream)
                 {
