@@ -85,14 +85,14 @@ namespace GrindCore.Tests
                                 Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
                                 result = 1;
                                 printExceptionDetails(tie.InnerException ?? tie);
-                                //return result;
+                                return result;
                             }
                             catch (Exception ex)
                             {
                                 Console.WriteLine($"Fail: {method.Name}({string.Join(", ", parameters)})");
                                 result = 1;
                                 printExceptionDetails(ex);
-                                //return result;
+                                return result;
                             }
                             finally
                             {
