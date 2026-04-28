@@ -95,7 +95,7 @@ namespace Nanook.GrindCore.Lzma
             _props.lc = _props.lp = _props.pb = _props.algo = _props.fb = _props.btMode = _props.numHashBytes = _props.numThreads = -1;
 
             // Fixed properties that we always want to set explicitly
-            _props.writeEndMark = 1; // default no end marker
+            _props.writeEndMark = 1; // write EOPM by default for self-contained blocks
             _props.affinity = 0;
             _props.reduceSize = ulong.MaxValue;
 
@@ -118,6 +118,9 @@ namespace Nanook.GrindCore.Lzma
                     _props.numHashBytes = mergedDict.HashBytes.Value;
                 if (mergedDict.MatchCycles.HasValue)
                     _props.mc = (uint)mergedDict.MatchCycles.Value;
+
+                if (mergedDict.WriteEndMark.HasValue)
+                    _props.writeEndMark = (uint)mergedDict.WriteEndMark.Value;
             }
 
             // Apply explicit thread count override

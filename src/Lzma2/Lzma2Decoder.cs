@@ -116,16 +116,21 @@ namespace Nanook.GrindCore.Lzma
             if (size < 3)
                 throw new ArgumentOutOfRangeException(nameof(size), "Incomplete header: need at least 3 bytes to read size fields");
 
-            int uSize = ((b & 0x1F) << 16 | (inData[inOffset + 1] << 8) | inData[inOffset + 2]) + 1;
-
+            int uSize;
             int cSize;
             if (!hasComp)
             {
-                // uncompressed block: compressed payload size equals uncompressed size
+                // Uncompressed block: size is only in the next 2 bytes.
+                // The control byte (0x01 or 0x02) carries NO size bits.
+                // See Lzma2Enc.c: outBuf[destPos++] = (u-1)>>8; outBuf[destPos++] = (u-1);
+                uSize = ((inData[inOffset + 1] << 8) | inData[inOffset + 2]) + 1;
                 cSize = uSize;
             }
             else
             {
+                // Compressed block: upper 5 bits of control byte carry the high bits of uSize-1.
+                uSize = (((b & 0x1F) << 16) | (inData[inOffset + 1] << 8) | inData[inOffset + 2]) + 1;
+
                 // For compressed blocks we need compressed-size bytes at offsets +3 and +4
                 if (size < 5)
                     throw new ArgumentOutOfRangeException(nameof(size), "Incomplete header: need at least 5 bytes for compressed-size");

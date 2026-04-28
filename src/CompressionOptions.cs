@@ -580,6 +580,17 @@ namespace Nanook.GrindCore
         /// </summary>
         public int? MatchCycles { get; set; }
 
+        /// <summary>
+        /// Gets or sets whether the LZMA end-of-payload marker (EOPM) is written at the end of the compressed stream.
+        /// <para><strong>Algorithms:</strong></para>
+        /// <para>• <strong>LZMA:</strong> 0 = do not write EOPM (default), 1 = write EOPM</para>
+        /// <para><strong>Impact:</strong> Some decoders (e.g. certain game engines and archivers) require the EOPM to be present
+        /// to correctly identify the end of an LZMA stream. Set to 1 for maximum compatibility when the compressed size
+        /// is not stored externally. The block-based API defaults to 1 (on) for self-contained blocks; the streaming
+        /// API defaults to 0 (off) because the caller controls stream boundaries.</para>
+        /// </summary>
+        public int? WriteEndMark { get; set; }
+
         // === TIER 4: Algorithm-Specific Advanced Options ===
 
         /// <summary>
