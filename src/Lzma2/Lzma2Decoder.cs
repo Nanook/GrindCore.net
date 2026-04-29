@@ -112,6 +112,10 @@ namespace Nanook.GrindCore.Lzma
             bool initProp = (b & 0x40) != 0;
             bool initState = (b & 0x20) != 0;
 
+            // Terminator is a single 0x00 byte — return early before the size checks
+            if (b == 0)
+                return new Lzma2BlockInfo { IsTerminator = true, HeaderSize = 1 };
+
             // For size fields we need at least bytes at offsets +1 and +2 (uncompressed size)
             if (size < 3)
                 throw new ArgumentOutOfRangeException(nameof(size), "Incomplete header: need at least 3 bytes to read size fields");
