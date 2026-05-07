@@ -94,6 +94,9 @@ namespace Nanook.GrindCore.Lzma
 
                 if (dictOptions.MatchCycles.HasValue)
                     props.mc = (uint)dictOptions.MatchCycles.Value;
+
+                if (dictOptions.WriteEndMark.HasValue)
+                    props.writeEndMark = (uint)dictOptions.WriteEndMark.Value;
             }
 
             // Thread count: explicit override wins, otherwise force single-threaded for LZMA
