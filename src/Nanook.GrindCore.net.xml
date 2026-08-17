@@ -6709,12 +6709,12 @@
             For compression, only reports current write position (no seeking).
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream_v1_5_2.#ctor(System.IO.Stream,System.UInt32,System.Int32,System.Boolean)">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream_v1_5_2.#ctor(System.IO.Stream,System.Int32,System.Int32,System.Boolean)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableStream_v1_5_2"/> class for compression.
             </summary>
             <param name="stream">The base stream to write compressed data to.</param>
-            <param name="maxFrameSize">Maximum size of each seekable frame (default 1MB).</param>
+            <param name="maxFrameSize">Maximum size of each seekable frame in bytes (default 1MB). Must be greater than zero.</param>
             <param name="compressionLevel">The compression level (1-22, default 3).</param>
             <param name="leaveOpen">True to leave the base stream open after disposing this stream.</param>
         </member>
@@ -6793,12 +6793,12 @@
             For compression, only reports current write position (no seeking).
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream_v1_5_7.#ctor(System.IO.Stream,System.UInt32,System.Int32,System.Boolean)">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream_v1_5_7.#ctor(System.IO.Stream,System.Int32,System.Int32,System.Boolean)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableStream_v1_5_7"/> class for compression.
             </summary>
             <param name="stream">The base stream to write compressed data to.</param>
-            <param name="maxFrameSize">Maximum size of each seekable frame (default 1MB).</param>
+            <param name="maxFrameSize">Maximum size of each seekable frame in bytes (default 1MB). Must be greater than zero.</param>
             <param name="compressionLevel">The compression level (1-22, default 3).</param>
             <param name="leaveOpen">True to leave the base stream open after disposing this stream.</param>
         </member>

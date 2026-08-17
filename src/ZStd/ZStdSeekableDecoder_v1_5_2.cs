@@ -17,6 +17,12 @@ namespace Nanook.GrindCore.ZStd
         private GCHandle _thisHandle;
         private GCHandle _bufferHandle; // Pin buffer for buffer-based decoder
 
+        // Reusable read callback buffer to avoid per-call allocations
+        private byte[] _readBuffer;
+        private GCHandle _readBufferHandle;
+        private IntPtr _readBufferPtr;
+        private const int _ReadBufferSize = 128 * 1024; // 128 KB - matches typical DStreamInSize
+
         // Delegates for callbacks - must be kept alive
         private readonly ReadFunc _readFunc;
         private readonly SeekFunc _seekFunc;
@@ -53,9 +59,14 @@ namespace Nanook.GrindCore.ZStd
             _sourceStream = sourceStream;
             _disposed = false;
 
+            // Allocate and pin a reusable read buffer for native callbacks
+            _readBuffer = BufferPool.Rent(_ReadBufferSize);
+            _readBufferHandle = GCHandle.Alloc(_readBuffer, GCHandleType.Pinned);
+            _readBufferPtr = _readBufferHandle.AddrOfPinnedObject();
+
             // Create delegates and pin this instance
-            _readFunc = ReadCallback;
-            _seekFunc = SeekCallback;
+            _readFunc = readCallback;
+            _seekFunc = seekCallback;
             _thisHandle = GCHandle.Alloc(this, GCHandleType.Normal);
 
             // Initialize seekable decompression context with callbacks
@@ -273,20 +284,29 @@ namespace Nanook.GrindCore.ZStd
         }
 
         // Callback implementations
-        private int ReadCallback(IntPtr opaque, IntPtr buffer, UIntPtr n)
+        private int readCallback(IntPtr opaque, IntPtr buffer, UIntPtr n)
         {
             try
             {
                 int count = (int)n;
-                byte[] tempBuffer = new byte[count];
-                int bytesRead = _sourceStream.Read(tempBuffer, 0, count);
 
-                if (bytesRead > 0)
+                // Use the pre-allocated pinned buffer when the request fits
+                if (count <= _ReadBufferSize)
                 {
-                    Marshal.Copy(tempBuffer, 0, buffer, bytesRead);
+                    int bytesRead = _sourceStream.Read(_readBuffer, 0, count);
+                    if (bytesRead > 0)
+                        Marshal.Copy(_readBuffer, 0, buffer, bytesRead);
+                    return bytesRead;
                 }
-
-                return bytesRead;
+                else
+                {
+                    // Rare case: request exceeds our buffer - fall back to a temporary allocation
+                    byte[] tempBuffer = new byte[count];
+                    int bytesRead = _sourceStream.Read(tempBuffer, 0, count);
+                    if (bytesRead > 0)
+                        Marshal.Copy(tempBuffer, 0, buffer, bytesRead);
+                    return bytesRead;
+                }
             }
             catch
             {
@@ -294,7 +314,7 @@ namespace Nanook.GrindCore.ZStd
             }
         }
 
-        private int SeekCallback(IntPtr opaque, long offset, int origin)
+        private int seekCallback(IntPtr opaque, long offset, int origin)
         {
             try
             {
@@ -334,6 +354,17 @@ namespace Nanook.GrindCore.ZStd
                 if (_thisHandle.IsAllocated)
                 {
                     _thisHandle.Free();
+                }
+
+                if (_readBufferHandle.IsAllocated)
+                {
+                    _readBufferHandle.Free();
+                }
+
+                if (_readBuffer != null)
+                {
+                    BufferPool.Return(_readBuffer);
+                    _readBuffer = null!;
                 }
 
                 if (_bufferHandle.IsAllocated)

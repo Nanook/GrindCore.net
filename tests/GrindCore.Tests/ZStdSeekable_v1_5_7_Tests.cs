@@ -625,7 +625,7 @@ namespace GrindCore.Tests
         {
             using (var memoryStream = new MemoryStream())
             {
-                using (var seekableStream = new ZStdSeekableStream_v1_5_7(memoryStream, maxFrameSize: (uint)frameSize, compressionLevel: compressionLevel, leaveOpen: true))
+                using (var seekableStream = new ZStdSeekableStream_v1_5_7(memoryStream, maxFrameSize: frameSize, compressionLevel: compressionLevel, leaveOpen: true))
                 {
                     seekableStream.Write(inputData, 0, inputData.Length);
                 }

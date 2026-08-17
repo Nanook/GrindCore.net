@@ -22,6 +22,7 @@ namespace Nanook.GrindCore.ZStd
         private long _position;
         private bool _disposed;
         private bool _wroteData;
+        private bool _finalized;
 
         /// <summary>
         /// Gets a value indicating whether the current stream supports reading (decompression).
@@ -77,16 +78,17 @@ namespace Nanook.GrindCore.ZStd
         /// Initializes a new instance of the <see cref="ZStdSeekableStream_v1_5_2"/> class for compression.
         /// </summary>
         /// <param name="stream">The base stream to write compressed data to.</param>
-        /// <param name="maxFrameSize">Maximum size of each seekable frame (default 1MB).</param>
+        /// <param name="maxFrameSize">Maximum size of each seekable frame in bytes (default 1MB). Must be greater than zero.</param>
         /// <param name="compressionLevel">The compression level (1-22, default 3).</param>
         /// <param name="leaveOpen">True to leave the base stream open after disposing this stream.</param>
-        [CLSCompliant(false)]
-        public ZStdSeekableStream_v1_5_2(Stream stream, uint maxFrameSize = 1024 * 1024, int compressionLevel = 3, bool leaveOpen = false)
+        public ZStdSeekableStream_v1_5_2(Stream stream, int maxFrameSize = 1024 * 1024, int compressionLevel = 3, bool leaveOpen = false)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
             if (!stream.CanWrite)
                 throw new ArgumentException("Stream must be writable for compression", nameof(stream));
+            if (maxFrameSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(maxFrameSize), "maxFrameSize must be greater than zero");
 
             _baseStream = stream;
             _mode = CompressionMode.Compress;
@@ -96,7 +98,7 @@ namespace Nanook.GrindCore.ZStd
             _wroteData = false;
 
             int bufferSize = 128 * 1024; // 128 KB buffer
-            _encoder = new ZStdSeekableEncoder_v1_5_2(bufferSize, maxFrameSize, compressionLevel, 1);
+            _encoder = new ZStdSeekableEncoder_v1_5_2(bufferSize, (uint)maxFrameSize, compressionLevel, 1);
             _buffer = new CompressionBuffer(bufferSize);
         }
 
@@ -211,8 +213,10 @@ namespace Nanook.GrindCore.ZStd
             if (_disposed)
                 throw new ObjectDisposedException(nameof(ZStdSeekableStream_v1_5_2));
 
-            if (_mode == CompressionMode.Compress && _encoder != null)
+            if (_mode == CompressionMode.Compress && _encoder != null && !_finalized)
             {
+                _finalized = true;
+
                 // Finalize compression and write seek table
                 CompressionBuffer inBuffer = new CompressionBuffer(0); // Empty input
                 CompressionBuffer outBuffer = new CompressionBuffer(_encoder.OutputBufferSize);
@@ -271,7 +275,7 @@ namespace Nanook.GrindCore.ZStd
             {
                 if (disposing)
                 {
-                    // Finalize compression if in write mode
+                    // Finalize compression if in write mode (no-op if already finalized)
                     if (_mode == CompressionMode.Compress && _encoder != null && _wroteData)
                     {
                         try
