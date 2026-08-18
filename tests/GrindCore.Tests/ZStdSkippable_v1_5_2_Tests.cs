@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using Nanook.GrindCore;
 using Nanook.GrindCore.ZStd;
 using Xunit;
 
@@ -7,6 +8,8 @@ namespace GrindCore.Tests
 {
     public class ZStdSkippable_v1_5_2_Tests
     {
+        private static readonly CompressionVersion _version = CompressionVersion.ZStd(ZStdVersion.v1_5_2);
+
         [Fact]
         public void WriteAndReadSkippableFrame_WithByteArray_Success()
         {
@@ -17,7 +20,7 @@ namespace GrindCore.Tests
             uint magicVariant = 5;
 
             // Act - Write skippable frame
-            int bytesWritten = ZStdSkippable_v1_5_2.WriteSkippableFrame(destination, sourceData, magicVariant);
+            int bytesWritten = ZStdSkippable.WriteSkippableFrame(destination, sourceData, magicVariant, _version);
 
             // Assert - Verify write succeeded
             Assert.True(bytesWritten > 0);
@@ -25,7 +28,7 @@ namespace GrindCore.Tests
 
             // Act - Read skippable frame
             byte[] readBuffer = new byte[sourceData.Length];
-            int bytesRead = ZStdSkippable_v1_5_2.ReadSkippableFrame(readBuffer, destination, out uint readVariant);
+            int bytesRead = ZStdSkippable.ReadSkippableFrame(readBuffer, destination, out uint readVariant, _version);
 
             // Assert - Verify read succeeded and data matches
             Assert.Equal(sourceData.Length, bytesRead);
@@ -44,7 +47,7 @@ namespace GrindCore.Tests
             uint magicVariant = 10;
 
             // Act - Write skippable frame
-            int bytesWritten = ZStdSkippable_v1_5_2.WriteSkippableFrame(destination, sourceData, magicVariant);
+            int bytesWritten = ZStdSkippable.WriteSkippableFrame(destination, sourceData, magicVariant, _version);
 
             // Assert - Verify write succeeded
             Assert.True(bytesWritten > 0);
@@ -52,7 +55,7 @@ namespace GrindCore.Tests
 
             // Act - Read skippable frame
             Span<byte> readBuffer = stackalloc byte[sourceData.Length];
-            int bytesRead = ZStdSkippable_v1_5_2.ReadSkippableFrame(readBuffer, destination, out uint readVariant);
+            int bytesRead = ZStdSkippable.ReadSkippableFrame(readBuffer, destination, out uint readVariant, _version);
 
             // Assert - Verify read succeeded and data matches
             Assert.Equal(sourceData.Length, bytesRead);
@@ -70,14 +73,14 @@ namespace GrindCore.Tests
             uint magicVariant = 3;
 
             // Act - Write a skippable frame
-            int bytesWritten = ZStdSkippable_v1_5_2.WriteSkippableFrame(frameBuffer, sourceData, magicVariant);
+            int bytesWritten = ZStdSkippable.WriteSkippableFrame(frameBuffer, sourceData, magicVariant, _version);
 
             // Trim buffer to actual frame size
             byte[] actualFrame = new byte[bytesWritten];
             Array.Copy(frameBuffer, actualFrame, bytesWritten);
 
             // Assert - Verify frame is detected as skippable
-            Assert.True(ZStdSkippable_v1_5_2.IsSkippableFrame(actualFrame));
+            Assert.True(ZStdSkippable.IsSkippableFrame(actualFrame, _version));
         }
 
         [Fact]
@@ -87,7 +90,7 @@ namespace GrindCore.Tests
             byte[] normalData = Encoding.UTF8.GetBytes("This is not a skippable frame");
 
             // Act & Assert
-            Assert.False(ZStdSkippable_v1_5_2.IsSkippableFrame(normalData));
+            Assert.False(ZStdSkippable.IsSkippableFrame(normalData, _version));
         }
 
         [Fact]
@@ -100,7 +103,7 @@ namespace GrindCore.Tests
 
             // Act & Assert
             Assert.Throws<ArgumentOutOfRangeException>(() =>
-                ZStdSkippable_v1_5_2.WriteSkippableFrame(destination, sourceData, invalidVariant));
+                ZStdSkippable.WriteSkippableFrame(destination, sourceData, invalidVariant, _version));
         }
 
         [Fact]
@@ -111,7 +114,7 @@ namespace GrindCore.Tests
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                ZStdSkippable_v1_5_2.WriteSkippableFrame(null!, sourceData, 0));
+                ZStdSkippable.WriteSkippableFrame(null!, sourceData, 0, _version));
         }
 
         [Fact]
@@ -122,7 +125,7 @@ namespace GrindCore.Tests
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                ZStdSkippable_v1_5_2.WriteSkippableFrame(destination, null!, 0));
+                ZStdSkippable.WriteSkippableFrame(destination, null!, 0, _version));
         }
 
         [Fact]
@@ -133,7 +136,7 @@ namespace GrindCore.Tests
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                ZStdSkippable_v1_5_2.ReadSkippableFrame(null!, sourceFrame, out _));
+                ZStdSkippable.ReadSkippableFrame(null!, sourceFrame, out _, _version));
         }
 
         [Fact]
@@ -144,7 +147,7 @@ namespace GrindCore.Tests
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                ZStdSkippable_v1_5_2.ReadSkippableFrame(destination, null!, out _));
+                ZStdSkippable.ReadSkippableFrame(destination, null!, out _, _version));
         }
 
         [Fact]
@@ -152,7 +155,7 @@ namespace GrindCore.Tests
         {
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                ZStdSkippable_v1_5_2.IsSkippableFrame((byte[])null!));
+                ZStdSkippable.IsSkippableFrame((byte[])null!, _version));
         }
 
         [Theory]
@@ -168,9 +171,9 @@ namespace GrindCore.Tests
             byte[] destination = new byte[1024];
 
             // Act - Write and read
-            int bytesWritten = ZStdSkippable_v1_5_2.WriteSkippableFrame(destination, sourceData, variant);
+            int bytesWritten = ZStdSkippable.WriteSkippableFrame(destination, sourceData, variant, _version);
             byte[] readBuffer = new byte[sourceData.Length];
-            int bytesRead = ZStdSkippable_v1_5_2.ReadSkippableFrame(readBuffer, destination, out uint readVariant);
+            int bytesRead = ZStdSkippable.ReadSkippableFrame(readBuffer, destination, out uint readVariant, _version);
 
             // Assert
             Assert.Equal(sourceData.Length, bytesRead);
@@ -191,9 +194,9 @@ namespace GrindCore.Tests
             uint magicVariant = 7;
 
             // Act
-            int bytesWritten = ZStdSkippable_v1_5_2.WriteSkippableFrame(destination, sourceData, magicVariant);
+            int bytesWritten = ZStdSkippable.WriteSkippableFrame(destination, sourceData, magicVariant, _version);
             byte[] readBuffer = new byte[sourceData.Length];
-            int bytesRead = ZStdSkippable_v1_5_2.ReadSkippableFrame(readBuffer, destination, out uint readVariant);
+            int bytesRead = ZStdSkippable.ReadSkippableFrame(readBuffer, destination, out uint readVariant, _version);
 
             // Assert
             Assert.Equal(sourceData.Length, bytesRead);
@@ -210,9 +213,9 @@ namespace GrindCore.Tests
             uint magicVariant = 0;
 
             // Act
-            int bytesWritten = ZStdSkippable_v1_5_2.WriteSkippableFrame(destination, sourceData, magicVariant);
+            int bytesWritten = ZStdSkippable.WriteSkippableFrame(destination, sourceData, magicVariant, _version);
             byte[] readBuffer = new byte[0];
-            int bytesRead = ZStdSkippable_v1_5_2.ReadSkippableFrame(readBuffer, destination, out uint readVariant);
+            int bytesRead = ZStdSkippable.ReadSkippableFrame(readBuffer, destination, out uint readVariant, _version);
 
             // Assert
             Assert.Equal(0, bytesRead);
@@ -221,3 +224,4 @@ namespace GrindCore.Tests
         }
     }
 }
+

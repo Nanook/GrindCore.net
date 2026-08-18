@@ -210,9 +210,9 @@ namespace GrindCore.Tests
         public void ZStdSkippable_ConstantsMatchZStdConstants()
         {
             // Verify backward compatibility - ZStdSkippable constants should match ZStdConstants
-            Assert.Equal(ZStdConstants.SkippableMagicNumberBase, ZStdSkippable_v1_5_7.MagicNumberBase);
-            Assert.Equal(ZStdConstants.SkippableMagicMask, ZStdSkippable_v1_5_7.MagicNumberMask);
-            Assert.Equal(ZStdConstants.SkippableMaxVariant, ZStdSkippable_v1_5_7.MaxVariant);
+            Assert.Equal(ZStdConstants.SkippableMagicNumberBase, ZStdSkippable.MagicNumberBase);
+            Assert.Equal(ZStdConstants.SkippableMagicMask, ZStdSkippable.MagicNumberMask);
+            Assert.Equal(ZStdConstants.SkippableMaxVariant, ZStdSkippable.MaxVariant);
         }
 
         [Fact]
@@ -221,7 +221,7 @@ namespace GrindCore.Tests
             // Verify that both methods produce the same results
             for (uint variant = 0; variant <= 15; variant++)
             {
-                uint fromSkippable = ZStdSkippable_v1_5_7.GetMagicNumber(variant);
+                uint fromSkippable = ZStdSkippable.GetMagicNumber(variant);
                 uint fromConstants = ZStdConstants.GetSkippableMagicNumber(variant);
 
                 Assert.Equal(fromConstants, fromSkippable);
