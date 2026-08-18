@@ -618,6 +618,84 @@ namespace GrindCore.Tests
             }
         }
 
+        [Theory]
+        [InlineData(4, 8192)]      // 4 frames of 8KB
+        [InlineData(10, 4096)]     // 10 frames of 4KB
+        [InlineData(2, 65536)]     // 2 frames of 64KB
+        public void SeekableDecoder_DecompressFrame_AllFrames_MatchesData(int numFrames, int frameSize)
+        {
+            // Arrange
+            int totalSize = numFrames * frameSize;
+            byte[] data = new byte[totalSize];
+            for (int i = 0; i < totalSize; i++) data[i] = (byte)(i % 251);
+
+            byte[] compressed = CompressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
+
+            using (var decoder = new ZStdSeekableDecoder(compressed))
+            {
+                Assert.Equal((uint)numFrames, decoder.FrameCount);
+
+                // Act & Assert - decompress each frame by index and verify against the source slice
+                for (uint frame = 0; frame < decoder.FrameCount; frame++)
+                {
+                    byte[] chunk = new byte[frameSize];
+                    int bytesDecompressed = decoder.DecompressFrame(chunk, frame);
+
+                    Assert.Equal(frameSize, bytesDecompressed);
+
+                    int offset = (int)frame * frameSize;
+                    for (int i = 0; i < frameSize; i++)
+                        Assert.Equal(data[offset + i], chunk[i]);
+                }
+            }
+        }
+
+        [Fact]
+        public void SeekableDecoder_DecompressFrame_MatchesOffsetBasedDecompress()
+        {
+            // Cross-checks DecompressFrame(index) against the already-covered Decompress(offset)
+            // path, so any future divergence between the two native code paths is caught.
+            const int frameSize = 8192;
+            const int numFrames = 5;
+            const int totalSize = frameSize * numFrames;
+
+            byte[] data = new byte[totalSize];
+            for (int i = 0; i < totalSize; i++) data[i] = (byte)(i % 251);
+
+            byte[] compressed = CompressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
+
+            using (var decoder = new ZStdSeekableDecoder(compressed))
+            {
+                for (uint frame = 0; frame < decoder.FrameCount; frame++)
+                {
+                    byte[] byIndex = new byte[frameSize];
+                    decoder.DecompressFrame(byIndex, frame);
+
+                    byte[] byOffset = new byte[frameSize];
+                    decoder.Decompress(byOffset, offset: (ulong)(frame * frameSize));
+
+                    Assert.Equal(byOffset, byIndex);
+                }
+            }
+        }
+
+        [Fact]
+        public void SeekableDecoder_DecompressFrame_IndexOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            const int frameSize = 4096;
+            byte[] data = new byte[frameSize * 3];
+            for (int i = 0; i < data.Length; i++) data[i] = (byte)(i % 251);
+
+            byte[] compressed = CompressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
+
+            using (var decoder = new ZStdSeekableDecoder(compressed))
+            {
+                byte[] chunk = new byte[frameSize];
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                    decoder.DecompressFrame(chunk, decoder.FrameCount)); // one past the last valid index
+            }
+        }
+
         /// <summary>
         /// Helper method to compress data using seekable format via the stream-based API.
         /// This simulates how the seekable encoder would be used in production code.
