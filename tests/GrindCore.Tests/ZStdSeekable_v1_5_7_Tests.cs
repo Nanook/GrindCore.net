@@ -619,9 +619,9 @@ namespace GrindCore.Tests
         }
 
         [Theory]
-        [InlineData(4, 8192)]      // 4 frames of 8KB
-        [InlineData(10, 4096)]     // 10 frames of 4KB
-        [InlineData(2, 65536)]     // 2 frames of 64KB
+        [InlineData(4, 8192)]      // 4 frames of 8KB max
+        [InlineData(10, 4096)]     // 10 frames of 4KB max
+        [InlineData(2, 65536)]     // 2 frames of 64KB max
         public void SeekableDecoder_DecompressFrame_AllFrames_MatchesData(int numFrames, int frameSize)
         {
             // Arrange
@@ -633,20 +633,25 @@ namespace GrindCore.Tests
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
-                Assert.Equal((uint)numFrames, decoder.FrameCount);
+                // frameSize passed to CompressSeekableUsingStream is a maxFrameSize ceiling, not a
+                // guaranteed exact per-frame size (see SeekableDecoder_FrameCount_MatchesExpectedFrames,
+                // which asserts FrameCount with >= rather than == for the same reason). Reassemble and
+                // check the total instead of assuming an exact frame count/size.
+                byte[] reassembled = new byte[decoder.DecompressedSize];
+                int cursor = 0;
 
-                // Act & Assert - decompress each frame by index and verify against the source slice
                 for (uint frame = 0; frame < decoder.FrameCount; frame++)
                 {
-                    byte[] chunk = new byte[frameSize];
+                    byte[] chunk = new byte[frameSize]; // frameSize is a safe upper bound for any single frame
                     int bytesDecompressed = decoder.DecompressFrame(chunk, frame);
 
-                    Assert.Equal(frameSize, bytesDecompressed);
-
-                    int offset = (int)frame * frameSize;
-                    for (int i = 0; i < frameSize; i++)
-                        Assert.Equal(data[offset + i], chunk[i]);
+                    Assert.True(bytesDecompressed > 0, $"Frame {frame} decompressed to 0 bytes");
+                    Array.Copy(chunk, 0, reassembled, cursor, bytesDecompressed);
+                    cursor += bytesDecompressed;
                 }
+
+                Assert.Equal((int)decoder.DecompressedSize, cursor);
+                Assert.Equal(data, reassembled);
             }
         }
 
@@ -666,16 +671,25 @@ namespace GrindCore.Tests
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
+                // Track the real cumulative offset from DecompressFrame's own return values rather
+                // than assuming frame * frameSize, in case per-frame sizes aren't perfectly uniform.
+                ulong runningOffset = 0;
+
                 for (uint frame = 0; frame < decoder.FrameCount; frame++)
                 {
                     byte[] byIndex = new byte[frameSize];
-                    decoder.DecompressFrame(byIndex, frame);
+                    int frameBytes = decoder.DecompressFrame(byIndex, frame);
 
-                    byte[] byOffset = new byte[frameSize];
-                    decoder.Decompress(byOffset, offset: (ulong)(frame * frameSize));
+                    byte[] byOffset = new byte[frameBytes];
+                    decoder.Decompress(byOffset, offset: runningOffset);
 
-                    Assert.Equal(byOffset, byIndex);
+                    for (int i = 0; i < frameBytes; i++)
+                        Assert.Equal(byOffset[i], byIndex[i]);
+
+                    runningOffset += (ulong)frameBytes;
                 }
+
+                Assert.Equal(decoder.DecompressedSize, runningOffset);
             }
         }
 
