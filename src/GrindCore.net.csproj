@@ -37,7 +37,7 @@
 
 	<!-- Include the LINQ bridge library for .NET Framework 2.0 support -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'net20'">
-		<PackageReference Include="Net30.LinqBridge" Version="1.6.0.1" />
+		<PackageReference Include="Net30.LinqBridge" Version="1.6.0.2" />
 	</ItemGroup>
 
 	<!-- CLASSIC will switch to net framework StreamBase and DataBlock for debugging -->
