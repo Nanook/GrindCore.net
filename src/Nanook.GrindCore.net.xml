@@ -6228,6 +6228,127 @@
             Decompresses the source data block into the destination data block using ZStd.
             </summary>
         </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdConstants">
+            <summary>
+            Provides constants for Zstandard (ZSTD) compression format.
+            These constants define magic numbers, size limits, and other ZSTD format specifications.
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.MagicNumber">
+            <summary>
+            Magic number for standard ZSTD compressed frames (0xFD2FB528).
+            Valid since ZSTD v0.8.0. This identifies the start of a standard compressed frame.
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.MagicDictionary">
+            <summary>
+            Magic number for ZSTD dictionary format (0xEC30A437).
+            Valid since ZSTD v0.7.0. This identifies a ZSTD dictionary file.
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.SkippableMagicNumberBase">
+            <summary>
+            Base magic number for skippable frames (0x184D2A50).
+            Skippable frames allow embedding custom user data within a ZSTD stream.
+            Valid magic numbers range from 0x184D2A50 to 0x184D2A5F (16 variants).
+            See <see cref="F:Nanook.GrindCore.ZStd.ZStdConstants.SkippableMagicMask"/> and <see cref="F:Nanook.GrindCore.ZStd.ZStdConstants.SkippableMaxVariant"/>.
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.SkippableMagicMask">
+            <summary>
+            Mask used to identify skippable frames (0xFFFFFFF0).
+            Use this to test if a magic number represents a skippable frame:
+            <code>
+            bool isSkippable = (magicNumber &amp; SkippableMagicMask) == SkippableMagicNumberBase;
+            </code>
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.SkippableMaxVariant">
+            <summary>
+            Maximum variant value for skippable frame magic numbers (0-15).
+            The actual magic number is: <c>SkippableMagicNumberBase + variant</c>.
+            This allows 16 different types of skippable frames (0x184D2A50 through 0x184D2A5F).
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.BlockSizeLogMax">
+            <summary>
+            Maximum log2 value for ZSTD block size (17).
+            Block size = 2^17 = 128 KB.
+            This is an internal ZSTD compression unit size limit enforced by the library.
+            </summary>
+            <remarks>
+            Note: This is the maximum size of a single **block** within a frame, not the frame itself.
+            For seekable compression, frames can be much larger (typically 1MB+) and contain many blocks.
+            </remarks>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.BlockSizeMax">
+            <summary>
+            Maximum size of a single ZSTD block (131072 bytes = 128 KB).
+            Calculated as 2^<see cref="F:Nanook.GrindCore.ZStd.ZStdConstants.BlockSizeLogMax"/>.
+            This limit is enforced by the ZSTD library for internal compression blocks.
+            </summary>
+            <remarks>
+            This is NOT the same as frame size. A frame can contain multiple blocks.
+            For seekable frames, you control frame size (e.g., 1MB default), not individual block size.
+            </remarks>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.ContentSizeUnknown">
+            <summary>
+            Special value indicating that the decompressed content size is unknown.
+            This value is used in the frame header when the final size cannot be determined upfront.
+            Value: <c>ulong.MaxValue</c> (0xFFFFFFFFFFFFFFFF)
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdConstants.ContentSizeError">
+            <summary>
+            Special value indicating an error when reading the content size.
+            Value: <c>ulong.MaxValue - 1</c> (0xFFFFFFFFFFFFFFFE)
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdConstants.IsStandardFrame(System.UInt32)">
+            <summary>
+            Determines if a magic number represents a standard ZSTD compressed frame.
+            </summary>
+            <param name="magicNumber">The 4-byte magic number to test.</param>
+            <returns>True if the magic number identifies a standard ZSTD frame.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdConstants.IsDictionary(System.UInt32)">
+            <summary>
+            Determines if a magic number represents a ZSTD dictionary.
+            </summary>
+            <param name="magicNumber">The 4-byte magic number to test.</param>
+            <returns>True if the magic number identifies a ZSTD dictionary.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdConstants.IsSkippableFrame(System.UInt32)">
+            <summary>
+            Determines if a magic number represents a skippable frame.
+            Skippable frames use magic numbers from 0x184D2A50 to 0x184D2A5F.
+            </summary>
+            <param name="magicNumber">The 4-byte magic number to test.</param>
+            <returns>True if the magic number identifies a skippable frame.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdConstants.GetSkippableVariant(System.UInt32)">
+            <summary>
+            Extracts the variant value (0-15) from a skippable frame magic number.
+            </summary>
+            <param name="magicNumber">The skippable frame magic number.</param>
+            <returns>The variant value (0-15), or null if the magic number is not a skippable frame.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdConstants.GetSkippableMagicNumber(System.UInt32)">
+            <summary>
+            Calculates the complete skippable frame magic number for a given variant.
+            </summary>
+            <param name="variant">Variant value (0-15).</param>
+            <returns>The complete magic number (0x184D2A50 + variant).</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown when variant is greater than 15.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdConstants.GetFrameTypeDescription(System.UInt32)">
+            <summary>
+            Gets a human-readable description of a ZSTD frame type based on its magic number.
+            </summary>
+            <param name="magicNumber">The 4-byte magic number to identify.</param>
+            <returns>A string describing the frame type.</returns>
+        </member>
         <member name="T:Nanook.GrindCore.ZStd.ZStdDecoder">
             <summary>
             Provides a decoder for Zstandard (ZStd) compressed data, supporting streaming decompression.
@@ -6305,6 +6426,355 @@
             Provides an encoder for Zstandard (ZStd) compressed data using version 1.5.2.
             Inherits from <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoder"/> and overrides only the version-specific logic.
             </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdSeekableDecoder">
+            <summary>
+            Provides a decoder for Zstandard (ZStd) seekable compressed data.
+            Supports random access decompression using the seek table footer.
+            This class implements the latest ZStd version (1.5.7) directly.
+            For older versions (e.g., 1.5.2), use <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableDecoderV1_5_2"/>, which inherits from this class and overrides only the version-specific logic.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableDecoder.FrameCount">
+            <summary>
+            Gets the number of seekable frames in the archive.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableDecoder.DecompressedSize">
+            <summary>
+            Gets the total decompressed size of all frames.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableDecoder.#ctor">
+            <summary>
+            Protected constructor for derived classes (v1.5.2) to bypass base initialization.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableDecoder.#ctor(System.IO.Stream)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableDecoder"/> class from a stream.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableDecoder.#ctor(System.Byte[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableDecoder"/> class from a buffer.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableDecoder.Decompress(System.Byte[],System.UInt64)">
+            <summary>
+            Decompresses data starting at a specific offset in the uncompressed stream.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableDecoder.DecompressFrame(System.Byte[],System.UInt32)">
+            <summary>
+            Decompresses a specific frame by index.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableDecoder.Dispose">
+            <summary>
+            Releases resources used by the decoder.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdSeekableDecoderV1_5_2">
+            <summary>
+            Provides a v1.5.2 decoder for Zstandard (ZStd) seekable compressed data.
+            Inherits from <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableDecoder"/> and overrides version-specific logic.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableDecoderV1_5_2.#ctor(System.IO.Stream)">
+            <summary>
+            Initializes a new instance from a stream.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableDecoderV1_5_2.#ctor(System.Byte[])">
+            <summary>
+            Initializes a new instance from a buffer.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdSeekableEncoder">
+            <summary>
+            Provides an encoder for Zstandard (ZStd) seekable compressed data.
+            Seekable format allows random access decompression by organizing data into
+            independently decompressible frames with a seek table footer.
+            This class implements the latest ZStd version (1.5.7) directly.
+            For older versions (e.g., 1.5.2), use <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableEncoderV1_5_2"/>, which inherits from this class and overrides only the version-specific logic.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableEncoder.InputBufferSize">
+            <summary>
+            Gets the recommended input buffer size for ZStd seekable compression.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableEncoder.OutputBufferSize">
+            <summary>
+            Gets the recommended output buffer size for ZStd seekable compression.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableEncoder.MaxFrameSize">
+            <summary>
+            Gets the maximum frame size for seekable compression.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableEncoder.#ctor(System.Int32,System.UInt32,System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableEncoder"/> class.
+            </summary>
+            <param name="blockSize">The block size to use for compression buffers.</param>
+            <param name="maxFrameSize">Maximum size of each seekable frame.</param>
+            <param name="compressionLevel">The compression level to use (1-22, default is 3).</param>
+            <param name="checksumFlag">Whether to include checksums in frames (1 = yes, 0 = no, default is 1).</param>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableEncoder.#ctor">
+            <summary>
+            Protected constructor for derived classes (v1.5.2) to bypass base initialization.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
+            <summary>
+            Encodes data from the input buffer into the output buffer using ZStd seekable compression.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableEncoder.EndFrame(Nanook.GrindCore.CompressionBuffer)">
+            <summary>
+            Explicitly ends the current frame without ending the entire stream.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableEncoder.Dispose">
+            <summary>
+            Releases resources used by the encoder.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdSeekableEncoderV1_5_2">
+            <summary>
+            Provides a v1.5.2 encoder for Zstandard (ZStd) seekable compressed data.
+            Inherits from <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableEncoder"/> and overrides version-specific logic.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdSeekableStream">
+            <summary>
+            Provides a stream implementation for Zstandard (ZStd) seekable compression and decompression.
+            Seekable streams allow random access decompression via frame-based organization.
+            
+            For compression: Creates seekable archives with configurable frame sizes.
+            For decompression: Supports random access reads from seekable archives.
+            
+            This class supports multiple ZStd versions (v1.5.2 and v1.5.7) via the <see cref="T:Nanook.GrindCore.CompressionVersion"/> parameter.
+            If no version is specified, the latest version (v1.5.7) is used.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableStream.CanRead">
+            <summary>
+            Gets a value indicating whether the current stream supports reading (decompression).
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableStream.CanSeek">
+            <summary>
+            Gets a value indicating whether the current stream supports seeking.
+            Only supported for decompression mode with seekable archives.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableStream.CanWrite">
+            <summary>
+            Gets a value indicating whether the current stream supports writing (compression).
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableStream.Length">
+            <summary>
+            Gets the length of the stream (decompressed size for read mode).
+            Only supported in decompression mode.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableStream.Position">
+            <summary>
+            Gets or sets the position within the current stream.
+            For decompression, supports seeking to any position.
+            For compression, only reports current write position (no seeking).
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableStream.DecompressedSize">
+            <summary>
+            Gets the total decompressed size (only available in decompression mode).
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.ZStd.ZStdSeekableStream.EncoderOutputBufferSize">
+            <summary>
+            Gets the output buffer size from the active encoder.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.#ctor(System.IO.Stream,System.Int32,System.Int32,System.Boolean,Nanook.GrindCore.CompressionVersion)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableStream"/> class for compression.
+            </summary>
+            <param name="stream">The base stream to write compressed data to.</param>
+            <param name="maxFrameSize">Maximum size of each seekable frame in bytes (default 1MB). Must be greater than zero.</param>
+            <param name="compressionLevel">The compression level (1-22, default 3).</param>
+            <param name="leaveOpen">True to leave the base stream open after disposing this stream.</param>
+            <param name="version">The ZStd version to use. If null, the latest version is used.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.#ctor(System.IO.Stream,System.Boolean,Nanook.GrindCore.CompressionVersion)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdSeekableStream"/> class for decompression from a stream.
+            </summary>
+            <param name="stream">The base stream to read compressed data from. Must be readable and seekable.</param>
+            <param name="leaveOpen">True to leave the base stream open after disposing this stream.</param>
+            <param name="version">The ZStd version to use. If null, the latest version is used.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reads a sequence of bytes from the current stream and advances the position.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.Write(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Writes a sequence of bytes to the current stream and advances the position.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.Flush">
+            <summary>
+            Flushes the compression buffer and writes all pending data.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.Seek(System.Int64,System.IO.SeekOrigin)">
+            <summary>
+            Sets the position within the current stream (decompression mode only).
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.SetLength(System.Int64)">
+            <summary>
+            Not supported for seekable streams.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.ReadAsync(System.Memory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously reads a sequence of bytes from the current stream and advances the position.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.WriteAsync(System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes a sequence of bytes to the current stream and advances the position.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously reads a sequence of bytes from the current stream and advances the position.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.WriteAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously writes a sequence of bytes to the current stream and advances the position.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.FlushAsync(System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously flushes the compression buffer and writes all pending data.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSeekableStream.Dispose(System.Boolean)">
+            <summary>
+            Releases the unmanaged resources used by the stream and optionally releases the managed resources.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.ZStd.ZStdSkippable">
+            <summary>
+            Provides utilities for working with Zstandard skippable frames.
+            Skippable frames allow integration of user-defined data into a flow of concatenated ZSTD frames.
+            They will be ignored (skipped) by standard ZSTD decompressors.
+            
+            This class supports multiple ZStd versions via the <see cref="T:Nanook.GrindCore.CompressionVersion"/> parameter.
+            If no version is specified, the latest version (v1.5.7) is used.
+            </summary>
+            <remarks>
+            For additional ZSTD constants and frame type detection, see <see cref="T:Nanook.GrindCore.ZStd.ZStdConstants"/>.
+            </remarks>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdSkippable.MagicNumberBase">
+            <summary>
+            The base magic number for skippable frames (0x184D2A50).
+            Valid skippable magic numbers range from 0x184D2A50 to 0x184D2A5F (variants 0-15).
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdSkippable.MagicNumberMask">
+            <summary>
+            The mask used to identify skippable frames (0xFFFFFFF0).
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.ZStd.ZStdSkippable.MaxVariant">
+            <summary>
+            Maximum variant value (0-15) for skippable frame magic numbers.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSkippable.WriteSkippableFrame(System.Byte[],System.Byte[],System.UInt32,Nanook.GrindCore.CompressionVersion)">
+            <summary>
+            Writes a skippable frame containing custom user data.
+            </summary>
+            <param name="destination">Destination buffer for the skippable frame.</param>
+            <param name="source">Source data to be embedded in the skippable frame.</param>
+            <param name="magicVariant">Variant value (0-15) to differentiate types of skippable frames.</param>
+            <param name="version">The ZStd version to use. If null, the latest version is used.</param>
+            <returns>Number of bytes written.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when destination or source is null.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown when magicVariant is greater than 15.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when the write operation fails.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSkippable.WriteSkippableFrame(System.Span{System.Byte},System.ReadOnlySpan{System.Byte},System.UInt32,Nanook.GrindCore.CompressionVersion)">
+            <summary>
+            Writes a skippable frame containing custom user data with span overloads.
+            </summary>
+            <param name="destination">Destination span for the skippable frame.</param>
+            <param name="source">Source span containing data to be embedded in the skippable frame.</param>
+            <param name="magicVariant">Variant value (0-15) to differentiate types of skippable frames.</param>
+            <param name="version">The ZStd version to use. If null, the latest version is used.</param>
+            <returns>Number of bytes written.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown when magicVariant is greater than 15.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when the write operation fails.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSkippable.ReadSkippableFrame(System.Byte[],System.Byte[],System.UInt32@,Nanook.GrindCore.CompressionVersion)">
+            <summary>
+            Reads the content of a skippable frame.
+            </summary>
+            <param name="destination">Buffer to receive the skippable frame content.</param>
+            <param name="source">Buffer containing the skippable frame.</param>
+            <param name="magicVariant">Receives the magic variant (0-15) that was used when the frame was written.</param>
+            <param name="version">The ZStd version to use. If null, the latest version is used.</param>
+            <returns>Number of bytes read.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when destination or source is null.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when the read operation fails.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSkippable.ReadSkippableFrame(System.Span{System.Byte},System.ReadOnlySpan{System.Byte},System.UInt32@,Nanook.GrindCore.CompressionVersion)">
+            <summary>
+            Reads the content of a skippable frame with spans.
+            </summary>
+            <param name="destination">Span to receive the skippable frame content.</param>
+            <param name="source">Span containing the skippable frame.</param>
+            <param name="magicVariant">Receives the magic variant (0-15) that was used when the frame was written.</param>
+            <param name="version">The ZStd version to use. If null, the latest version is used.</param>
+            <returns>Number of bytes read.</returns>
+            <exception cref="T:System.InvalidOperationException">Thrown when the read operation fails.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSkippable.IsSkippableFrame(System.Byte[],Nanook.GrindCore.CompressionVersion)">
+            <summary>
+            Checks if a buffer starts with a valid skippable frame magic number.
+            </summary>
+            <param name="buffer">Buffer to check for a skippable frame identifier.</param>
+            <param name="version">The ZStd version to use. If null, the latest version is used.</param>
+            <returns>True if the buffer starts with a skippable frame magic number; otherwise, false.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when buffer is null.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSkippable.IsSkippableFrame(System.ReadOnlySpan{System.Byte},Nanook.GrindCore.CompressionVersion)">
+            <summary>
+            Checks if a span starts with a valid skippable frame magic number.
+            </summary>
+            <param name="buffer">Span to check for a skippable frame identifier.</param>
+            <param name="version">The ZStd version to use. If null, the latest version is used.</param>
+            <returns>True if the span starts with a skippable frame magic number; otherwise, false.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.ZStd.ZStdSkippable.GetMagicNumber(System.UInt32)">
+            <summary>
+            Gets the complete magic number for a given variant.
+            </summary>
+            <param name="variant">Variant value (0-15).</param>
+            <returns>The complete magic number (0x184D2A50 + variant).</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">Thrown when variant is greater than 15.</exception>
         </member>
         <member name="T:Nanook.GrindCore.ZStd.ZStdStream">
             <summary>

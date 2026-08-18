@@ -57,10 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0'
 
@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download Linux ARM64 build
         uses: actions/download-artifact@v8
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download Linux ARM build
         uses: actions/download-artifact@v8
@@ -199,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0'
           
@@ -225,7 +225,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0'
           
@@ -278,11 +278,12 @@ jobs:
   test_win_arm64:
     needs: build_all_platforms
     if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['win-arm64'] == 'true' }}
-    runs-on: [self-hosted, Windows, ARM64]
+    runs-on: windows-11-arm
     steps:
-      - name: Clean windows workspace (remove entire repo folder)
-        run: del /f /q "%GITHUB_WORKSPACE%\*"
-        shell: cmd
+      - name: Setup .NET 10.0
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0'
 
       - name: Download Windows arm64 build
         uses: actions/download-artifact@v8
@@ -305,7 +306,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0'
 
@@ -330,7 +331,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0'
 

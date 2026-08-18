@@ -50,6 +50,7 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
   `net10.0;net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35`
 - **AOT Compatible**: Fully supports Ahead-of-Time compilation
 - **Native Performance**: Leverages native C libraries for optimal performance
+- **Seekable Compression**: ZStd seekable format for random access into compressed archives
 
 ### Compression  
 
@@ -60,6 +61,8 @@ GrindCore implements compression in two forms: **Stream-based** and **Block-base
 
 All **compression streams** inherit from the `CompressionStream` class, ensuring consistent behavior and shared functionality across implementations.  
 Similarly, all **block-based compression** implementations inherit from `CompressionBlock`, maintaining structured handling of compression operations.  
+
+Additionally, GrindCore provides **seekable compression** via `ZStdSeekableStream`, enabling random access decompression of ZStd archives. Data is organized into independently decompressible frames with a seek table, allowing efficient seeking to any byte offset without scanning the entire archive. See the [Getting Started Guide](GettingStarted.md#zstd-seekable-stream) for details.
 
 To simplify instance creation, GrindCore provides:  
 - `CompressionStreamFactory`, allowing easy instantiation of stream-based compression classes.  
@@ -79,7 +82,7 @@ All native compression algorithms are directly built into the [GrindCore Native]
 - **Fast-LZMA2** v1.0.1 (from [7Zip-mcmilk](https://github.com/mcmilk/7-Zip-zstd/tree/master/C/fast-lzma2))
 - **ZLib** v1.3.1 (GZip, ZLib, Deflate - from [.NET 8.0](https://github.com/dotnet/runtime/tree/release/8.0/src/native/external/zlib))
 - **ZLib-NG** v2.2.1 (GZip, ZLib, Deflate - from [.NET 9.0](https://github.com/dotnet/runtime/tree/release/9.0/src/native/external/zlib-ng))
-- **ZStd** v1.5.7 & v1.5.2 (from [Facebook](https://github.com/facebook/zstd/tree/dev/lib))
+- **ZStd** v1.5.7 & v1.5.2 (from [Facebook](https://github.com/facebook/zstd/tree/dev/lib)) — includes seekable format and skippable frame support
 
 **Notes:**
 - Multiple versions of some algorithms (e.g., ZStd, ZLib/ZLib-NG) are included to support applications that require pinned or frozen versions, most commonly for scenarios demanding byte-perfect, deterministic outputs.

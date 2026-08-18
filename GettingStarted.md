@@ -59,12 +59,12 @@ For algorithms that support detailed tuning (notably the LZMA family: LZMA, LZMA
 > **Note**: Fast-LZMA2 has sophisticated native multi-threading support and uses its own internal parameter system. Dictionary options are automatically mapped to appropriate native Fast-LZMA2 settings.
 
 Common useful fields for the LZMA family:
-- `DictionarySize` — dictionary size in bytes (most impactful for ratio/memory).
-- `FastBytes` — encoder lookahead / fast-match length.
-- `LiteralContextBits`, `LiteralPositionBits`, `PositionBits` — map to LZMA's lc/lp/pb settings.
-- `Algorithm`, `BinaryTreeMode`, `HashBytes`, `MatchCycles`, `SearchDepth` — various match-finder and algorithm-mode knobs.
-- `Strategy` — used by some wrappers to indicate compression level/variant for hybrid encoders (Fast?LZMA2 maps Strategy ? compression level).
-- `ThreadCount` (on `CompressionOptions`) — used where the native encoder supports multithreading (e.g., Fast-LZMA2, block-based LZMA2). Note: LZMA uses single-threading for stability; LZMA2 and Fast-LZMA2 support true multithreading.
+- `DictionarySize` â€” dictionary size in bytes (most impactful for ratio/memory).
+- `FastBytes` â€” encoder lookahead / fast-match length.
+- `LiteralContextBits`, `LiteralPositionBits`, `PositionBits` â€” map to LZMA's lc/lp/pb settings.
+- `Algorithm`, `BinaryTreeMode`, `HashBytes`, `MatchCycles`, `SearchDepth` â€” various match-finder and algorithm-mode knobs.
+- `Strategy` â€” used by some wrappers to indicate compression level/variant for hybrid encoders (Fast?LZMA2 maps Strategy ? compression level).
+- `ThreadCount` (on `CompressionOptions`) â€” used where the native encoder supports multithreading (e.g., Fast-LZMA2, block-based LZMA2). Note: LZMA uses single-threading for stability; LZMA2 and Fast-LZMA2 support true multithreading.
 
 Best practice:
 - Set tuning via `CompressionOptions.WithLzmaDictionary(...)`, `WithLzma2Dictionary(...)` or `WithFastLzma2Dictionary(...)` helpers where provided.
@@ -119,6 +119,118 @@ using var zstdStream = new ZStdStream(outputStream,
 using var brotliStream = new BrotliStream(inputStream, 
   CompressionOptions.DefaultDecompress());
 ```
+
+## ZStd Seekable Stream
+
+GrindCore provides `ZStdSeekableStream`, a stream implementation for the ZStd seekable format. Unlike standard streaming compression, seekable archives organize data into independently decompressible frames with a seek table footer, enabling random access decompression without scanning the entire archive.
+
+### Key Features
+
+- **Random access decompression**: Seek to any byte offset and decompress from that point.
+- **Frame-based compression**: Data is split into configurable frames (default 1MB), each independently decompressible.
+- **Standard Stream API**: Inherits from `Stream` with full `Read`, `Write`, `Seek`, `Position`, and `Length` support.
+- **Async support**: `ReadAsync`, `WriteAsync`, and `FlushAsync` for non-blocking I/O.
+- **Version selection**: Supports ZStd v1.5.7 (default) and v1.5.2 via `CompressionVersion`.
+- **CLS-compliant**: All public parameters use standard .NET types.
+
+### When to Use
+
+Use `ZStdSeekableStream` when you need:
+- Random access into large compressed archives (e.g., database pages, virtual disk images).
+- Selective decompression of specific regions without decompressing the entire file.
+- Compressed formats that support efficient seeking (e.g., indexed storage).
+
+For simple sequential compression/decompression, use `ZStdStream` instead.
+
+### Example: Compression
+
+```csharp
+using var output = File.Create("archive.zst");
+using var seekable = new ZStdSeekableStream(output, maxFrameSize: 256 * 1024, compressionLevel: 5);
+
+// Write data - frames are created automatically based on maxFrameSize
+seekable.Write(data, 0, data.Length);
+
+// Flush finalizes the archive and writes the seek table
+seekable.Flush();
+```
+
+### Example: Random Access Decompression
+
+```csharp
+using var input = File.OpenRead("archive.zst");
+using var seekable = new ZStdSeekableStream(input, leaveOpen: false);
+
+// Query archive metadata
+long totalSize = seekable.Length;
+
+// Seek to any position and read
+seekable.Position = 1024 * 1024; // Jump to 1MB offset
+byte[] buffer = new byte[4096];
+int bytesRead = seekable.Read(buffer, 0, buffer.Length);
+
+// Seek relative to current position
+seekable.Seek(-100, SeekOrigin.Current);
+```
+
+### Example: Async Compression
+
+```csharp
+using var output = new MemoryStream();
+using var seekable = new ZStdSeekableStream(output, maxFrameSize: 64 * 1024, leaveOpen: true);
+
+await seekable.WriteAsync(data, 0, data.Length, cancellationToken);
+await seekable.FlushAsync(cancellationToken);
+```
+
+### Example: Using a Specific ZStd Version
+
+```csharp
+// Use v1.5.2 for compatibility with older archives
+var version = CompressionVersion.ZStd(ZStdVersion.v1_5_2);
+
+using var seekable = new ZStdSeekableStream(stream, maxFrameSize: 1024 * 1024,
+    compressionLevel: 3, leaveOpen: false, version: version);
+```
+
+### Frame Size Guidance
+
+The `maxFrameSize` parameter controls the granularity of random access:
+- **Smaller frames** (e.g., 64KB): More precise seeking, slightly higher overhead from frame headers and seek table entries.
+- **Larger frames** (e.g., 4MB): Better compression ratio, but seeking requires decompressing up to one full frame.
+- **Default (1MB)**: Good balance for most use cases.
+
+### Related: Skippable Frames
+
+ZStd supports skippable frames, which embed arbitrary user data within a ZStd stream. These are ignored by standard decompressors but can carry metadata (e.g., checksums, indexes, version info).
+
+```csharp
+// Write a skippable frame with custom metadata
+byte[] metadata = Encoding.UTF8.GetBytes("archive-v2.0");
+byte[] frame = new byte[metadata.Length + 8]; // 4-byte magic + 4-byte size header
+int written = ZStdSkippable.WriteSkippableFrame(frame, metadata, magicVariant: 0);
+
+// Detect and read skippable frames
+if (ZStdSkippable.IsSkippableFrame(buffer))
+{
+    byte[] content = new byte[1024];
+    int read = ZStdSkippable.ReadSkippableFrame(content, buffer, out uint variant);
+}
+```
+
+### Related: ZStdConstants
+
+Use `ZStdConstants` for format-level detection and validation:
+
+```csharp
+// Identify frame types from magic numbers
+uint magic = BitConverter.ToUInt32(header, 0);
+if (ZStdConstants.IsStandardFrame(magic)) { /* compressed data */ }
+if (ZStdConstants.IsSkippableFrame(magic)) { /* user metadata */ }
+uint? variant = ZStdConstants.GetSkippableVariant(magic); // 0-15 or null
+```
+
+---
 
 ## Block Compression Architecture 
 

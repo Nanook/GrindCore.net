@@ -178,6 +178,41 @@ namespace Nanook.GrindCore
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern UIntPtr SZ_ZStd_v1_5_7_CStreamOutSize();
+
+            /* ===== Error Handling ===== */
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern uint SZ_ZStd_v1_5_7_IsError(UIntPtr result);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern IntPtr SZ_ZStd_v1_5_7_GetErrorName(UIntPtr result);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern uint SZ_ZStd_v1_5_2_IsError(UIntPtr result);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern IntPtr SZ_ZStd_v1_5_2_GetErrorName(UIntPtr result);
+
+            /* ===== Skippable Frame Support ===== */
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern UIntPtr SZ_ZStd_v1_5_7_WriteSkippableFrame(
+                void* dst, 
+                UIntPtr dstCapacity,
+                void* src, 
+                UIntPtr srcSize,
+                uint magicVariant);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern UIntPtr SZ_ZStd_v1_5_7_ReadSkippableFrame(
+                void* dst, 
+                UIntPtr dstCapacity,
+                uint* magicVariant,
+                void* src, 
+                UIntPtr srcSize);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern uint SZ_ZStd_v1_5_7_IsSkippableFrame(
+                void* buffer, 
+                UIntPtr size);
         }
 
         /* ===== Compression Strategies & Directives (v1_5_2) ===== */
