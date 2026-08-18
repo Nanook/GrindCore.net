@@ -163,7 +163,7 @@ namespace GrindCore.Tests
         [InlineData(5)]
         [InlineData(10)]
         [InlineData(15)]
-        public void WriteAndReadSkippableFrame_AllVariants_Success(uint variant)
+        public void WriteAndReadSkippableFrame_AllVariants_Success(int variant)
         {
             // Arrange
             string testData = $"Testing variant {variant}";
@@ -171,13 +171,13 @@ namespace GrindCore.Tests
             byte[] destination = new byte[1024];
 
             // Act - Write and read
-            int bytesWritten = ZStdSkippable.WriteSkippableFrame(destination, sourceData, variant, _version);
+            int bytesWritten = ZStdSkippable.WriteSkippableFrame(destination, sourceData, (uint)variant, _version);
             byte[] readBuffer = new byte[sourceData.Length];
             int bytesRead = ZStdSkippable.ReadSkippableFrame(readBuffer, destination, out uint readVariant, _version);
 
             // Assert
             Assert.Equal(sourceData.Length, bytesRead);
-            Assert.Equal(variant, readVariant);
+            Assert.Equal((uint)variant, readVariant);
             Assert.Equal(testData, Encoding.UTF8.GetString(readBuffer, 0, bytesRead));
         }
 
