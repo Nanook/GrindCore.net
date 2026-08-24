@@ -201,8 +201,15 @@ namespace Nanook.GrindCore.ZStd
 
                 if (dictionary != null && dictionary.Length > 0)
                 {
-                    // Dictionary binding for streaming not yet supported in v1.5.2 PAL
-                    // Use v1.5.7 for dictionary + streaming support
+                    fixed (byte* dictPtr = dictionary)
+                    {
+                        SZ_ZStd_v1_5_2_CompressionDict dict = new SZ_ZStd_v1_5_2_CompressionDict();
+                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateCompressionDict(out dict.cdict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel) == 0)
+                        {
+                            _cdict152 = dict;
+                            Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_SetCompressionDict(ctxPtr, &dict);
+                        }
+                    }
                 }
             }
 

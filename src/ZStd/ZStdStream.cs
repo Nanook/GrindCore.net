@@ -89,8 +89,9 @@ namespace Nanook.GrindCore.ZStd
             else
             {
                 this.BufferSizeOutput = BufferThreshold;
+                byte[]? dictionary = options?.InitProperties;
                 if (useV152)
-                    _decoder = new ZStdDecoderV1_5_2();
+                    _decoder = new ZStdDecoderV1_5_2(dictionary);
                 else
                     _decoder = new ZStdDecoder();
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);

@@ -1,6 +1,9 @@
 name: Publish NuGet Package
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       branch:
@@ -22,21 +25,35 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.inputs.branch || github.ref }}
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v6
       with:
         dotnet-version: '10.0'
 
+    - name: Determine version
+      id: version
+      run: |
+        if [[ "${{ github.ref_type }}" == "tag" ]]; then
+          # Strip leading 'v' from tag name (v1.0.0 -> 1.0.0, v1.0.0-beta1 -> 1.0.0-beta1)
+          VERSION="${GITHUB_REF_NAME#v}"
+        else
+          # Manual dispatch fallback - use csproj version + run number as prerelease
+          VERSION="0.8.0-ci.${{ github.run_number }}"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+      shell: bash
+
     - name: Restore dependencies
       run: dotnet restore
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
     - name: Pack NuGet package
-      run: dotnet pack --configuration Release --output ./.nuget --no-restore
+      run: dotnet pack --configuration Release --output ./.nuget --no-restore -p:Version=${{ steps.version.outputs.version }}
 
     - name: List .nuget directory contents
       run: ls -l ${{ github.workspace }}/.nuget
@@ -48,6 +65,5 @@ jobs:
         path: '**/*.nupkg'
 
     - name: Publish NuGet package
-      if: ${{ github.event.inputs.upload_to_nuget == 'true' }}
-      # if: github.event.pull_request.merged == true || github.ref == 'refs/heads/main'
+      if: ${{ github.event_name == 'push' || github.event.inputs.upload_to_nuget == 'true' }}
       run: dotnet nuget push ./.nuget/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
