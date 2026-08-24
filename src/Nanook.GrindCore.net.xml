@@ -6377,7 +6377,7 @@
             Inherits from <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> and overrides only the version-specific logic.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2.#ctor">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2.#ctor(System.Byte[])">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2"/> class and creates a decompression context for ZStd v1.5.2.
             </summary>
