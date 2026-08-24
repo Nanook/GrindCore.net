@@ -11,13 +11,14 @@ namespace Nanook.GrindCore.ZStd
     internal unsafe class ZStdDecoder : IDisposable
     {
         protected SZ_ZStd_v1_5_7_DecompressionContext _ctx;
+        private SZ_ZStd_v1_5_7_DecompressionDict? _ddict;
         public int InputBufferSize { get; protected set; }
         public int OutputBufferSize { get; protected set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ZStdDecoder"/> class and creates a decompression context for ZStd v1.5.7.
         /// </summary>
-        public ZStdDecoder()
+        public ZStdDecoder(byte[]? dictionary = null)
         {
             InputBufferSize = (int)Interop.ZStd.SZ_ZStd_v1_5_7_CStreamInSize();
             OutputBufferSize = (int)Interop.ZStd.SZ_ZStd_v1_5_7_CStreamOutSize() * 0x2;
@@ -27,6 +28,19 @@ namespace Nanook.GrindCore.ZStd
             {
                 if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateDecompressionContext(ctxPtr) < 0)
                     throw new Exception("Failed to create Zstd v1.5.7 decompression context");
+
+                if (dictionary != null && dictionary.Length > 0)
+                {
+                    fixed (byte* dictPtr = dictionary)
+                    {
+                        SZ_ZStd_v1_5_7_DecompressionDict dict = new SZ_ZStd_v1_5_7_DecompressionDict();
+                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateDecompressionDict(out dict.ddict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length) == 0)
+                        {
+                            _ddict = dict;
+                            Interop.ZStd.SZ_ZStd_v1_5_7_SetDecompressionDict(ctxPtr, &dict);
+                        }
+                    }
+                }
             }
         }
 
@@ -74,6 +88,9 @@ namespace Nanook.GrindCore.ZStd
             {
                 Interop.ZStd.SZ_ZStd_v1_5_7_FreeDecompressionContext(ctxPtr);
             }
+
+            if (_ddict.HasValue)
+                Interop.ZStd.SZ_ZStd_v1_5_7_FreeDecompressionDict(_ddict.Value.ddict);
         }
     }
 

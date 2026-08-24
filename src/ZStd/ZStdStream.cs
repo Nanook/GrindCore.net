@@ -93,7 +93,7 @@ namespace Nanook.GrindCore.ZStd
                 if (useV152)
                     _decoder = new ZStdDecoderV1_5_2(dictionary);
                 else
-                    _decoder = new ZStdDecoder();
+                    _decoder = new ZStdDecoder(dictionary);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
