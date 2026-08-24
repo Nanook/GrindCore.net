@@ -52,16 +52,16 @@ jobs:
       shell: bash
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/GrindCore.net.csproj
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+      run: dotnet build src/GrindCore.net.csproj --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
     - name: Pack NuGet package
-      run: dotnet pack --configuration Release --output ./.nuget --no-restore -p:Version=${{ steps.version.outputs.version }}
+      run: dotnet pack src/GrindCore.net.csproj --configuration Release --output ./.nuget --no-build -p:Version=${{ steps.version.outputs.version }}
 
     - name: List .nuget directory contents
-      run: ls -l ${{ github.workspace }}/.nuget
+      run: ls -la ./.nuget
 
     - name: Upload NuGet package as artifact
       uses: actions/upload-artifact@v7
