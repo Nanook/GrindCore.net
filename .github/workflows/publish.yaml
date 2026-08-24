@@ -6,10 +6,10 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      branch:
-        description: 'Branch to build'
-        required: true
-        default: 'main'
+      tag:
+        description: 'Tag to build (e.g. v0.8.1-alpha). Leave empty to use the latest v* tag.'
+        required: false
+        default: ''
         type: string
 
 jobs:
@@ -20,7 +20,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
       with:
-        ref: ${{ github.event.inputs.branch || github.ref }}
+        ref: ${{ github.event.inputs.tag || github.ref }}
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v6
@@ -31,11 +32,20 @@ jobs:
       id: version
       run: |
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          # Strip leading 'v' from tag name (v1.0.0 -> 1.0.0, v1.0.0-beta1 -> 1.0.0-beta1)
+          # Triggered by tag push - strip leading 'v'
           VERSION="${GITHUB_REF_NAME#v}"
+        elif [[ -n "${{ github.event.inputs.tag }}" ]]; then
+          # Manual dispatch with explicit tag
+          VERSION="${{ github.event.inputs.tag }}"
+          VERSION="${VERSION#v}"
         else
-          # Manual dispatch fallback - use csproj version + run number as prerelease
-          VERSION="0.8.0-ci.${{ github.run_number }}"
+          # Manual dispatch with no tag - find latest v* tag
+          VERSION=$(git describe --tags --match "v*" --abbrev=0 2>/dev/null || echo "")
+          if [[ -z "$VERSION" ]]; then
+            echo "::error::No v* tags found in repository"
+            exit 1
+          fi
+          VERSION="${VERSION#v}"
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
