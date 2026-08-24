@@ -1,4 +1,4 @@
-name: Publish NuGet Package
+name: Build NuGet Package
 
 on:
   push:
@@ -11,11 +11,6 @@ on:
         required: true
         default: 'main'
         type: string
-      upload_to_nuget:
-        description: 'Upload to NuGet (uncheck to only upload artifact)'
-        required: true
-        default: true
-        type: boolean
 
 jobs:
   build:
@@ -62,8 +57,4 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: nuget-package
-        path: '**/*.nupkg'
-
-    - name: Publish NuGet package
-      if: ${{ github.event_name == 'push' || github.event.inputs.upload_to_nuget == 'true' }}
-      run: dotnet nuget push ./.nuget/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        path: ./.nuget/*.nupkg

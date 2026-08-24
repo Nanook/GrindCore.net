@@ -1,0 +1,68 @@
+name: Push to NuGet
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Build workflow Run ID to download artifacts from (leave empty for latest successful run)'
+        required: false
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '10.0'
+
+    - name: Get latest successful build run
+      if: inputs.run_id == ''
+      id: get-run-id
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const runs = await github.rest.actions.listWorkflowRuns({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'publish.yaml',
+            status: 'completed',
+            conclusion: 'success',
+            per_page: 1
+          });
+
+          if (runs.data.workflow_runs.length === 0) {
+            core.setFailed('No successful build runs found for publish.yaml');
+            return;
+          }
+
+          const run = runs.data.workflow_runs[0];
+          core.setOutput('run_id', run.id);
+          core.info(`Using run #${run.run_number} (${run.id}) from ${run.created_at} - ${run.display_title}`);
+
+    - name: Download NuGet package artifact
+      uses: actions/download-artifact@v7
+      with:
+        name: nuget-package
+        path: ./artifacts
+        run-id: ${{ inputs.run_id || steps.get-run-id.outputs.run_id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: List downloaded artifacts
+      run: ls -la ./artifacts
+
+    - name: Push to NuGet
+      run: |
+        for package in ./artifacts/*.nupkg; do
+          echo "Publishing: $(basename "$package")"
+          dotnet nuget push "$package" \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+        done
+      shell: bash
