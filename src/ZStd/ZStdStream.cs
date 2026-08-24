@@ -74,10 +74,16 @@ namespace Nanook.GrindCore.ZStd
                     BufferThreshold = encoderInputPref;
 
                 this.BufferSizeOutput = BufferThreshold + (BufferThreshold >> 7) + 128;
+
+                // Resolve MT and dictionary options
+                int nbWorkers = options?.ThreadCount ?? 0;
+                int jobSize = (options?.BlockSize != null && options.BlockSize.Value > 0) ? (int)options.BlockSize.Value : 0;
+                byte[]? dictionary = options?.InitProperties;
+
                 if (useV152)
-                    _encoder = new ZStdEncoderV1_5_2(resolvedBlockSize, resolvedCompressionLevel);
+                    _encoder = new ZStdEncoderV1_5_2(resolvedBlockSize, resolvedCompressionLevel, nbWorkers, jobSize, dictionary);
                 else
-                    _encoder = new ZStdEncoder(resolvedBlockSize, resolvedCompressionLevel);
+                    _encoder = new ZStdEncoder(resolvedBlockSize, resolvedCompressionLevel, nbWorkers, jobSize, dictionary);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else

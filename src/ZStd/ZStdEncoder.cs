@@ -12,6 +12,7 @@ namespace Nanook.GrindCore.ZStd
     internal unsafe class ZStdEncoder : IDisposable
     {
         protected SZ_ZStd_v1_5_7_CompressionContext _ctx;
+        protected SZ_ZStd_v1_5_7_CompressionDict? _cdict;
         protected byte[] _outputBuffer;
         protected GCHandle _outputPinned;
         protected IntPtr _outputPtr;
@@ -32,7 +33,10 @@ namespace Nanook.GrindCore.ZStd
         /// </summary>
         /// <param name="blockSize">The block size to use for compression.</param>
         /// <param name="compressionLevel">The compression level to use (default is 3).</param>
-        public ZStdEncoder(int blockSize, int compressionLevel = 3)
+        /// <param name="nbWorkers">Number of worker threads for multithreaded compression (0 = single-threaded).</param>
+        /// <param name="jobSize">Size of each compression job when using MT (0 = auto).</param>
+        /// <param name="dictionary">Optional pre-trained dictionary data for improved compression.</param>
+        public ZStdEncoder(int blockSize, int compressionLevel = 3, int nbWorkers = 0, int jobSize = 0, byte[]? dictionary = null)
         {
             _compressionLevel = compressionLevel;
             _ctx = new SZ_ZStd_v1_5_7_CompressionContext();
@@ -43,7 +47,24 @@ namespace Nanook.GrindCore.ZStd
                     throw new Exception("Failed to create Zstd v1.5.7 compression context");
 
                 Interop.ZStd.SZ_ZStd_v1_5_7_SetCompressionLevel(ctxPtr, _compressionLevel);
-                Interop.ZStd.SZ_ZStd_v1_5_7_SetBlockSize(ctxPtr, (nuint)blockSize);
+
+                if (nbWorkers > 0)
+                    Interop.ZStd.SZ_ZStd_v1_5_7_SetNbWorkers(ctxPtr, nbWorkers);
+                if (jobSize > 0)
+                    Interop.ZStd.SZ_ZStd_v1_5_7_SetJobSize(ctxPtr, (nuint)jobSize);
+
+                if (dictionary != null && dictionary.Length > 0)
+                {
+                    fixed (byte* dictPtr = dictionary)
+                    {
+                        SZ_ZStd_v1_5_7_CompressionDict dict = new SZ_ZStd_v1_5_7_CompressionDict();
+                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateCompressionDict(out dict.cdict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel) == 0)
+                        {
+                            _cdict = dict;
+                            Interop.ZStd.SZ_ZStd_v1_5_7_SetCompressionDict(ctxPtr, &dict);
+                        }
+                    }
+                }
             }
 
             InputBufferSize = (int)Interop.ZStd.SZ_ZStd_v1_5_7_CStreamInSize();
@@ -141,6 +162,9 @@ namespace Nanook.GrindCore.ZStd
                 Interop.ZStd.SZ_ZStd_v1_5_7_FreeCompressionContext(ctxPtr);
             }
 
+            if (_cdict.HasValue)
+                Interop.ZStd.SZ_ZStd_v1_5_7_FreeCompressionDict(_cdict.Value.cdict);
+
             if (_outputPinned.IsAllocated)
                 try { _outputPinned.Free(); } catch { }
 
@@ -155,8 +179,9 @@ namespace Nanook.GrindCore.ZStd
     internal unsafe class ZStdEncoderV1_5_2 : ZStdEncoder
     {
         private SZ_ZStd_v1_5_2_CompressionContext _ctx152;
+        private SZ_ZStd_v1_5_2_CompressionDict? _cdict152;
 
-        public ZStdEncoderV1_5_2(int blockSize, int compressionLevel = 3)
+        public ZStdEncoderV1_5_2(int blockSize, int compressionLevel = 3, int nbWorkers = 0, int jobSize = 0, byte[]? dictionary = null)
             : base(0, compressionLevel) // base will not be used, but must be called
         {
             _compressionLevel = compressionLevel;
@@ -168,7 +193,17 @@ namespace Nanook.GrindCore.ZStd
                     throw new Exception("Failed to create Zstd v1.5.2 compression context");
 
                 Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_SetCompressionLevel(ctxPtr, _compressionLevel);
-                Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_SetBlockSize(ctxPtr, (nuint)blockSize);
+
+                if (nbWorkers > 0)
+                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_SetNbWorkers(ctxPtr, nbWorkers);
+                if (jobSize > 0)
+                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_SetJobSize(ctxPtr, (nuint)jobSize);
+
+                if (dictionary != null && dictionary.Length > 0)
+                {
+                    // Dictionary binding for streaming not yet supported in v1.5.2 PAL
+                    // Use v1.5.7 for dictionary + streaming support
+                }
             }
 
             InputBufferSize = (int)Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CStreamInSize();
@@ -256,6 +291,9 @@ namespace Nanook.GrindCore.ZStd
             {
                 Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeCompressionContext(ctxPtr);
             }
+
+            if (_cdict152.HasValue)
+                Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeCompressionDict(_cdict152.Value.cdict);
 
             if (_outputPinned.IsAllocated)
                 try { _outputPinned.Free(); } catch { }
