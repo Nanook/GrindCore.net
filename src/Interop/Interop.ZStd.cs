@@ -118,16 +118,16 @@ namespace Nanook.GrindCore
 
             /* ===== Dictionary Handling ===== */
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_ZStd_v1_5_7_CreateCompressionDict(out IntPtr dict, IntPtr dictBuffer, UIntPtr dictSize, int compressionLevel);
+            public static extern int SZ_ZStd_v1_5_7_CreateCompressionDict(SZ_ZStd_v1_5_7_CompressionDict* dict, IntPtr dictBuffer, UIntPtr dictSize, int compressionLevel);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_ZStd_v1_5_7_CreateDecompressionDict(out IntPtr dict, IntPtr dictBuffer, UIntPtr dictSize);
+            public static extern int SZ_ZStd_v1_5_7_CreateDecompressionDict(SZ_ZStd_v1_5_7_DecompressionDict* dict, IntPtr dictBuffer, UIntPtr dictSize);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_ZStd_v1_5_7_FreeCompressionDict(IntPtr dict);
+            public static extern void SZ_ZStd_v1_5_7_FreeCompressionDict(SZ_ZStd_v1_5_7_CompressionDict* dict);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_ZStd_v1_5_7_FreeDecompressionDict(IntPtr dict);
+            public static extern void SZ_ZStd_v1_5_7_FreeDecompressionDict(SZ_ZStd_v1_5_7_DecompressionDict* dict);
 
             /* ===== Block Compression & Decompression ===== */
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
@@ -359,16 +359,16 @@ namespace Nanook.GrindCore
 
             /* ===== Dictionary Handling ===== */
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_ZStd_v1_5_2_CreateCompressionDict(out IntPtr dict, IntPtr dictBuffer, UIntPtr dictSize, int compressionLevel);
+            public static extern int SZ_ZStd_v1_5_2_CreateCompressionDict(SZ_ZStd_v1_5_2_CompressionDict* dict, IntPtr dictBuffer, UIntPtr dictSize, int compressionLevel);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern int SZ_ZStd_v1_5_2_CreateDecompressionDict(out IntPtr dict, IntPtr dictBuffer, UIntPtr dictSize);
+            public static extern int SZ_ZStd_v1_5_2_CreateDecompressionDict(SZ_ZStd_v1_5_2_DecompressionDict* dict, IntPtr dictBuffer, UIntPtr dictSize);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_ZStd_v1_5_2_FreeCompressionDict(IntPtr dict);
+            public static extern void SZ_ZStd_v1_5_2_FreeCompressionDict(SZ_ZStd_v1_5_2_CompressionDict* dict);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_ZStd_v1_5_2_FreeDecompressionDict(IntPtr dict);
+            public static extern void SZ_ZStd_v1_5_2_FreeDecompressionDict(SZ_ZStd_v1_5_2_DecompressionDict* dict);
 
             /* ===== Block Compression & Decompression ===== */
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
@@ -417,7 +417,21 @@ namespace Nanook.GrindCore
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_ZStd_v1_5_2_SetJobSize(SZ_ZStd_v1_5_2_CompressionContext* ctx, UIntPtr jobSize);
 
-            /* ===== Dictionary Streaming ===== */
+            /* ===== Dictionary Compression & Decompression ===== */
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern UIntPtr SZ_ZStd_v1_5_2_CompressBlockWithDict(
+                SZ_ZStd_v1_5_2_CompressionContext* ctx,
+                SZ_ZStd_v1_5_2_CompressionDict* dict,
+                IntPtr dst, UIntPtr dstCapacity,
+                byte* src, UIntPtr srcSize);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern UIntPtr SZ_ZStd_v1_5_2_DecompressBlockWithDict(
+                SZ_ZStd_v1_5_2_DecompressionContext* ctx,
+                SZ_ZStd_v1_5_2_DecompressionDict* dict,
+                IntPtr dst, UIntPtr dstCapacity,
+                byte* src, UIntPtr srcSize);
+
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_ZStd_v1_5_2_SetCompressionDict(
                 SZ_ZStd_v1_5_2_CompressionContext* ctx,

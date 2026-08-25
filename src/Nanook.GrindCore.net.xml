@@ -6356,7 +6356,7 @@
             For older versions (e.g., 1.5.2), use <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2"/>, which inherits from this class and overrides only the version-specific logic.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoder.#ctor">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoder.#ctor(System.Byte[])">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> class and creates a decompression context for ZStd v1.5.7.
             </summary>

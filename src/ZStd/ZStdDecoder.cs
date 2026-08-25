@@ -34,7 +34,7 @@ namespace Nanook.GrindCore.ZStd
                     fixed (byte* dictPtr = dictionary)
                     {
                         SZ_ZStd_v1_5_7_DecompressionDict dict = new SZ_ZStd_v1_5_7_DecompressionDict();
-                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateDecompressionDict(out dict.ddict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length) == 0)
+                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateDecompressionDict(&dict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length) == 0)
                         {
                             _ddict = dict;
                             Interop.ZStd.SZ_ZStd_v1_5_7_SetDecompressionDict(ctxPtr, &dict);
@@ -90,7 +90,11 @@ namespace Nanook.GrindCore.ZStd
             }
 
             if (_ddict.HasValue)
-                Interop.ZStd.SZ_ZStd_v1_5_7_FreeDecompressionDict(_ddict.Value.ddict);
+            {
+                var ddict = _ddict.Value;
+                Interop.ZStd.SZ_ZStd_v1_5_7_FreeDecompressionDict(&ddict);
+                _ddict = null;
+            }
         }
     }
 
@@ -122,7 +126,7 @@ namespace Nanook.GrindCore.ZStd
                     fixed (byte* dictPtr = dictionary)
                     {
                         SZ_ZStd_v1_5_2_DecompressionDict dict = new SZ_ZStd_v1_5_2_DecompressionDict();
-                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateDecompressionDict(out dict.ddict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length) == 0)
+                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateDecompressionDict(&dict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length) == 0)
                         {
                             _ddict152 = dict;
                             Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_SetDecompressionDict(ctxPtr, &dict);
@@ -172,7 +176,11 @@ namespace Nanook.GrindCore.ZStd
             }
 
             if (_ddict152.HasValue)
-                Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeDecompressionDict(_ddict152.Value.ddict);
+            {
+                var ddict152 = _ddict152.Value;
+                Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeDecompressionDict(&ddict152);
+                _ddict152 = null;
+            }
         }
     }
 }
