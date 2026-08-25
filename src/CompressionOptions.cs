@@ -464,7 +464,12 @@ namespace Nanook.GrindCore
         /// Gets or sets the window size as a power of 2 (log2 value) for algorithms that use logarithmic sizing.
         /// Alternative to DictionarySize for algorithms that prefer logarithmic parameters.
         /// <para><strong>Algorithms:</strong></para>
-        /// <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Default: 23 (8MB). Dictionary size = 2^WindowBits</para>
+        /// <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Unset (null) uses zstd's own implicit,
+        /// level-based window sizing for both block sizing and (when a content dictionary is supplied via
+        /// <see cref="CompressionOptions.InitProperties"/>) the dictionary's CDict - which caps out at 8MB for
+        /// any dictionary larger than 256KB at level 19 and never grows further, no matter how much bigger the
+        /// dictionary gets. Set this explicitly to override that cap when using a dictionary larger than ~8MB;
+        /// otherwise leave unset. Dictionary/block size = 2^WindowBits</para>
         /// <para>• <strong>Brotli:</strong> Window bits range: 10-24. Default: 22 (4MB). Larger = better compression</para>
         /// <para>• <strong>ZLib/Deflate/GZip:</strong> Range: 8-15 (256B-32KB), or negative (-8 to -15) for raw deflate without headers</para>
         /// <para><strong>Impact:</strong> Higher values increase memory usage but improve compression for large files.</para>

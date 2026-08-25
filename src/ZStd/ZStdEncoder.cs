@@ -36,7 +36,8 @@ namespace Nanook.GrindCore.ZStd
         /// <param name="nbWorkers">Number of worker threads for multithreaded compression (0 = single-threaded).</param>
         /// <param name="jobSize">Size of each compression job when using MT (0 = auto).</param>
         /// <param name="dictionary">Optional pre-trained dictionary data for improved compression.</param>
-        public ZStdEncoder(int blockSize, int compressionLevel = 3, int nbWorkers = 0, int jobSize = 0, byte[]? dictionary = null)
+        /// <param name="windowLog">Optional advanced windowLog override for the dictionary's CDict (0 = zstd's implicit level-based sizing, which caps out at 8MB for dictionaries &gt;256KB - see <see cref="CompressionDictionaryOptions.WindowBits"/>).</param>
+        public ZStdEncoder(int blockSize, int compressionLevel = 3, int nbWorkers = 0, int jobSize = 0, byte[]? dictionary = null, int windowLog = 0)
         {
             _compressionLevel = compressionLevel;
             _ctx = new SZ_ZStd_v1_5_7_CompressionContext();
@@ -58,7 +59,7 @@ namespace Nanook.GrindCore.ZStd
                     fixed (byte* dictPtr = dictionary)
                     {
                         SZ_ZStd_v1_5_7_CompressionDict dict = new SZ_ZStd_v1_5_7_CompressionDict();
-                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateCompressionDict(&dict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel) == 0)
+                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateCompressionDict(&dict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel, windowLog) == 0)
                         {
                             _cdict = dict;
                             Interop.ZStd.SZ_ZStd_v1_5_7_SetCompressionDict(ctxPtr, &dict);
@@ -197,7 +198,7 @@ namespace Nanook.GrindCore.ZStd
         private SZ_ZStd_v1_5_2_CompressionContext _ctx152;
         private SZ_ZStd_v1_5_2_CompressionDict? _cdict152;
 
-        public ZStdEncoderV1_5_2(int blockSize, int compressionLevel = 3, int nbWorkers = 0, int jobSize = 0, byte[]? dictionary = null)
+        public ZStdEncoderV1_5_2(int blockSize, int compressionLevel = 3, int nbWorkers = 0, int jobSize = 0, byte[]? dictionary = null, int windowLog = 0)
             : base(0, compressionLevel) // base will not be used, but must be called
         {
             _compressionLevel = compressionLevel;
@@ -220,7 +221,7 @@ namespace Nanook.GrindCore.ZStd
                     fixed (byte* dictPtr = dictionary)
                     {
                         SZ_ZStd_v1_5_2_CompressionDict dict = new SZ_ZStd_v1_5_2_CompressionDict();
-                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateCompressionDict(&dict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel) == 0)
+                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateCompressionDict(&dict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel, windowLog) == 0)
                         {
                             _cdict152 = dict;
                             Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_SetCompressionDict(ctxPtr, &dict);

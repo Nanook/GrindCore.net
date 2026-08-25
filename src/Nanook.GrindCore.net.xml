@@ -1165,7 +1165,12 @@
             Gets or sets the window size as a power of 2 (log2 value) for algorithms that use logarithmic sizing.
             Alternative to DictionarySize for algorithms that prefer logarithmic parameters.
             <para><strong>Algorithms:</strong></para>
-            <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Default: 23 (8MB). Dictionary size = 2^WindowBits</para>
+            <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Unset (null) uses zstd's own implicit,
+            level-based window sizing for both block sizing and (when a content dictionary is supplied via
+            <see cref="P:Nanook.GrindCore.CompressionOptions.InitProperties"/>) the dictionary's CDict - which caps out at 8MB for
+            any dictionary larger than 256KB at level 19 and never grows further, no matter how much bigger the
+            dictionary gets. Set this explicitly to override that cap when using a dictionary larger than ~8MB;
+            otherwise leave unset. Dictionary/block size = 2^WindowBits</para>
             <para>• <strong>Brotli:</strong> Window bits range: 10-24. Default: 22 (4MB). Larger = better compression</para>
             <para>• <strong>ZLib/Deflate/GZip:</strong> Range: 8-15 (256B-32KB), or negative (-8 to -15) for raw deflate without headers</para>
             <para><strong>Impact:</strong> Higher values increase memory usage but improve compression for large files.</para>
@@ -6399,7 +6404,7 @@
             Gets the recommended output buffer size for ZStd compression.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Byte[])">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Byte[],System.Int32)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoder"/> class with the specified block size and compression level.
             </summary>
@@ -6408,6 +6413,7 @@
             <param name="nbWorkers">Number of worker threads for multithreaded compression (0 = single-threaded).</param>
             <param name="jobSize">Size of each compression job when using MT (0 = auto).</param>
             <param name="dictionary">Optional pre-trained dictionary data for improved compression.</param>
+            <param name="windowLog">Optional advanced windowLog override for the dictionary's CDict (0 = zstd's implicit level-based sizing, which caps out at 8MB for dictionaries &gt;256KB - see <see cref="P:Nanook.GrindCore.CompressionDictionaryOptions.WindowBits"/>).</param>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
             <summary>
