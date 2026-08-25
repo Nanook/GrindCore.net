@@ -355,8 +355,7 @@ namespace GrindCore.Tests
                 }
 
                 // If we get here without exception, the test should fail (unless we wrote all data before cancelling)
-                // xUnit does not provide Assert.Fail; use Assert.False(false, message) to indicate failure.
-                Assert.False(true, "Expected OperationCanceledException but operation completed");
+                Assert.Fail("Expected OperationCanceledException but operation completed");
             }
         }
 

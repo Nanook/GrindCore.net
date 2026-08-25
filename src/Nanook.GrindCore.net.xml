@@ -6356,7 +6356,7 @@
             For older versions (e.g., 1.5.2), use <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2"/>, which inherits from this class and overrides only the version-specific logic.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoder.#ctor">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoder.#ctor(System.Byte[])">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> class and creates a decompression context for ZStd v1.5.7.
             </summary>
@@ -6377,7 +6377,7 @@
             Inherits from <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoder"/> and overrides only the version-specific logic.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2.#ctor">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2.#ctor(System.Byte[])">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdDecoderV1_5_2"/> class and creates a decompression context for ZStd v1.5.2.
             </summary>
@@ -6399,12 +6399,15 @@
             Gets the recommended output buffer size for ZStd compression.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.#ctor(System.Int32,System.Int32)">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Byte[])">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoder"/> class with the specified block size and compression level.
             </summary>
             <param name="blockSize">The block size to use for compression.</param>
             <param name="compressionLevel">The compression level to use (default is 3).</param>
+            <param name="nbWorkers">Number of worker threads for multithreaded compression (0 = single-threaded).</param>
+            <param name="jobSize">Size of each compression job when using MT (0 = auto).</param>
+            <param name="dictionary">Optional pre-trained dictionary data for improved compression.</param>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
             <summary>

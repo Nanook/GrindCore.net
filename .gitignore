@@ -406,3 +406,4 @@ FodyWeavers.xsd
 *.lib
 
 output/
+*.dSYM/

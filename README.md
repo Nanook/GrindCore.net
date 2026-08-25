@@ -82,10 +82,12 @@ All native compression algorithms are directly built into the [GrindCore Native]
 - **Fast-LZMA2** v1.0.1 (from [7Zip-mcmilk](https://github.com/mcmilk/7-Zip-zstd/tree/master/C/fast-lzma2))
 - **ZLib** v1.3.1 (GZip, ZLib, Deflate - from [.NET 8.0](https://github.com/dotnet/runtime/tree/release/8.0/src/native/external/zlib))
 - **ZLib-NG** v2.2.1 (GZip, ZLib, Deflate - from [.NET 9.0](https://github.com/dotnet/runtime/tree/release/9.0/src/native/external/zlib-ng))
-- **ZStd** v1.5.7 & v1.5.2 (from [Facebook](https://github.com/facebook/zstd/tree/dev/lib)) — includes seekable format and skippable frame support
+- **ZStd** v1.5.7 & v1.5.2 (from [Facebook](https://github.com/facebook/zstd/tree/dev/lib)) — includes seekable format, skippable frame support, multithreaded compression, and dictionary support
 
 **Notes:**
 - Multiple versions of some algorithms (e.g., ZStd, ZLib/ZLib-NG) are included to support applications that require pinned or frozen versions, most commonly for scenarios demanding byte-perfect, deterministic outputs.
+- ZStd supports multithreaded compression via `ThreadCount` in `CompressionOptions`, enabling parallel compression using multiple worker threads for significantly higher throughput on multicore systems.
+- ZStd supports pre-trained dictionaries via `InitProperties` in `CompressionOptions` for improved compression of small data.
 - The set of supported algorithms will continue to expand, with Snappy and BZip2 planned for future releases.
 - Both blocking and asynchronous methods are available, allowing flexible compression workflows.
 - Compression streams expose `.Position` (compressed) and `.PositionFullSize` (uncompressed) properties for accurate progress tracking.
@@ -151,7 +153,7 @@ GrindCore is designed to overcome several known complications in the dotnet ecos
 
 Several enhancements and additional features could be introduced to further improve GrindCore. While these may be addressed over time, listing them here serves to communicate known gaps and encourage community contributions:
 - Multi-language support.
-- Custom Dictionaries and training where supported.
+- ~~Custom Dictionaries and training where supported.~~ ✅ ZStd dictionary support added.
 - Progress updates raised from C library.
 - Update native compression versions.
 - Expanded compression algorithm capabilities.

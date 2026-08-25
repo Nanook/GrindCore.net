@@ -1,18 +1,33 @@
-name: Publish NuGet Package
+# ============================================================================
+# Build NuGet Package
+# ============================================================================
+# PURPOSE: Builds and packages the library for NuGet distribution.
+#
+# WHEN IT RUNS:
+#   - Tag pushes matching v* (automatically after tests pass via test.yaml)
+#   - Manual dispatch (specify a tag or use the latest)
+#
+# NOTES:
+#   - This workflow does NOT run tests — that's handled by test.yaml which
+#     also triggers on v* tags. Both run in parallel on tag push.
+#   - The produced .nupkg is uploaded as an artifact for the nuget-push
+#     workflow to pick up.
+#   - Version is derived from the tag (e.g. v0.8.2-alpha -> 0.8.2-alpha).
+# ============================================================================
+
+name: Build NuGet Package
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
-      branch:
-        description: 'Branch to build'
-        required: true
-        default: 'main'
+      tag:
+        description: 'Tag to build (e.g. v0.8.1-alpha). Leave empty to use the latest v* tag.'
+        required: false
+        default: ''
         type: string
-      upload_to_nuget:
-        description: 'Upload to NuGet (uncheck to only upload artifact)'
-        required: true
-        default: true
-        type: boolean
 
 jobs:
   build:
@@ -22,32 +37,51 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.inputs.tag || github.ref }}
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v6
       with:
         dotnet-version: '10.0'
 
+    - name: Determine version
+      id: version
+      run: |
+        if [[ "${{ github.ref_type }}" == "tag" ]]; then
+          # Triggered by tag push - strip leading 'v'
+          VERSION="${GITHUB_REF_NAME#v}"
+        elif [[ -n "${{ github.event.inputs.tag }}" ]]; then
+          # Manual dispatch with explicit tag
+          VERSION="${{ github.event.inputs.tag }}"
+          VERSION="${VERSION#v}"
+        else
+          # Manual dispatch with no tag - find latest v* tag
+          VERSION=$(git describe --tags --match "v*" --abbrev=0 2>/dev/null || echo "")
+          if [[ -z "$VERSION" ]]; then
+            echo "::error::No v* tags found in repository"
+            exit 1
+          fi
+          VERSION="${VERSION#v}"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+      shell: bash
+
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/GrindCore.net.csproj
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build src/GrindCore.net.csproj --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
     - name: Pack NuGet package
-      run: dotnet pack --configuration Release --output ./.nuget --no-restore
+      run: dotnet pack src/GrindCore.net.csproj --configuration Release --output ./artifacts --no-build -p:Version=${{ steps.version.outputs.version }}
 
-    - name: List .nuget directory contents
-      run: ls -l ${{ github.workspace }}/.nuget
+    - name: List artifacts
+      run: ls -la ./artifacts
 
     - name: Upload NuGet package as artifact
       uses: actions/upload-artifact@v7
       with:
         name: nuget-package
-        path: '**/*.nupkg'
-
-    - name: Publish NuGet package
-      if: ${{ github.event.inputs.upload_to_nuget == 'true' }}
-      # if: github.event.pull_request.merged == true || github.ref == 'refs/heads/main'
-      run: dotnet nuget push ./.nuget/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        path: artifacts/*.nupkg

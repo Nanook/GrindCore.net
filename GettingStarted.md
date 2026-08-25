@@ -64,7 +64,7 @@ Common useful fields for the LZMA family:
 - `LiteralContextBits`, `LiteralPositionBits`, `PositionBits` — map to LZMA's lc/lp/pb settings.
 - `Algorithm`, `BinaryTreeMode`, `HashBytes`, `MatchCycles`, `SearchDepth` — various match-finder and algorithm-mode knobs.
 - `Strategy` — used by some wrappers to indicate compression level/variant for hybrid encoders (Fast?LZMA2 maps Strategy ? compression level).
-- `ThreadCount` (on `CompressionOptions`) — used where the native encoder supports multithreading (e.g., Fast-LZMA2, block-based LZMA2). Note: LZMA uses single-threading for stability; LZMA2 and Fast-LZMA2 support true multithreading.
+- `ThreadCount` (on `CompressionOptions`) — used where the native encoder supports multithreading (e.g., ZStd, Fast-LZMA2, block-based LZMA2). Note: LZMA uses single-threading for stability; LZMA2, Fast-LZMA2, and ZStd support true multithreading.
 
 Best practice:
 - Set tuning via `CompressionOptions.WithLzmaDictionary(...)`, `WithLzma2Dictionary(...)` or `WithFastLzma2Dictionary(...)` helpers where provided.
@@ -118,6 +118,40 @@ using var zstdStream = new ZStdStream(outputStream,
 
 using var brotliStream = new BrotliStream(inputStream, 
   CompressionOptions.DefaultDecompress());
+```
+
+### ZStd Multithreaded Compression
+
+ZStd supports multithreaded compression via `ThreadCount`. The streaming API remains unchanged — parallelism is handled internally:
+
+```csharp
+// Multithreaded ZStd compression with 4 workers
+var opts = new CompressionOptions
+{
+    Type = CompressionType.Optimal,
+    ThreadCount = 4  // enable 4 worker threads
+};
+
+using var zstd = new ZStdStream(outputStream, opts);
+zstd.Write(data, 0, data.Length);
+// Workers compress chunks in parallel; output is serialized automatically
+```
+
+### ZStd Dictionary Compression
+
+Pre-trained dictionaries improve compression for small data (e.g., JSON records, log lines). Pass dictionary bytes via `InitProperties`:
+
+```csharp
+byte[] dictionary = File.ReadAllBytes("trained.dict");
+
+var opts = new CompressionOptions
+{
+    Type = CompressionType.Optimal,
+    InitProperties = dictionary  // bind dictionary for compression
+};
+
+using var zstd = new ZStdStream(outputStream, opts);
+zstd.Write(data, 0, data.Length);
 ```
 
 ## ZStd Seekable Stream

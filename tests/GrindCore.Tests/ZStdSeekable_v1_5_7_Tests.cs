@@ -19,7 +19,7 @@ namespace GrindCore.Tests
             }
 
             // Act - Create compressed buffer using seekable stream
-            byte[] compressedData = CompressSeekableUsingStream(inputData, frameSize: 64 * 1024, compressionLevel: 3);
+            byte[] compressedData = compressSeekableUsingStream(inputData, frameSize: 64 * 1024, compressionLevel: 3);
 
             // Assert - Verify compression happened
             Assert.NotEmpty(compressedData);
@@ -81,7 +81,7 @@ namespace GrindCore.Tests
             }
 
             // Act - Compress and decompress
-            byte[] compressedData = CompressSeekableUsingStream(inputData, frameSize, compressionLevel: 3);
+            byte[] compressedData = compressSeekableUsingStream(inputData, frameSize, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressedData))
             {
@@ -108,7 +108,7 @@ namespace GrindCore.Tests
             }
 
             // Act - Compress
-            byte[] compressedData = CompressSeekableUsingStream(inputData, frameSize, compressionLevel: 3);
+            byte[] compressedData = compressSeekableUsingStream(inputData, frameSize, compressionLevel: 3);
 
             // Assert - Check frame count
             using (var decoder = new ZStdSeekableDecoder(compressedData))
@@ -132,7 +132,7 @@ namespace GrindCore.Tests
                 inputData[i] = (byte)(i % 251);
             }
 
-            byte[] compressedData = CompressSeekableUsingStream(inputData, frameSize, compressionLevel: 3);
+            byte[] compressedData = compressSeekableUsingStream(inputData, frameSize, compressionLevel: 3);
 
             // Act - Decompress from offset
             using (var decoder = new ZStdSeekableDecoder(compressedData))
@@ -190,7 +190,7 @@ namespace GrindCore.Tests
                 try
                 {
                     // Compress with random frame size
-                    byte[] compressedData = CompressSeekableUsingStream(inputData, frameSize, compressionLevel: 3);
+                    byte[] compressedData = compressSeekableUsingStream(inputData, frameSize, compressionLevel: 3);
 
                     Assert.NotEmpty(compressedData);
                     System.Console.WriteLine($"[FUZZ TEST {iteration + 1}/20] Compressed to {compressedData.Length} bytes ({(double)dataSize / compressedData.Length:F2}x ratio)");
@@ -244,7 +244,7 @@ namespace GrindCore.Tests
         {
             // Test with minimal data (1 byte)
             byte[] tinyData = new byte[] { 42 };
-            byte[] compressed = CompressSeekableUsingStream(tinyData, frameSize: 64 * 1024, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(tinyData, frameSize: 64 * 1024, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -266,7 +266,7 @@ namespace GrindCore.Tests
             byte[] data = new byte[size];
             for (int i = 0; i < size; i++) data[i] = (byte)(i % 256);
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: size, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: size, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -288,7 +288,7 @@ namespace GrindCore.Tests
             byte[] data = new byte[size];
             for (int i = 0; i < size; i++) data[i] = (byte)(i % 256);
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: 10000, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: 10000, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -313,7 +313,7 @@ namespace GrindCore.Tests
             byte[] data = new byte[totalSize];
             for (int i = 0; i < totalSize; i++) data[i] = (byte)(i % 251);
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -347,7 +347,7 @@ namespace GrindCore.Tests
 
             foreach (int level in compressionLevels)
             {
-                byte[] compressed = CompressSeekableUsingStream(data, frameSize: 2048, compressionLevel: level);
+                byte[] compressed = compressSeekableUsingStream(data, frameSize: 2048, compressionLevel: level);
 
                 using (var decoder = new ZStdSeekableDecoder(compressed))
                 {
@@ -369,7 +369,7 @@ namespace GrindCore.Tests
             const int size = 100000;
             byte[] zeros = new byte[size]; // All zeros
 
-            byte[] compressed = CompressSeekableUsingStream(zeros, frameSize: 16384, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(zeros, frameSize: 16384, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -399,7 +399,7 @@ namespace GrindCore.Tests
                 data[i] = (byte)(seed & 0xFF);
             }
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: 8192, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: 8192, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -422,7 +422,7 @@ namespace GrindCore.Tests
             byte[] data = new byte[size];
             for (int i = 0; i < size; i++) data[i] = (byte)(i % 251);
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: 5000, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: 5000, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -458,7 +458,7 @@ namespace GrindCore.Tests
                 data[i] = (byte)(i % 1000); // Repeating pattern every 1000 bytes
             }
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: 64 * 1024, compressionLevel: 5);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: 64 * 1024, compressionLevel: 5);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -503,7 +503,7 @@ namespace GrindCore.Tests
             }
 
             System.Console.WriteLine($"[LARGE FILE 100MB] Compressing with {frameSize / 1024 / 1024}MB frames...");
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 5);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 5);
 
             System.Console.WriteLine($"[LARGE FILE 100MB] Testing decoder...");
             using (var decoder = new ZStdSeekableDecoder(compressed))
@@ -593,7 +593,7 @@ namespace GrindCore.Tests
             byte[] data = new byte[size];
             for (int i = 0; i < size; i++) data[i] = (byte)(i % 251);
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: 4096, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: 4096, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -629,7 +629,7 @@ namespace GrindCore.Tests
             byte[] data = new byte[totalSize];
             for (int i = 0; i < totalSize; i++) data[i] = (byte)(i % 251);
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -667,7 +667,7 @@ namespace GrindCore.Tests
             byte[] data = new byte[totalSize];
             for (int i = 0; i < totalSize; i++) data[i] = (byte)(i % 251);
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -700,7 +700,7 @@ namespace GrindCore.Tests
             byte[] data = new byte[frameSize * 3];
             for (int i = 0; i < data.Length; i++) data[i] = (byte)(i % 251);
 
-            byte[] compressed = CompressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
+            byte[] compressed = compressSeekableUsingStream(data, frameSize: frameSize, compressionLevel: 3);
 
             using (var decoder = new ZStdSeekableDecoder(compressed))
             {
@@ -714,7 +714,7 @@ namespace GrindCore.Tests
         /// Helper method to compress data using seekable format via the stream-based API.
         /// This simulates how the seekable encoder would be used in production code.
         /// </summary>
-        private byte[] CompressSeekableUsingStream(byte[] inputData, int frameSize, int compressionLevel)
+        private byte[] compressSeekableUsingStream(byte[] inputData, int frameSize, int compressionLevel)
         {
             using (var memoryStream = new MemoryStream())
             {

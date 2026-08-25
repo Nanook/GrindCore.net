@@ -967,15 +967,16 @@ namespace Nanook.GrindCore
         /// </summary>
         public override async ValueTask DisposeAsync()
         {
-            if (SynchronizationContext.Current == null)
+            if (!_disposed)
             {
-                Dispose(true);
-                return;
+                await onFlushAsync(CancellationToken.None, false, true).ConfigureAwait(false);
+                OnDispose();
+
+                if (!LeaveOpen)
+                    await BaseStream.DisposeAsync().ConfigureAwait(false);
+
+                _disposed = true;
             }
-            await Task.Run(() =>
-            {
-                Dispose(true);
-            }).ConfigureAwait(false);
         }
 #endif
 #if CLASSIC || NET45_OR_GREATER || NETSTANDARD || NETCOREAPP
@@ -1074,16 +1075,14 @@ namespace Nanook.GrindCore
         /// <returns>A task that represents the asynchronous flush operation.</returns>
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (SynchronizationContext.Current == null)
-            {
-                onFlush(new CancellableTask(cancellationToken), true, false);
-                return;
-            }
-
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+            await onFlushAsync(cancellationToken, true, false).ConfigureAwait(false);
+#else
             await Task.Run(() =>
             {
                 onFlush(new CancellableTask(cancellationToken), true, false);
             }, cancellationToken).ConfigureAwait(false);
+#endif
         }
 
         /// <summary>
@@ -1093,16 +1092,14 @@ namespace Nanook.GrindCore
         /// <returns>A task that represents the asynchronous complete operation.</returns>
         public virtual async Task CompleteAsync(CancellationToken cancellationToken)
         {
-            if (SynchronizationContext.Current == null)
-            {
-                onFlush(new CancellableTask(cancellationToken), false, true);
-                return;
-            }
-
+#if !CLASSIC && (NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER)
+            await onFlushAsync(cancellationToken, false, true).ConfigureAwait(false);
+#else
             await Task.Run(() =>
             {
                 onFlush(new CancellableTask(cancellationToken), false, true);
             }, cancellationToken).ConfigureAwait(false);
+#endif
         }
 #endif
     }
