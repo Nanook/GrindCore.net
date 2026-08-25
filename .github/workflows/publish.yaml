@@ -58,13 +58,13 @@ jobs:
       run: dotnet build src/GrindCore.net.csproj --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
     - name: Pack NuGet package
-      run: dotnet pack src/GrindCore.net.csproj --configuration Release --output ./.nuget --no-build -p:Version=${{ steps.version.outputs.version }}
+      run: dotnet pack src/GrindCore.net.csproj --configuration Release --output ./artifacts --no-build -p:Version=${{ steps.version.outputs.version }}
 
-    - name: List .nuget directory contents
-      run: ls -la ./.nuget
+    - name: List artifacts
+      run: ls -la ./artifacts
 
     - name: Upload NuGet package as artifact
       uses: actions/upload-artifact@v7
       with:
         name: nuget-package
-        path: .nuget/
+        path: artifacts/*.nupkg
