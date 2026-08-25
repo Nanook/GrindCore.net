@@ -1,0 +1,21 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="ReleaseTest" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path="GettingStarted.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="src/GrindCore.net.csproj" />
+  <Project Path="tests/GrindCore.Tests.Runtime/GrindCore.Tests.Runtime.csproj">
+    <BuildType Solution="ReleaseTest|*" Project="Release" />
+  </Project>
+  <Project Path="tests/GrindCore.Tests/GrindCore.Tests.csproj">
+    <BuildType Solution="ReleaseTest|*" Project="Release" />
+  </Project>
+  <Project Path="tests/StressLzma/StressLzma.csproj">
+    <BuildType Solution="ReleaseTest|*" Project="Release" />
+  </Project>
+</Solution>

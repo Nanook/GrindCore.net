@@ -1,3 +1,20 @@
+# ============================================================================
+# Build NuGet Package
+# ============================================================================
+# PURPOSE: Builds and packages the library for NuGet distribution.
+#
+# WHEN IT RUNS:
+#   - Tag pushes matching v* (automatically after tests pass via test.yaml)
+#   - Manual dispatch (specify a tag or use the latest)
+#
+# NOTES:
+#   - This workflow does NOT run tests — that's handled by test.yaml which
+#     also triggers on v* tags. Both run in parallel on tag push.
+#   - The produced .nupkg is uploaded as an artifact for the nuget-push
+#     workflow to pick up.
+#   - Version is derived from the tag (e.g. v0.8.2-alpha -> 0.8.2-alpha).
+# ============================================================================
+
 name: Build NuGet Package
 
 on:

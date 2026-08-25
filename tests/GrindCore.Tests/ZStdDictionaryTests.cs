@@ -165,5 +165,34 @@ namespace GrindCore.Tests
 
             Assert.Equal(data, decompressed);
         }
+
+        [Theory]
+        [InlineData("record-201", "delta payload for v1.5.2 streaming round trip")]
+        [InlineData("record-202", "epsilon payload v1.5.2, a little longer to span more than one internal buffer flush")]
+        public void ZStdStream_Dictionary_V1_5_2_RoundTrip(string id, string body)
+        {
+            byte[] data = buildRecord(id, body);
+            byte[] compressed;
+
+            var compressOptions = new CompressionOptions { Type = CompressionType.Optimal, LeaveOpen = true, Version = CompressionVersion.ZStd(ZStdVersion.v1_5_2), InitProperties = Dictionary };
+            using (var output = new System.IO.MemoryStream())
+            {
+                using (var stream = new ZStdStream(output, compressOptions))
+                    stream.Write(data, 0, data.Length);
+                compressed = output.ToArray();
+            }
+
+            byte[] decompressed;
+            var decompressOptions = new CompressionOptions { Type = CompressionType.Decompress, LeaveOpen = true, Version = CompressionVersion.ZStd(ZStdVersion.v1_5_2), InitProperties = Dictionary };
+            using (var input = new System.IO.MemoryStream(compressed))
+            using (var output = new System.IO.MemoryStream())
+            {
+                using (var stream = new ZStdStream(input, decompressOptions))
+                    stream.CopyTo(output);
+                decompressed = output.ToArray();
+            }
+
+            Assert.Equal(data, decompressed);
+        }
     }
 }

@@ -101,19 +101,22 @@ namespace Nanook.GrindCore.ZStd
                 fixed (byte* inputPtr = inData.Data)
                 fixed (SZ_ZStd_v1_5_7_CompressionContext* ctxPtr = &_ctx)
                 {
-                    *&inputPtr += inData.Pos;
+                    byte* srcPtr = inputPtr + inData.Pos;
 
-                    UIntPtr toFlush = Interop.ZStd.SZ_ZStd_v1_5_7_CompressStream(
+                    Interop.ZStd.SZ_ZStd_v1_5_7_CompressStream(
                         ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize,
-                        inputPtr, (UIntPtr)srcCapacity,
+                        srcPtr, (UIntPtr)srcCapacity,
                         out inSize, out outSize);
 
-                    if (toFlush != UIntPtr.Zero)
-                        throw new Exception("TODO: ZStd compression has more to flush");
+                    // Non-zero return is normal for MT (indicates internal buffering) — not an error.
+                    // Buffered data will be drained during Flush/End operations.
 
                     inData.Read((int)inSize);
-                    outData.Write(_outputBuffer, 0, (int)outSize);
-                    totalCompressed += (int)outSize;
+                    if (outSize > 0)
+                    {
+                        outData.Write(_outputBuffer, 0, (int)outSize);
+                        totalCompressed += (int)outSize;
+                    }
                     final = false;
                 }
             }
@@ -126,29 +129,38 @@ namespace Nanook.GrindCore.ZStd
         /// </summary>
         public virtual long Flush(CompressionBuffer outData)
         {
-            long flushedSize = 0;
-            long endSize;
+            long totalFlushed = 0;
             byte[] buff = new byte[1];
-            long inSize = 0;
+            long inSize;
+            long outSize;
 
             fixed (byte* inputPtr = buff)
             fixed (SZ_ZStd_v1_5_7_CompressionContext* ctxPtr = &_ctx)
             {
-                UIntPtr res = Interop.ZStd.SZ_ZStd_v1_5_7_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out flushedSize);
+                // Flush: drain all internally buffered data
+                UIntPtr res;
+                do
+                {
+                    res = Interop.ZStd.SZ_ZStd_v1_5_7_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize);
+                    if (outSize > 0)
+                    {
+                        outData.Write(_outputBuffer, 0, (int)outSize);
+                        totalFlushed += outSize;
+                    }
+                } while (res != UIntPtr.Zero);
 
-                if (res != UIntPtr.Zero)
-                    throw new Exception("ZStd flush failed");
+                // End: finalize the frame, draining any remaining output
+                do
+                {
+                    res = Interop.ZStd.SZ_ZStd_v1_5_7_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize);
+                    if (outSize > 0)
+                    {
+                        outData.Write(_outputBuffer, 0, (int)outSize);
+                        totalFlushed += outSize;
+                    }
+                } while (res != UIntPtr.Zero);
 
-                outData.Write(_outputBuffer, 0, (int)flushedSize);
-
-                res = Interop.ZStd.SZ_ZStd_v1_5_7_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out endSize);
-
-                if (res != UIntPtr.Zero)
-                    throw new Exception("Failed to finalize Zstd compression");
-
-                outData.Write(_outputBuffer, 0, (int)endSize);
-
-                return flushedSize + endSize;
+                return totalFlushed;
             }
         }
 
@@ -248,19 +260,22 @@ namespace Nanook.GrindCore.ZStd
                 fixed (byte* inputPtr = inData.Data)
                 fixed (SZ_ZStd_v1_5_2_CompressionContext* ctxPtr = &_ctx152)
                 {
-                    *&inputPtr += inData.Pos;
+                    byte* srcPtr = inputPtr + inData.Pos;
 
-                    UIntPtr toFlush = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressStream(
+                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressStream(
                         ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize,
-                        inputPtr, (UIntPtr)srcCapacity,
+                        srcPtr, (UIntPtr)srcCapacity,
                         out inSize, out outSize);
 
-                    if (toFlush != UIntPtr.Zero)
-                        throw new Exception("TODO: ZStd compression has more to flush");
+                    // Non-zero return is normal for MT — not an error.
+                    // Buffered data will be drained during Flush/End operations.
 
                     inData.Read((int)inSize);
-                    outData.Write(_outputBuffer, 0, (int)outSize);
-                    totalCompressed += (int)outSize;
+                    if (outSize > 0)
+                    {
+                        outData.Write(_outputBuffer, 0, (int)outSize);
+                        totalCompressed += (int)outSize;
+                    }
                     final = false;
                 }
             }
@@ -270,29 +285,38 @@ namespace Nanook.GrindCore.ZStd
 
         public override long Flush(CompressionBuffer outData)
         {
-            long flushedSize = 0;
-            long endSize;
+            long totalFlushed = 0;
             byte[] buff = new byte[1];
-            long inSize = 0;
+            long inSize;
+            long outSize;
 
             fixed (byte* inputPtr = buff)
             fixed (SZ_ZStd_v1_5_2_CompressionContext* ctxPtr = &_ctx152)
             {
-                UIntPtr res = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out flushedSize);
+                // Flush: drain all internally buffered data
+                UIntPtr res;
+                do
+                {
+                    res = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize);
+                    if (outSize > 0)
+                    {
+                        outData.Write(_outputBuffer, 0, (int)outSize);
+                        totalFlushed += outSize;
+                    }
+                } while (res != UIntPtr.Zero);
 
-                if (res != UIntPtr.Zero)
-                    throw new Exception("ZStd flush failed");
+                // End: finalize the frame, draining any remaining output
+                do
+                {
+                    res = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize);
+                    if (outSize > 0)
+                    {
+                        outData.Write(_outputBuffer, 0, (int)outSize);
+                        totalFlushed += outSize;
+                    }
+                } while (res != UIntPtr.Zero);
 
-                outData.Write(_outputBuffer, 0, (int)flushedSize);
-
-                res = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out endSize);
-
-                if (res != UIntPtr.Zero)
-                    throw new Exception("Failed to finalize Zstd compression");
-
-                outData.Write(_outputBuffer, 0, (int)endSize);
-
-                return flushedSize + endSize;
+                return totalFlushed;
             }
         }
 

@@ -1,3 +1,28 @@
+# ============================================================================
+# Push to NuGet
+# ============================================================================
+# PURPOSE: Publishes a previously-built NuGet package to nuget.org.
+#
+# WHEN IT RUNS:
+#   - Manual dispatch only (you decide when to publish)
+#
+# PREREQUISITES:
+#   - A successful "Build NuGet Package" workflow run must exist (either from
+#     a tag push or manual dispatch of publish.yaml).
+#   - The NUGET_API_KEY secret must be configured in the repository.
+#
+# HOW TO USE:
+#   1. Push a v* tag (triggers test.yaml + publish.yaml automatically)
+#   2. Wait for both to pass (tests green + package built)
+#   3. Run this workflow manually (optionally specify the build Run ID)
+#   4. Package is pushed to nuget.org with --skip-duplicate
+#
+# NOTES:
+#   - No build or tests run here — the package was already validated.
+#   - If run_id is left empty, it uses the latest successful publish.yaml run.
+#   - --skip-duplicate means re-running is safe (won't fail on existing version).
+# ============================================================================
+
 name: Push to NuGet
 
 on:
