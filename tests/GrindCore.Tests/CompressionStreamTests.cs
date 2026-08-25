@@ -24,6 +24,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x3d3, "faf781046fb77de8")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x4c5, "1c5c2490ab900308")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x197, "e6b4aafc1efa2266")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, 0x4eb, "c365a915aa207c65")]
 
 #if !IS_32BIT
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x29a, "72f75d0b96ea09ee")]
@@ -38,6 +39,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x305, "a3c36ab37f8f236d")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x305, "a3c36ab37f8f236d")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x197, "7dd3bfedab192873")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Optimal, 0x4eb, "0a74debb4a7dbc63")]
 
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x18a, "03e8b1d250f7e6aa")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0x2ff, "fd1a57a63d29c607")]
@@ -49,6 +51,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0x305, "a21b9fa33c110bc5")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0x305, "a21b9fa33c110bc5")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x197, "6f32a8f86c2c0f8b")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.SmallestSize, 0x4eb, "0a74debb4a7dbc63")]
 #endif
         public void Data_Stream64KiB(CompressionAlgorithm algorithm, CompressionType type, int compressedSize, string compXxH64)
         {
@@ -77,6 +80,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x8, "2bc964c3d0162760")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x8, "2bc964c3d0162760")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x9, "ea7ad91258c4ea87")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, 0xe, "e0c95a86158b3e4e")]
 
 #if !IS_32BIT
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0xb, "9810acdea8d71804")]
@@ -91,6 +95,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x8, "65f2e912ed28c1ed")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x8, "65f2e912ed28c1ed")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x9, "22c883899be40e7c")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Optimal, 0xe, "30bd3c7bff035e20")]
 
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, 0x1, "12f83c352a398165")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, 0x2, "fae4a10ff02fd326")]
@@ -102,6 +107,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0x8, "31edcf2ea90ea820")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0x8, "31edcf2ea90ea820")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x9, "8559f845bc0c4f54")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.SmallestSize, 0xe, "30bd3c7bff035e20")]
 #endif
         public void Text_StreamEmpty(CompressionAlgorithm algorithm, CompressionType type, int compressedSize, string compXxH64)
         {
@@ -131,6 +137,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, null, 0x2652, "f2324065e2e34d09")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, null, 0x827, "6227887e1bc483a0")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, CompressionVersion.ZSTD_v1_5_2, 0x827, "6227887e1bc483a0")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, null, 0xe6f, "d070588a52f991f6")]
 #if !IS_32BIT
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, null, 0x16e8, "a0783a6c336c8bd9")]
 
@@ -145,6 +152,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, null, 0xbe7, "bd93e4482eb778cb")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, null, 0x7f2, "b18fa96dc3b4708d")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, CompressionVersion.ZSTD_v1_5_2, 0x7f2, "b18fa96dc3b4708d")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Optimal, null, 0xe6f, "29d0774cc96ce8de")]
 
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, null, 0x4fa, "bd7a15fc895f1b65")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, null, 0xb9b, "080ef351410b77ac")]
@@ -157,6 +165,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, null, 0xba1, "2b9ecf7dce8e81ce")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, null, 0x561, "dcff6b04d3f0e324")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, CompressionVersion.ZSTD_v1_5_2, 0x6bd, "085483666aa6a09f")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.SmallestSize, null, 0xe6f, "29d0774cc96ce8de")]
 #endif
         public void Text_Stream64KiB(CompressionAlgorithm algorithm, CompressionType type, string? version, int compressedSize, string compXxH64)
         {
@@ -187,6 +196,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x600781, "6aaba9c27838a268", "4d650db1242fefec")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x654019, "6aaba9c27838a268", "503de593cc2df76a")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x600099, "6aaba9c27838a268", "d033cda5805f142b")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, 0x60c5b3, "6aaba9c27838a268", "527b7474191fe530")]
         public void DataNonCompressible_Stream6MiB_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxh64, string compXxH64)
         {
             int streamLen = 6 * 1024 * 1024; // Total bytes to process
@@ -217,6 +227,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Level0, 0x6001eb, "5cb9b63eb9a4c344", "0a28fcae3b408197")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Level0, 0x6001eb, "5cb9b63eb9a4c344", "0a28fcae3b408197")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Level0, 0x5717, "5cb9b63eb9a4c344", "425403335cb3485b")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Level0, 0x394d3, "5cb9b63eb9a4c344", "d84ba25966b65739")]
         public void NoCompression_Stream6MiB_Chunk1MiB(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxh64, string compXxH64)
         {
             int streamLen = 6 * 1024 * 1024; // Total bytes to process
@@ -247,6 +258,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0xb49f, "7833322f45651d24", "6971719677322556")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x13723, "7833322f45651d24", "34a0eaac76a7fd87")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x3d4, "7833322f45651d24", "ae6f556cb2489ead")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, 0x1272a, "7833322f45651d24", "e2bb5072a530fe22")]
         public void Data_Stream6MiB_ReadByteWriteByte(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
         {
             int streamLen = 6 * 1024 * 1024; // Total bytes to process
@@ -298,6 +310,9 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x90b, "6d522dca7d96dfe8", "5690b6b13a63fa53")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x90b, "6d522dca7d96dfe8", "8c2c44e66f7f5ff0")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x86e, "6d522dca7d96dfe8", "060d59864bfd9550")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, 0x3d782, "6d522dca7d96dfe8", "3ebd03ad440ca8fe")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Optimal, 0x87cc, "6d522dca7d96dfe8", "1cf8f83efea14312")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.SmallestSize, 0x87cc, "6d522dca7d96dfe8", "1cf8f83efea14312")]
         public async Task Data_Stream20MiB_Chunk1MiB_Async(CompressionAlgorithm algorithm, CompressionType type, long compressedSize, string rawXxH64, string compXxH64)
         {
             int streamLen = 20 * 1024 * 1024; // Total bytes to process

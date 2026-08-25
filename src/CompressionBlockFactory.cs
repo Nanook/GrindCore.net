@@ -1,4 +1,5 @@
 using Nanook.GrindCore.Brotli;
+using Nanook.GrindCore.BZip2;
 using Nanook.GrindCore.Copy;
 using Nanook.GrindCore.DeflateZLib;
 using Nanook.GrindCore.FastLzma2;
@@ -19,6 +20,7 @@ namespace Nanook.GrindCore
         {
             { CompressionAlgorithm.Copy, (options) => new CopyBlock(options) },
             { CompressionAlgorithm.Brotli, (options) => new BrotliBlock(options) },
+            { CompressionAlgorithm.BZip2, (options) => new BZip2Block(options) },
             { CompressionAlgorithm.Deflate, (options) => new DeflateBlock(options) },
             { CompressionAlgorithm.DeflateNg, (options) => new DeflateBlock(options) },
             { CompressionAlgorithm.FastLzma2, (options) => new FastLzma2Block(options) },

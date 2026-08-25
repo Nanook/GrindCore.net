@@ -75,6 +75,7 @@ To simplify instance creation, GrindCore provides:
 All native compression algorithms are directly built into the [GrindCore Native](https://github.com/Nanook/GrindCore) project—**no third-party binaries are used or required**. The following algorithms are compiled from source as part of the native library, ensuring full integration, security, and maintainability:
 
 - **Brotli** v1.1.0 (from [.NET 9.0](https://github.com/dotnet/runtime/tree/release/9.0/src/native/external/brotli))
+- **BZip2** v1.0.8 (from [bzip2](https://sourceware.org/git/?p=bzip2.git)) — supports multi-stream (concatenated) decompression
 - **Copy** (no compression - direct stream copy)
 - **LZ4** v1.10.0 (from [LZ4](https://github.com/lz4/lz4/tree/dev/lib))
 - **LZMA** v25.1.0 (from [7Zip](https://sourceforge.net/projects/sevenzip/files/7-Zip/25.01/) App)
@@ -88,7 +89,7 @@ All native compression algorithms are directly built into the [GrindCore Native]
 - Multiple versions of some algorithms (e.g., ZStd, ZLib/ZLib-NG) are included to support applications that require pinned or frozen versions, most commonly for scenarios demanding byte-perfect, deterministic outputs.
 - ZStd supports multithreaded compression via `ThreadCount` in `CompressionOptions`, enabling parallel compression using multiple worker threads for significantly higher throughput on multicore systems.
 - ZStd supports pre-trained dictionaries via `InitProperties` in `CompressionOptions` for improved compression of small data.
-- The set of supported algorithms will continue to expand, with Snappy and BZip2 planned for future releases.
+- The set of supported algorithms will continue to expand.
 - Both blocking and asynchronous methods are available, allowing flexible compression workflows.
 - Compression streams expose `.Position` (compressed) and `.PositionFullSize` (uncompressed) properties for accurate progress tracking.
 

@@ -85,6 +85,15 @@ namespace Nanook.GrindCore
     }
 
     /// <summary>
+    /// Specifies supported versions for the BZip2 algorithm.
+    /// </summary>
+    public enum BZip2Version
+    {
+        v1_0_8 = 1,
+        Latest = v1_0_8
+    }
+
+    /// <summary>
     /// Represents a version for a specific compression algorithm.
     /// </summary>
     public class CompressionVersion
@@ -103,6 +112,7 @@ namespace Nanook.GrindCore
         public const string LZ4_v1_10_0 = "1.10.0";
         public const string ZSTD_v1_5_2 = "1.5.2";
         public const string ZSTD_v1_5_7 = "1.5.7";
+        public const string BZIP2_v1_0_8 = "1.0.8";
 
         /// <summary>
         /// Converts an enum name to a version string (e.g., v1_2_3 to 1.2.3).
@@ -234,6 +244,17 @@ namespace Nanook.GrindCore
         public static CompressionVersion ZStd(ZStdVersion version) => create(CompressionAlgorithm.ZStd, enumStringToVersionString(Enum.GetName(typeof(ZStdVersion), (int)version)!));
 
         /// <summary>
+        /// Gets the latest version for the BZip2 algorithm.
+        /// </summary>
+        public static CompressionVersion BZip2Latest() => BZip2(BZip2Version.Latest);
+
+        /// <summary>
+        /// Gets a specific version for the BZip2 algorithm.
+        /// </summary>
+        /// <param name="version">The version enum value.</param>
+        public static CompressionVersion BZip2(BZip2Version version) => create(CompressionAlgorithm.BZip2, enumStringToVersionString(Enum.GetName(typeof(BZip2Version), (int)version)!));
+
+        /// <summary>
         /// Private constructor to prevent direct instantiation.
         /// </summary>
         private CompressionVersion()
@@ -305,6 +326,13 @@ namespace Nanook.GrindCore
                     if (string.IsNullOrEmpty(version) || version == BROTLI_v1_1_0)
                     {
                         result.Version = BROTLI_v1_1_0;
+                        result.Index = 0;
+                    }
+                    break;
+                case CompressionAlgorithm.BZip2:
+                    if (string.IsNullOrEmpty(version) || version == BZIP2_v1_0_8)
+                    {
+                        result.Version = BZIP2_v1_0_8;
                         result.Index = 0;
                     }
                     break;

@@ -662,5 +662,31 @@ namespace Nanook.GrindCore
         /// <para>Level 11 provides maximum compression but slowest speed.</para>
         /// </summary>
         public int? Quality { get; set; }
+
+        /// <summary>
+        /// Gets or sets bzip2's compression work factor.
+        /// Controls when bzip2 falls back from its normal sorting algorithm to a slower, more
+        /// conservative one that avoids worst-case (near-quadratic) behavior on pathological or
+        /// highly repetitive input.
+        /// <para><strong>Algorithms:</strong></para>
+        /// <para>• <strong>BZip2:</strong> Range: 0-250. 0 selects bzip2's own default (30).</para>
+        /// <para><strong>Impact:</strong> Has no effect on decompression and (in nearly all practical
+        /// cases) no effect on the compressed output size - it only affects how much CPU time
+        /// compression can take on adversarial/degenerate input. Lower values trade that safety
+        /// margin for a small amount of speed on ordinary data; there's rarely a reason to change
+        /// this from the default.</para>
+        /// </summary>
+        public int? WorkFactor { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether bzip2 decompression uses its reduced-memory algorithm.
+        /// <para><strong>Algorithms:</strong></para>
+        /// <para>• <strong>BZip2:</strong> false/unset (default) = normal algorithm. true = ~2.5x less
+        /// memory, some speed cost. Has no effect on compression - decompression-only.</para>
+        /// <para><strong>Impact:</strong> Useful primarily on memory-constrained targets; the memory
+        /// saved scales with the BlockSize/level used at compression time, not with this setting
+        /// itself.</para>
+        /// </summary>
+        public bool? SmallDecompress { get; set; }
     }
 }

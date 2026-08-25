@@ -77,6 +77,14 @@ namespace Nanook.GrindCore
                     this.LevelSmallestSize = CompressionType.Level22;
                     this.Version = version ?? CompressionVersion.ZStdLatest();
                     break;
+                case CompressionAlgorithm.BZip2:
+                    // bzip2's blockSize100k (1-9) has little speed impact compared to LZMA's levels;
+                    // the bzip2 CLI itself defaults to -9 (largest blocks, best ratio) unless the
+                    // caller is memory-constrained, so both defaults point at the maximum.
+                    this.LevelOptimal = CompressionType.Level9;
+                    this.LevelSmallestSize = CompressionType.Level9;
+                    this.Version = version ?? CompressionVersion.BZip2Latest();
+                    break;
                 default:
                     break;
             }
