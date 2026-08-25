@@ -58,7 +58,7 @@ namespace Nanook.GrindCore.ZStd
                     fixed (byte* dictPtr = dictionary)
                     {
                         SZ_ZStd_v1_5_7_CompressionDict dict = new SZ_ZStd_v1_5_7_CompressionDict();
-                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateCompressionDict(out dict.cdict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel) == 0)
+                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateCompressionDict(&dict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel) == 0)
                         {
                             _cdict = dict;
                             Interop.ZStd.SZ_ZStd_v1_5_7_SetCompressionDict(ctxPtr, &dict);
@@ -163,7 +163,11 @@ namespace Nanook.GrindCore.ZStd
             }
 
             if (_cdict.HasValue)
-                Interop.ZStd.SZ_ZStd_v1_5_7_FreeCompressionDict(_cdict.Value.cdict);
+            {
+                var cdict = _cdict.Value;
+                Interop.ZStd.SZ_ZStd_v1_5_7_FreeCompressionDict(&cdict);
+                _cdict = null;
+            }
 
             if (_outputPinned.IsAllocated)
                 try { _outputPinned.Free(); } catch { }
@@ -204,7 +208,7 @@ namespace Nanook.GrindCore.ZStd
                     fixed (byte* dictPtr = dictionary)
                     {
                         SZ_ZStd_v1_5_2_CompressionDict dict = new SZ_ZStd_v1_5_2_CompressionDict();
-                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateCompressionDict(out dict.cdict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel) == 0)
+                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateCompressionDict(&dict, (IntPtr)dictPtr, (UIntPtr)dictionary.Length, _compressionLevel) == 0)
                         {
                             _cdict152 = dict;
                             Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_SetCompressionDict(ctxPtr, &dict);
@@ -300,7 +304,11 @@ namespace Nanook.GrindCore.ZStd
             }
 
             if (_cdict152.HasValue)
-                Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeCompressionDict(_cdict152.Value.cdict);
+            {
+                var cdict152 = _cdict152.Value;
+                Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeCompressionDict(&cdict152);
+                _cdict152 = null;
+            }
 
             if (_outputPinned.IsAllocated)
                 try { _outputPinned.Free(); } catch { }
