@@ -27,6 +27,14 @@ namespace Nanook.GrindCore.BZip2
         internal override int BufferSizeOutput { get; }
 
         /// <summary>
+        /// Gets the number of bytes buffered internally by the BZip2 decoder that have been read
+        /// from the base stream but not yet consumed by the native decompressor. After BZ_STREAM_END,
+        /// these are overread bytes belonging to the next entry in an archive container.
+        /// Used by <see cref="CompressionStream.BufferedBytesUnused"/> for stream position correction.
+        /// </summary>
+        protected override int InternalBufferedBytes => _buffer?.AvailableRead ?? 0;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="BZip2Stream"/> class with the specified stream and options.
         /// </summary>
         /// <param name="stream">The underlying stream to read from or write to.</param>
