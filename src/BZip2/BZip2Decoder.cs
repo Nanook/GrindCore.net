@@ -22,6 +22,7 @@ namespace Nanook.GrindCore.BZip2
         // the bz_stream* pointer across calls) and BZip2Encoder's matching field.
         private IntPtr _ctx;
         private readonly int _small;
+        private readonly bool _tolerateErrors;
         private bool _finished;
         private bool _nonEmptyInput;
         private bool _isDisposed;
@@ -42,10 +43,16 @@ namespace Nanook.GrindCore.BZip2
         /// <param name="smallDecompress">
         /// When true, selects bzip2's reduced-memory decompression algorithm (~2.5x less memory, some speed cost).
         /// </param>
+        /// <param name="tolerateErrors">
+        /// When true, BZ_DATA_ERROR after valid output is treated as end-of-stream rather than
+        /// throwing. Used when bzip2 data is embedded in archives where buffer overread may feed
+        /// non-bzip2 bytes to the decoder after the real stream end.
+        /// </param>
         /// <exception cref="Exception">Thrown if the native decompression context cannot be created.</exception>
-        public BZip2Decoder(bool smallDecompress)
+        public BZip2Decoder(bool smallDecompress, bool tolerateErrors = false)
         {
             _small = smallDecompress ? 1 : 0;
+            _tolerateErrors = tolerateErrors;
             _ctx = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(SZ_BZip2_v1_0_8_DecompressionContext)));
             init();
         }
@@ -124,7 +131,24 @@ namespace Nanook.GrindCore.BZip2
                     out long inSize, out long outSize);
 
                 if (result < 0)
+                {
+                    // BZ_DATA_ERROR or BZ_DATA_ERROR_MAGIC can occur when the internal
+                    // buffer overreads past the real bzip2 stream end into non-bzip2 data
+                    // (e.g., next archive entry in a Zip file). If tolerance mode is enabled
+                    // and we've previously produced valid output, treat as implicit end-of-stream.
+                    // The caller's rewind mechanism will correct the base stream position.
+                    if (_tolerateErrors && _nonEmptyInput && (result == BZ_DATA_ERROR || result == BZ_DATA_ERROR_MAGIC))
+                    {
+                        _finished = true;
+                        if (inSize > 0)
+                            inData.Read((int)inSize);
+                        if (outSize > 0)
+                            outData.Write((int)outSize);
+                        return (int)outSize;
+                    }
+
                     throw new InvalidDataException(SR.GenericInvalidData);
+                }
 
                 if (inSize > 0)
                     inData.Read((int)inSize);

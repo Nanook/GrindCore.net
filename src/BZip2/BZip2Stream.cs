@@ -14,6 +14,7 @@ namespace Nanook.GrindCore.BZip2
         private BZip2Decoder? _decoder;
         private BZip2Encoder? _encoder;
         private readonly CompressionBuffer _buffer;
+        private readonly bool _tolerateTruncation;
 
         /// <summary>
         /// Gets the input buffer size for BZip2 operations.
@@ -39,7 +40,8 @@ namespace Nanook.GrindCore.BZip2
                 this.BufferSizeOutput = 8192;
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
                 bool small = options?.Dictionary?.SmallDecompress ?? false;
-                _decoder = new BZip2Decoder(small);
+                _tolerateTruncation = options?.Dictionary?.TolerateTruncation ?? false;
+                _decoder = new BZip2Decoder(small, _tolerateTruncation);
             }
             else
             {
@@ -87,7 +89,7 @@ namespace Nanook.GrindCore.BZip2
                     int n = BaseRead(_buffer, _buffer.AvailableWrite);
                     if (n <= 0)
                     {
-                        if (available != 0 && !_decoder.Finished && _decoder.NonEmptyInput)
+                        if (available != 0 && !_decoder.Finished && _decoder.NonEmptyInput && !_tolerateTruncation)
                             throw new InvalidDataException(SR.TruncatedData);
                         break;
                     }
@@ -216,7 +218,7 @@ namespace Nanook.GrindCore.BZip2
                     int n = await BaseReadAsync(_buffer, _buffer.AvailableWrite, cancellationToken).ConfigureAwait(false);
                     if (n <= 0)
                     {
-                        if (available != 0 && !_decoder.Finished && _decoder.NonEmptyInput)
+                        if (available != 0 && !_decoder.Finished && _decoder.NonEmptyInput && !_tolerateTruncation)
                             throw new InvalidDataException(SR.TruncatedData);
                         break;
                     }

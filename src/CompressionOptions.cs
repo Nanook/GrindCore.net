@@ -688,5 +688,16 @@ namespace Nanook.GrindCore
         /// itself.</para>
         /// </summary>
         public bool? SmallDecompress { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether bzip2 decompression tolerates truncated streams.
+        /// <para><strong>Algorithms:</strong></para>
+        /// <para>• <strong>BZip2:</strong> false/unset (default) = throw on truncation. true = treat
+        /// end-of-input at a block boundary as normal end-of-stream rather than an error.</para>
+        /// <para><strong>Impact:</strong> Allows decoding partial/truncated bzip2 streams (e.g., a sub-range
+        /// of blocks extracted for random access) that lack a stream footer. Per-block CRCs are still
+        /// validated; only the whole-stream combined CRC check (which requires the footer) is skipped.</para>
+        /// </summary>
+        public bool? TolerateTruncation { get; set; }
     }
 }
