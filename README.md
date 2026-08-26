@@ -4,8 +4,6 @@ An AOT-compatible compression and hashing library built in the **System.IO.Compr
 
 Published on **NuGet** as [GrindCore](https://www.nuget.org/packages/GrindCore) with support for multiple platforms.  
 
-> **⚠️ Important Notice**: GrindCore is still in the early days of broader adoption. It is actively being tested and refined, but it is already being used in production scenarios and appears to be stable. Please thoroughly test in your specific use cases and report any issues encountered.
-
 ## Table of Contents
 
 - [Quick Start](#quick-start)
@@ -130,6 +128,8 @@ GrindCore integrates robust solutions from several key projects:
   - Supplies zlib/deflate and Brotli from the dotnet 8 code, combined with C# wrappers, to offer efficient and reliable compression algorithms.
 - **[ZStd Facebook GitHub Repository](https://github.com/facebook/zstd):**
   - Multiplatform zstandard direct from the source.
+- **[bzip2 Official Repository](https://sourceware.org/bzip2/):**
+  - The official bzip2/libbzip2 1.0.8 source, providing block-sorting compression with streaming and one-shot block APIs.
 - **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):**
   - Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
 - **[GrindCore.SharpCompress](https://github.com/Nanook/GrindCore.SharpCompress):**
