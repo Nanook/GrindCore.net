@@ -260,6 +260,11 @@ namespace Nanook.GrindCore
             BaseStream = stream;
             Version = options.Version ?? this.Defaults.Version; // latest
 
+            // Proactively mark async-only base streams so the very first sync write/flush
+            // uses async APIs, avoiding the cold-start gap where the reactive flag hasn't
+            // been set yet.
+            _baseStreamAsyncOnly = options.BaseStreamAsyncOnly;
+
             PositionLimit = options.PositionLimit;
             PositionFullSizeLimit = options.PositionFullSizeLimit;
 

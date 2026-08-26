@@ -132,6 +132,79 @@ namespace GrindCore.Tests
             Assert.True(dictSize < plainSize, $"Expected dictionary-primed compression ({dictSize} bytes) to beat plain compression ({plainSize} bytes) for dictionary-similar data");
         }
 
+#if !IS_32BIT_ARM
+        [Theory]
+        [InlineData("record-301", "explicit windowLog override, v1.5.7")]
+        public void ZStdBlock_Dictionary_ExplicitWindowBits_RoundTrip(string id, string body)
+        {
+            // Regression coverage for the windowLog gap: ZSTD_createCDict()'s implicit sizing caps the
+            // window at 8MB for any dictionary >256KB at level 19 and never grows further, no matter how
+            // much bigger the dictionary actually gets - CreateCompressionDict now takes an explicit
+            // windowLog (sourced from Dictionary.WindowBits) to override that. This dictionary is nowhere
+            // near 8MB, so this isn't proving a ratio improvement - it's proving the advanced
+            // ZSTD_createCDict_advanced2 code path round-trips correctly at all when WindowBits is set,
+            // which nothing previously exercised (WindowBits was only ever used for output-buffer sizing).
+            byte[] data = buildRecord(id, body);
+
+            var options = new CompressionOptions
+            {
+                Type = CompressionType.Optimal,
+                BlockSize = data.Length,
+                InitProperties = Dictionary,
+                Dictionary = new CompressionDictionaryOptions { WindowBits = 24 } // 16MB - comfortably above the 8MB implicit cap
+            };
+
+            using (var block = new ZStdBlock(options))
+            {
+                byte[] compressed = new byte[block.RequiredCompressOutputSize];
+                int compressedLength = compressed.Length;
+                var compressResult = block.Compress(data, 0, data.Length, compressed, 0, ref compressedLength);
+                Assert.Equal(CompressionResultCode.Success, compressResult);
+
+                byte[] decompressed = new byte[data.Length];
+                int decompressedLength = decompressed.Length;
+                var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
+                Assert.Equal(CompressionResultCode.Success, decompressResult);
+
+                Assert.Equal(data.Length, decompressedLength);
+                Assert.Equal(data, decompressed);
+            }
+        }
+
+        [Theory]
+        [InlineData("record-302", "explicit windowLog override, v1.5.2")]
+        public void ZStdBlock_Dictionary_V1_5_2_ExplicitWindowBits_RoundTrip(string id, string body)
+        {
+            // Same rationale as the v1.5.7 test above, exercised against the v1.5.2 advanced2 code path.
+            byte[] data = buildRecord(id, body);
+
+            var options = new CompressionOptions
+            {
+                Type = CompressionType.Optimal,
+                BlockSize = data.Length,
+                Version = CompressionVersion.ZStd(ZStdVersion.v1_5_2),
+                InitProperties = Dictionary,
+                Dictionary = new CompressionDictionaryOptions { WindowBits = 24 }
+            };
+
+            using (var block = new ZStdBlock(options))
+            {
+                byte[] compressed = new byte[block.RequiredCompressOutputSize];
+                int compressedLength = compressed.Length;
+                var compressResult = block.Compress(data, 0, data.Length, compressed, 0, ref compressedLength);
+                Assert.Equal(CompressionResultCode.Success, compressResult);
+
+                byte[] decompressed = new byte[data.Length];
+                int decompressedLength = decompressed.Length;
+                var decompressResult = block.Decompress(compressed, 0, compressedLength, decompressed, 0, ref decompressedLength);
+                Assert.Equal(CompressionResultCode.Success, decompressResult);
+
+                Assert.Equal(data.Length, decompressedLength);
+                Assert.Equal(data, decompressed);
+            }
+        }
+#endif
+
         [Theory]
         [InlineData("record-101", "delta payload for the streaming round trip")]
         [InlineData("record-102", "epsilon payload, a little longer to span more than one internal buffer flush")]

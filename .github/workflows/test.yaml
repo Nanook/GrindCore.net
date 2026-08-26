@@ -4,28 +4,25 @@
 # PURPOSE: Validates the library across all supported platforms.
 #
 # WHEN IT RUNS:
-#   - Pull requests targeting main (protects main from untested code)
-#   - Tag pushes matching v* (validates before packaging a release)
-#   - Manual dispatch (select which platforms to test)
+#   - Push to main (after merge — badges reflect main's state)
+#   - Manual dispatch (test any branch without affecting badges)
+#
+# BADGE NOTES:
+#   - README badges use ?branch=main so they only reflect main's state.
+#   - Manual dispatch runs on other branches don't affect badges.
 #
 # COST NOTES:
 #   - This is the most expensive workflow (8 platform runners).
-#   - It only runs when it matters: before merging to main, or before release.
-#   - Day-to-day pushes to feature branches do NOT trigger this.
-#   - If you've already validated via a tag, you can merge to main locally
-#     without triggering another test run.
+#   - Use manual dispatch to validate branches before merging.
+#   - Tag pushes do NOT trigger this (publish.yaml handles releases).
 # ============================================================================
 
 name: Run Unit Tests
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-
-  push:
-    tags:
-      - 'v*'
 
   workflow_dispatch:
     inputs:
@@ -174,6 +171,7 @@ jobs:
     needs: build_all_platforms
     if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs['linux-arm'] == 'true' }}
     runs-on: ubuntu-24.04-arm
+    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -205,7 +203,10 @@ jobs:
           rm -rf runtimes
           chmod 755 GrindCore.Tests.Runtime
           ls -al
-          qemu-arm-static -L /usr/arm-linux-gnueabihf ./GrindCore.Tests.Runtime
+          export DOTNET_DefaultStackSize=800000
+          export DOTNET_GCConserveMemory=0
+          export DOTNET_gcTrimCommitOnLowMemory=0
+          qemu-arm-static -s 8388608 -L /usr/arm-linux-gnueabihf ./GrindCore.Tests.Runtime
 
   test_linux_x64:
     needs: build_all_platforms

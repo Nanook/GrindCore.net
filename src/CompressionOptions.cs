@@ -66,6 +66,16 @@ namespace Nanook.GrindCore
         public CompressionDictionaryOptions? Dictionary { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the base stream only supports async operations.
+        /// When true, the internal <c>_baseStreamAsyncOnly</c> flag is set proactively at construction
+        /// time so that even the very first write/flush uses async base stream APIs. Without this,
+        /// the flag is only set reactively after a successful async call — creating a cold-start gap
+        /// where a sync Flush() on a "write nothing then finish" sequence would hit the genuine
+        /// sync BaseStream.Write() path, which async-only streams reject.
+        /// </summary>
+        public bool BaseStreamAsyncOnly { get; set; }
+
+        /// <summary>
         /// Returns a <see cref="CompressionOptions"/> instance configured for decompression.
         /// </summary>
         public static CompressionOptions DefaultDecompress() => new CompressionOptions() { Type = CompressionType.Decompress };
@@ -464,7 +474,12 @@ namespace Nanook.GrindCore
         /// Gets or sets the window size as a power of 2 (log2 value) for algorithms that use logarithmic sizing.
         /// Alternative to DictionarySize for algorithms that prefer logarithmic parameters.
         /// <para><strong>Algorithms:</strong></para>
-        /// <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Default: 23 (8MB). Dictionary size = 2^WindowBits</para>
+        /// <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Unset (null) uses zstd's own implicit,
+        /// level-based window sizing for both block sizing and (when a content dictionary is supplied via
+        /// <see cref="CompressionOptions.InitProperties"/>) the dictionary's CDict - which caps out at 8MB for
+        /// any dictionary larger than 256KB at level 19 and never grows further, no matter how much bigger the
+        /// dictionary gets. Set this explicitly to override that cap when using a dictionary larger than ~8MB;
+        /// otherwise leave unset. Dictionary/block size = 2^WindowBits</para>
         /// <para>• <strong>Brotli:</strong> Window bits range: 10-24. Default: 22 (4MB). Larger = better compression</para>
         /// <para>• <strong>ZLib/Deflate/GZip:</strong> Range: 8-15 (256B-32KB), or negative (-8 to -15) for raw deflate without headers</para>
         /// <para><strong>Impact:</strong> Higher values increase memory usage but improve compression for large files.</para>
@@ -657,5 +672,42 @@ namespace Nanook.GrindCore
         /// <para>Level 11 provides maximum compression but slowest speed.</para>
         /// </summary>
         public int? Quality { get; set; }
+
+        /// <summary>
+        /// Gets or sets bzip2's compression work factor.
+        /// Controls when bzip2 falls back from its normal sorting algorithm to a slower, more
+        /// conservative one that avoids worst-case (near-quadratic) behavior on pathological or
+        /// highly repetitive input.
+        /// <para><strong>Algorithms:</strong></para>
+        /// <para>• <strong>BZip2:</strong> Range: 0-250. 0 selects bzip2's own default (30).</para>
+        /// <para><strong>Impact:</strong> Has no effect on decompression and (in nearly all practical
+        /// cases) no effect on the compressed output size - it only affects how much CPU time
+        /// compression can take on adversarial/degenerate input. Lower values trade that safety
+        /// margin for a small amount of speed on ordinary data; there's rarely a reason to change
+        /// this from the default.</para>
+        /// </summary>
+        public int? WorkFactor { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether bzip2 decompression uses its reduced-memory algorithm.
+        /// <para><strong>Algorithms:</strong></para>
+        /// <para>• <strong>BZip2:</strong> false/unset (default) = normal algorithm. true = ~2.5x less
+        /// memory, some speed cost. Has no effect on compression - decompression-only.</para>
+        /// <para><strong>Impact:</strong> Useful primarily on memory-constrained targets; the memory
+        /// saved scales with the BlockSize/level used at compression time, not with this setting
+        /// itself.</para>
+        /// </summary>
+        public bool? SmallDecompress { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether bzip2 decompression tolerates truncated streams.
+        /// <para><strong>Algorithms:</strong></para>
+        /// <para>• <strong>BZip2:</strong> false/unset (default) = throw on truncation. true = treat
+        /// end-of-input at a block boundary as normal end-of-stream rather than an error.</para>
+        /// <para><strong>Impact:</strong> Allows decoding partial/truncated bzip2 streams (e.g., a sub-range
+        /// of blocks extracted for random access) that lack a stream footer. Per-block CRCs are still
+        /// validated; only the whole-stream combined CRC check (which requires the footer) is skipped.</para>
+        /// </summary>
+        public bool? TolerateTruncation { get; set; }
     }
 }

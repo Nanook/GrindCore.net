@@ -610,6 +610,264 @@
             Periodically removes stale buffers from the pool that have not been used for a threshold period.
             </summary>
         </member>
+        <member name="T:Nanook.GrindCore.BZip2.BZip2Block">
+            <summary>
+            Provides a block-based implementation of the BZip2 compression algorithm.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.BZip2.BZip2Block.RequiredCompressOutputSize">
+            <summary>
+            Gets the required output buffer size for compression, as determined by bzip2's own
+            documented worst-case bound (source size + 1% + 600 bytes; see BZ2_bzBuffToBuffCompress
+            in bzlib.h).
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Block.#ctor(Nanook.GrindCore.CompressionOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.BZip2.BZip2Block"/> class with the specified compression options.
+            </summary>
+            <param name="options">The compression options to use.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="options"/> or <c>options.BlockSize</c> is null.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Block.OnCompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock,System.Int32@)">
+            <summary>
+            Compresses the source data block into the destination data block using BZip2.
+            </summary>
+            <param name="srcData">The source data block to compress.</param>
+            <param name="dstData">The destination data block to write compressed data to.</param>
+            <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+            <returns>The compression result code.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Block.OnDecompress(Nanook.GrindCore.DataBlock,Nanook.GrindCore.DataBlock,System.Int32@)">
+            <summary>
+            Decompresses the source data block into the destination data block using BZip2.
+            </summary>
+            <param name="srcData">The source data block to decompress.</param>
+            <param name="dstData">The destination data block to write decompressed data to.</param>
+            <param name="dstCount">On input, the maximum bytes available; on output, the actual bytes written.</param>
+            <returns>The compression result code.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Block.OnDispose">
+            <summary>
+            Releases any resources used by the <see cref="T:Nanook.GrindCore.BZip2.BZip2Block"/>. No resources to release for BZip2 blocks.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.BZip2.BZip2Decoder">
+            <summary>
+            Provides a wrapper around the BZip2 streaming decompression API, supporting transparent
+            decompression of concatenated ("multi-stream") .bz2 data - bzip2 has documented this
+            concatenation convention since 0.9.0 (the same way multiple gzip members can be
+            concatenated and decompress as one logical stream; see <c>DeflateDecoder</c>'s
+            <c>resetStreamForLeftoverInput</c> for the equivalent gzip-side handling).
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.BZip2.BZip2Decoder.Finished">
+            <summary>
+            Returns true if the end of the (possibly multi-stream) input has been reached.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.BZip2.BZip2Decoder.NonEmptyInput">
+            <summary>
+            Returns true if any non-empty input has ever been provided.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Decoder.#ctor(System.Boolean,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.BZip2.BZip2Decoder"/> class.
+            </summary>
+            <param name="smallDecompress">
+            When true, selects bzip2's reduced-memory decompression algorithm (~2.5x less memory, some speed cost).
+            </param>
+            <param name="tolerateErrors">
+            When true, BZ_DATA_ERROR after valid output is treated as end-of-stream rather than
+            throwing. Used when bzip2 data is embedded in archives where buffer overread may feed
+            non-bzip2 bytes to the decoder after the real stream end.
+            </param>
+            <exception cref="T:System.Exception">Thrown if the native decompression context cannot be created.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Decoder.Finalize">
+            <summary>
+            Finalizer to ensure resources are released.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Decoder.Dispose">
+            <summary>
+            Releases all resources used by the <see cref="T:Nanook.GrindCore.BZip2.BZip2Decoder"/>.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Decoder.NeedsInput(Nanook.GrindCore.CompressionBuffer)">
+            <summary>
+            Returns true if there is no available input to feed the decoder.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Decoder.DecodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Int32)">
+            <summary>
+            Decompresses available input from <paramref name="inData"/> into <paramref name="outData"/>.
+            If bzip2 reports the end of a stream and further input immediately looks like another
+            bzip2 header, the decoder transparently reinitializes and continues (multi-stream
+            concatenation); otherwise <see cref="P:Nanook.GrindCore.BZip2.BZip2Decoder.Finished"/> becomes true.
+            </summary>
+            <param name="inData">The input buffer containing compressed data.</param>
+            <param name="outData">The output buffer to write decompressed data to.</param>
+            <param name="length">The maximum number of bytes to write. If 0, fills the available output space.</param>
+            <returns>The number of bytes written to <paramref name="outData"/>.</returns>
+            <exception cref="T:System.IO.InvalidDataException">Thrown if the input data is corrupted or invalid.</exception>
+        </member>
+        <member name="T:Nanook.GrindCore.BZip2.BZip2Encoder">
+            <summary>
+            Provides a wrapper around the BZip2 streaming compression API. bzip2's bz_stream is
+            deliberately shaped like zlib's z_stream, so this mirrors <c>DeflateEncoder</c>'s shape
+            (one call drives one native step; the caller loops and drains output between calls) rather
+            than LZ4/LZMA's multi-call-per-invocation style.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Encoder.#ctor(System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.BZip2.BZip2Encoder"/> class with the specified
+            block size and work factor.
+            </summary>
+            <param name="blockSize100k">Block size, 1-9 (900k*n block size).</param>
+            <param name="workFactor">Work factor, 0-250 (0 = bzip2's own default).</param>
+            <exception cref="T:System.Exception">Thrown if the native compression context cannot be created.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Encoder.Finalize">
+            <summary>
+            Finalizer to ensure resources are released.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Encoder.Dispose">
+            <summary>
+            Releases all resources used by the <see cref="T:Nanook.GrindCore.BZip2.BZip2Encoder"/>.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Encoder.NeedsInput(Nanook.GrindCore.CompressionBuffer)">
+            <summary>
+            Returns true if there is no available input to feed the encoder.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Encoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer)">
+            <summary>
+            Feeds available input to the encoder (BZ_RUN) and writes any produced output to outData.
+            A single native call may not consume/produce everything available; callers loop while
+            input and output space both remain.
+            </summary>
+            <param name="inData">The input buffer containing data to compress.</param>
+            <param name="outData">The output buffer to write compressed data to.</param>
+            <returns>The number of bytes written to <paramref name="outData"/>.</returns>
+            <exception cref="T:System.Exception">Thrown if the native compress step reports an error.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Encoder.Flush(Nanook.GrindCore.CompressionBuffer,System.Int32@)">
+            <summary>
+            Drives one BZ_FLUSH step - a block-boundary flush that leaves the stream open for
+            further BZ_RUN input, unlike <see cref="M:Nanook.GrindCore.BZip2.BZip2Encoder.Finish(Nanook.GrindCore.CompressionBuffer,System.Int32@)"/>. Returns true once bzip2 signals the
+            flush has fully completed (i.e. the stream is ready to accept BZ_RUN input again).
+            </summary>
+            <param name="outData">The buffer to write flushed data to.</param>
+            <param name="bytesWritten">The number of bytes written to <paramref name="outData"/>.</param>
+            <returns>True if the flush completed; false if more calls are required.</returns>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Encoder.Finish(Nanook.GrindCore.CompressionBuffer,System.Int32@)">
+            <summary>
+            Drives one BZ_FINISH step, ending the stream. Once called, no further input may be fed.
+            Returns true once bzip2 signals BZ_STREAM_END.
+            </summary>
+            <param name="outData">The buffer to write finalized data to.</param>
+            <param name="bytesWritten">The number of bytes written to <paramref name="outData"/>.</param>
+            <returns>True if the stream has been finalized; false if more calls are required.</returns>
+        </member>
+        <member name="T:Nanook.GrindCore.BZip2.BZip2Stream">
+            <summary>
+            Provides a stream implementation for BZip2 compression and decompression.
+            Inherits common <see cref="T:System.IO.Stream"/> functionality from <see cref="T:Nanook.GrindCore.CompressionStream"/>.
+            bzip2's bz_stream is deliberately shaped like zlib's z_stream, so this follows
+            <c>DeflateStream</c>'s Read/Write/Flush structure rather than LZ4/LZMA's.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.BZip2.BZip2Stream.BufferSizeInput">
+            <summary>
+            Gets the input buffer size for BZip2 operations.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.BZip2.BZip2Stream.BufferSizeOutput">
+            <summary>
+            Gets the output buffer size for BZip2 operations.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.BZip2.BZip2Stream.InternalBufferedBytes">
+            <summary>
+            Gets the number of bytes buffered internally by the BZip2 decoder that have been read
+            from the base stream but not yet consumed by the native decompressor. After BZ_STREAM_END,
+            these are overread bytes belonging to the next entry in an archive container.
+            Used by <see cref="P:Nanook.GrindCore.CompressionStream.BufferedBytesUnused"/> for stream position correction.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Nanook.GrindCore.BZip2.BZip2Stream"/> class with the specified stream and options.
+            </summary>
+            <param name="stream">The underlying stream to read from or write to.</param>
+            <param name="options">The compression options to use.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="stream"/> or <paramref name="options"/> is null.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.OnRead(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Int32)">
+            <summary>
+            Reads data from the stream and decompresses it using BZip2.
+            Updates the position with the running total of bytes processed from the source stream.
+            </summary>
+            <param name="data">The buffer to read decompressed data into.</param>
+            <param name="cancel">A cancellable task for cooperative cancellation.</param>
+            <param name="bytesReadFromStream">The number of bytes read from the underlying stream.</param>
+            <param name="length">The maximum number of bytes to read. If 0, the method will fill the buffer if possible.</param>
+            <returns>The number of bytes written to the buffer.</returns>
+            <exception cref="T:System.NotSupportedException">Thrown if the stream is not in decompression mode.</exception>
+            <exception cref="T:System.IO.InvalidDataException">Thrown if the input stream is truncated.</exception>
+            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.OnWrite(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@)">
+            <summary>
+            Compresses data using BZip2 and writes it to the stream.
+            Updates the position with the running total of bytes processed from the source stream.
+            </summary>
+            <param name="data">The buffer containing data to compress and write.</param>
+            <param name="cancel">A cancellable task for cooperative cancellation.</param>
+            <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+            <exception cref="T:System.NotSupportedException">Thrown if the stream is not in compression mode.</exception>
+            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.OnFlush(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CancellableTask,System.Int32@,System.Boolean,System.Boolean)">
+            <summary>
+            Flushes any remaining compressed data to the stream.
+            </summary>
+            <param name="data">The buffer containing data to flush.</param>
+            <param name="cancel">A cancellable task for cooperative cancellation.</param>
+            <param name="bytesWrittenToStream">The number of bytes written to the underlying stream.</param>
+            <param name="flush">Indicates if this is a flush operation (BZ_FLUSH: block-boundary flush, stream stays open).</param>
+            <param name="complete">Indicates that there is no more data to compress (BZ_FINISH: ends the stream).</param>
+            <exception cref="T:System.OperationCanceledException">Thrown if cancellation is requested.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.OnReadAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Asynchronously reads data from the stream and decompresses it using BZip2.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.OnWriteAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously compresses data using BZip2 and writes it to the stream.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.OnFlushAsync(Nanook.GrindCore.CompressionBuffer,System.Threading.CancellationToken,System.Boolean,System.Boolean)">
+            <summary>
+            Asynchronously flushes any remaining compressed data to the stream.
+            This override provides true async I/O without blocking.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.OnDispose">
+            <summary>
+            Disposes the <see cref="T:Nanook.GrindCore.BZip2.BZip2Stream"/> and its resources.
+            </summary>
+        </member>
         <member name="T:Nanook.GrindCore.CancellableTask">
             <summary>
             Represents a cancellable task using a <see cref="T:System.Threading.CancellationToken"/> for supported frameworks.
@@ -996,6 +1254,16 @@
             Gets or sets dictionary and advanced compression options for algorithms that support fine-tuning.
             </summary>
         </member>
+        <member name="P:Nanook.GrindCore.CompressionOptions.BaseStreamAsyncOnly">
+            <summary>
+            Gets or sets whether the base stream only supports async operations.
+            When true, the internal <c>_baseStreamAsyncOnly</c> flag is set proactively at construction
+            time so that even the very first write/flush uses async base stream APIs. Without this,
+            the flag is only set reactively after a successful async call — creating a cold-start gap
+            where a sync Flush() on a "write nothing then finish" sequence would hit the genuine
+            sync BaseStream.Write() path, which async-only streams reject.
+            </summary>
+        </member>
         <member name="M:Nanook.GrindCore.CompressionOptions.DefaultDecompress">
             <summary>
             Returns a <see cref="T:Nanook.GrindCore.CompressionOptions"/> instance configured for decompression.
@@ -1165,7 +1433,12 @@
             Gets or sets the window size as a power of 2 (log2 value) for algorithms that use logarithmic sizing.
             Alternative to DictionarySize for algorithms that prefer logarithmic parameters.
             <para><strong>Algorithms:</strong></para>
-            <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Default: 23 (8MB). Dictionary size = 2^WindowBits</para>
+            <para>• <strong>ZStd:</strong> WindowLog range: 10-31. Unset (null) uses zstd's own implicit,
+            level-based window sizing for both block sizing and (when a content dictionary is supplied via
+            <see cref="P:Nanook.GrindCore.CompressionOptions.InitProperties"/>) the dictionary's CDict - which caps out at 8MB for
+            any dictionary larger than 256KB at level 19 and never grows further, no matter how much bigger the
+            dictionary gets. Set this explicitly to override that cap when using a dictionary larger than ~8MB;
+            otherwise leave unset. Dictionary/block size = 2^WindowBits</para>
             <para>• <strong>Brotli:</strong> Window bits range: 10-24. Default: 22 (4MB). Larger = better compression</para>
             <para>• <strong>ZLib/Deflate/GZip:</strong> Range: 8-15 (256B-32KB), or negative (-8 to -15) for raw deflate without headers</para>
             <para><strong>Impact:</strong> Higher values increase memory usage but improve compression for large files.</para>
@@ -1350,6 +1623,43 @@
             <para>• <strong>Brotli:</strong> Range: 0-11, default: 6. Higher = better compression, slower speed</para>
             <para><strong>Impact:</strong> Level 0 provides minimal compression but fastest speed.</para>
             <para>Level 11 provides maximum compression but slowest speed.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.WorkFactor">
+            <summary>
+            Gets or sets bzip2's compression work factor.
+            Controls when bzip2 falls back from its normal sorting algorithm to a slower, more
+            conservative one that avoids worst-case (near-quadratic) behavior on pathological or
+            highly repetitive input.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>BZip2:</strong> Range: 0-250. 0 selects bzip2's own default (30).</para>
+            <para><strong>Impact:</strong> Has no effect on decompression and (in nearly all practical
+            cases) no effect on the compressed output size - it only affects how much CPU time
+            compression can take on adversarial/degenerate input. Lower values trade that safety
+            margin for a small amount of speed on ordinary data; there's rarely a reason to change
+            this from the default.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.SmallDecompress">
+            <summary>
+            Gets or sets whether bzip2 decompression uses its reduced-memory algorithm.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>BZip2:</strong> false/unset (default) = normal algorithm. true = ~2.5x less
+            memory, some speed cost. Has no effect on compression - decompression-only.</para>
+            <para><strong>Impact:</strong> Useful primarily on memory-constrained targets; the memory
+            saved scales with the BlockSize/level used at compression time, not with this setting
+            itself.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.TolerateTruncation">
+            <summary>
+            Gets or sets whether bzip2 decompression tolerates truncated streams.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>BZip2:</strong> false/unset (default) = throw on truncation. true = treat
+            end-of-input at a block boundary as normal end-of-stream rather than an error.</para>
+            <para><strong>Impact:</strong> Allows decoding partial/truncated bzip2 streams (e.g., a sub-range
+            of blocks extracted for random access) that lack a stream footer. Per-block CRCs are still
+            validated; only the whole-stream combined CRC check (which requires the footer) is skipped.</para>
             </summary>
         </member>
         <member name="T:Nanook.GrindCore.CompressionResultCode">
@@ -1848,6 +2158,11 @@
             Specifies supported versions for the ZStd algorithm.
             </summary>
         </member>
+        <member name="T:Nanook.GrindCore.BZip2Version">
+            <summary>
+            Specifies supported versions for the BZip2 algorithm.
+            </summary>
+        </member>
         <member name="T:Nanook.GrindCore.CompressionVersion">
             <summary>
             Represents a version for a specific compression algorithm.
@@ -1978,6 +2293,17 @@
         <member name="M:Nanook.GrindCore.CompressionVersion.ZStd(Nanook.GrindCore.ZStdVersion)">
             <summary>
             Gets a specific version for the ZStd algorithm.
+            </summary>
+            <param name="version">The version enum value.</param>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionVersion.BZip2Latest">
+            <summary>
+            Gets the latest version for the BZip2 algorithm.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.CompressionVersion.BZip2(Nanook.GrindCore.BZip2Version)">
+            <summary>
+            Gets a specific version for the BZip2 algorithm.
             </summary>
             <param name="version">The version enum value.</param>
         </member>
@@ -3674,6 +4000,28 @@
         <member name="T:Nanook.GrindCore.HashType">
             <summary>
             Specifies supported hash algorithms for integrity or fingerprinting.
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.Interop.SZ_BZip2_v1_0_8_CompressionContext">
+            <summary>
+            Mirrors the native bz_stream layout embedded (by value) inside
+            SZ_BZip2_v1_0_8_CompressionContext. Used ONLY via <c>Marshal.SizeOf</c> to size the fixed
+            unmanaged allocation BZip2Encoder makes for the real context - never instantiated or
+            passed by value/ref itself. libbzip2 stores the exact bz_stream* address passed to
+            BZ2_bzCompressInit and rejects any later call whose pointer doesn't match byte-for-byte
+            (bzlib.c: `if (s->strm != strm) return BZ_PARAM_ERROR`), so the context must live at a
+            single fixed address for its whole lifetime - a managed struct field can't guarantee
+            that across separate P/Invoke calls under a compacting GC, hence unmanaged allocation
+            (see BZip2Encoder/BZip2Decoder) rather than the "PAL owns a managed struct by value"
+            style used elsewhere (e.g. Interop.ZStream for pal_zlib_v1_3_1's PAL_ZStream, which zlib
+            itself never validates the address of).
+            </summary>
+        </member>
+        <member name="T:Nanook.GrindCore.Interop.SZ_BZip2_v1_0_8_DecompressionContext">
+            <summary>
+            Mirrors the native bz_stream layout embedded (by value) inside
+            SZ_BZip2_v1_0_8_DecompressionContext, used only for sizing. See
+            <see cref="T:Nanook.GrindCore.Interop.SZ_BZip2_v1_0_8_CompressionContext"/>.
             </summary>
         </member>
         <member name="F:Nanook.GrindCore.Interop.FL2CompressionParameters.DictionarySize">
@@ -6399,7 +6747,7 @@
             Gets the recommended output buffer size for ZStd compression.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Byte[])">
+        <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Byte[],System.Int32)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.ZStd.ZStdEncoder"/> class with the specified block size and compression level.
             </summary>
@@ -6408,6 +6756,7 @@
             <param name="nbWorkers">Number of worker threads for multithreaded compression (0 = single-threaded).</param>
             <param name="jobSize">Size of each compression job when using MT (0 = auto).</param>
             <param name="dictionary">Optional pre-trained dictionary data for improved compression.</param>
+            <param name="windowLog">Optional advanced windowLog override for the dictionary's CDict (0 = zstd's implicit level-based sizing, which caps out at 8MB for dictionaries &gt;256KB - see <see cref="P:Nanook.GrindCore.CompressionDictionaryOptions.WindowBits"/>).</param>
         </member>
         <member name="M:Nanook.GrindCore.ZStd.ZStdEncoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
             <summary>

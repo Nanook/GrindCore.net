@@ -11,16 +11,21 @@
 #     a tag push or manual dispatch of publish.yaml).
 #   - The NUGET_API_KEY secret must be configured in the repository.
 #
-# HOW TO USE:
-#   1. Push a v* tag (triggers test.yaml + publish.yaml automatically)
-#   2. Wait for both to pass (tests green + package built)
-#   3. Run this workflow manually (optionally specify the build Run ID)
-#   4. Package is pushed to nuget.org with --skip-duplicate
+# RELEASE WORKFLOW:
+#   1. Develop on a feature/release branch
+#   2. Use manual dispatch of test.yaml to validate on all platforms
+#   3. Tag the validated commit (e.g. v0.9.0) — triggers publish.yaml to
+#      build the NuGet package from that exact commit
+#   4. Continue with any non-code changes (docs, CI tweaks) on the branch
+#   5. PR/merge to main — tests run automatically, badges update
+#   6. Run this workflow to push the package to nuget.org
 #
 # NOTES:
 #   - No build or tests run here — the package was already validated.
 #   - If run_id is left empty, it uses the latest successful publish.yaml run.
 #   - --skip-duplicate means re-running is safe (won't fail on existing version).
+#   - The tag pins the package to the code at tagging time; later commits
+#     (readme, workflow changes) are not included in the package.
 # ============================================================================
 
 name: Push to NuGet

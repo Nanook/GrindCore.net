@@ -17,6 +17,7 @@
         Lzma2,
         FastLzma2,
         Lz4,
-        ZStd
+        ZStd,
+        BZip2
     }
 }

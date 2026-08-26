@@ -46,6 +46,7 @@ namespace Nanook.GrindCore.ZStd
             int resolvedCompressionLevel = options?.Dictionary?.Strategy ?? (int)this.CompressionType;
 
             int resolvedBlockSize = BufferThreshold; // default
+            int resolvedWindowLog = 0; // 0 = zstd's implicit level-based CDict window sizing (see ZStdBlock/CreateCompressionDict)
             if (options?.Dictionary?.WindowBits != null)
             {
                 int wb = options.Dictionary.WindowBits.Value;
@@ -57,6 +58,7 @@ namespace Nanook.GrindCore.ZStd
                 long bs = 1L << wb;
                 if (bs > int.MaxValue) bs = int.MaxValue;
                 resolvedBlockSize = (int)bs;
+                resolvedWindowLog = wb;
             }
 
             if (IsCompress)
@@ -81,9 +83,9 @@ namespace Nanook.GrindCore.ZStd
                 byte[]? dictionary = options?.InitProperties;
 
                 if (useV152)
-                    _encoder = new ZStdEncoderV1_5_2(resolvedBlockSize, resolvedCompressionLevel, nbWorkers, jobSize, dictionary);
+                    _encoder = new ZStdEncoderV1_5_2(resolvedBlockSize, resolvedCompressionLevel, nbWorkers, jobSize, dictionary, resolvedWindowLog);
                 else
-                    _encoder = new ZStdEncoder(resolvedBlockSize, resolvedCompressionLevel, nbWorkers, jobSize, dictionary);
+                    _encoder = new ZStdEncoder(resolvedBlockSize, resolvedCompressionLevel, nbWorkers, jobSize, dictionary, resolvedWindowLog);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
             else

@@ -38,6 +38,27 @@ namespace Nanook.GrindCore.ZStd
             // read-only/thread-safe per zstd's own docs, so this instance can also be shared read-only across threads that
             // each create their own context per call (as OnCompress/OnDecompress already do).
             bool isV152 = options.Version != null && options.Version.Index == 1;
+
+            // WindowBits doubles as the advanced windowLog override for CDict creation: zstd's own
+            // ZSTD_createCDict() sizes its window from a level-keyed table that caps out at 8MB for any
+            // dictionary >256KB at level 19 and never grows further, regardless of how much bigger the
+            // dictionary actually is. 0 (the default when WindowBits is unset) preserves that exact
+            // implicit behavior - the native side takes the plain ZSTD_createCDict() path for windowLog
+            // <= 0 (and separately, zstd's own ZSTD_c_windowLog documents 0 as "use default" too, so this
+            // is consistent either way). An explicit WindowBits is clamped into zstd's actual valid range
+            // [10, 31] first - zstd's docs require windowLog "clamped between ZSTD_WINDOWLOG_MIN and
+            // ZSTD_WINDOWLOG_MAX", and don't promise to do that clamping themselves - same range already
+            // used below for the output-buffer-size calc, kept consistent here.
+            int windowLog = 0;
+            if (options.Dictionary?.WindowBits != null)
+            {
+                windowLog = options.Dictionary.WindowBits.Value;
+                if (windowLog < 10)
+                    windowLog = 10;
+                if (windowLog > 31)
+                    windowLog = 31;
+            }
+
             if (options.InitProperties != null && options.InitProperties.Length > 0)
             {
                 fixed (byte* dictPtr = options.InitProperties)
@@ -45,7 +66,7 @@ namespace Nanook.GrindCore.ZStd
                     if (isV152)
                     {
                         var cdict152 = new Interop.SZ_ZStd_v1_5_2_CompressionDict();
-                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateCompressionDict(&cdict152, (IntPtr)dictPtr, (UIntPtr)options.InitProperties.Length, _compressionLevel) == 0)
+                        if (Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CreateCompressionDict(&cdict152, (IntPtr)dictPtr, (UIntPtr)options.InitProperties.Length, _compressionLevel, windowLog) == 0)
                             _cdict152 = cdict152;
 
                         var ddict152 = new Interop.SZ_ZStd_v1_5_2_DecompressionDict();
@@ -55,7 +76,7 @@ namespace Nanook.GrindCore.ZStd
                     else
                     {
                         var cdict = new Interop.SZ_ZStd_v1_5_7_CompressionDict();
-                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateCompressionDict(&cdict, (IntPtr)dictPtr, (UIntPtr)options.InitProperties.Length, _compressionLevel) == 0)
+                        if (Interop.ZStd.SZ_ZStd_v1_5_7_CreateCompressionDict(&cdict, (IntPtr)dictPtr, (UIntPtr)options.InitProperties.Length, _compressionLevel, windowLog) == 0)
                             _cdict = cdict;
 
                         var ddict = new Interop.SZ_ZStd_v1_5_7_DecompressionDict();
@@ -68,15 +89,7 @@ namespace Nanook.GrindCore.ZStd
             // Resolve input block size: prefer Dictionary.WindowBits -> 1<<WindowBits, otherwise use options.BlockSize. Be tolerant.
             long isize = 0;
             if (options.Dictionary?.WindowBits != null)
-            {
-                int wb = options.Dictionary.WindowBits.Value;
-                if (wb < 10)
-                    wb = 10; // minimum reasonable for zstd
-                if (wb > 31)
-                    wb = 31; // clamp
-                long calc = 1L << wb;
-                isize = calc;
-            }
+                isize = 1L << windowLog; // windowLog is already clamped to [10, 31] above
 
             if (isize == 0)
             {

@@ -70,6 +70,9 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, CompressionVersion.ZSTD_v1_5_2, 0x195, "3545b23ad651d5d4")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, CompressionVersion.ZSTD_v1_5_2, 0x195, "3545b23ad651d5d4")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, CompressionVersion.ZSTD_v1_5_2, 0x195, "3545b23ad651d5d4")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, null, 0x4eb, "c365a915aa207c65")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Optimal, null, 0x4eb, "0a74debb4a7dbc63")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.SmallestSize, null, 0x4eb, "0a74debb4a7dbc63")]
         public void Data_ByteArray64KiB_BlockCompress(CompressionAlgorithm algorithm, CompressionType type, string? version, int size, string expected)
         {
             using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _Data64KiB.Length, false, CompressionVersion.Create(algorithm, version)))
@@ -133,6 +136,9 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x1000a, "4b9f7d6be30a4eca")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x1000a, "4b9f7d6be30a4eca")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x1000a, "4b9f7d6be30a4eca")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, 0x10281, "e66ecbf6abdf847a")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Optimal, 0x10281, "35496d2fa0b23389")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.SmallestSize, 0x10281, "35496d2fa0b23389")]
         public void DataNonCompressible_ByteArray64KiB_BlockCompress(CompressionAlgorithm algorithm, CompressionType type, int size, string expected)
         {
             using (CompressionBlock block = CompressionBlockFactory.Create(algorithm, type, _DataNC64KiB.Length, false, CompressionVersion.Create(algorithm)))
@@ -162,6 +168,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, null, 0x2651, "8b0b438386b0c1f5")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, null, 0x83a, "8a7fd9bf458ad52a")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, CompressionVersion.ZSTD_v1_5_2, 0x83a, "8a7fd9bf458ad52a")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Fastest, null, 0xe6f, "d070588a52f991f6")]
 
 #if !IS_32BIT
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, null, 0x16d9, "f9420ec7af17eccf")]
@@ -177,6 +184,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, null, 0xbe7, "bd93e4482eb778cb")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, null, 0x7f0, "8723d465c72e2e88")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, CompressionVersion.ZSTD_v1_5_2, 0x7f0, "8723d465c72e2e88")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.Optimal, null, 0xe6f, "29d0774cc96ce8de")]
 
         [InlineData(CompressionAlgorithm.Brotli, CompressionType.SmallestSize, null, 0x4fa, "bd7a15fc895f1b65")]
         [InlineData(CompressionAlgorithm.Deflate, CompressionType.SmallestSize, null, 0xb9b, "080ef351410b77ac")]
@@ -189,6 +197,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, null, 0xba1, "2b9ecf7dce8e81ce")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, null, 0x5c0, "6775dd2c3d7c5222")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, CompressionVersion.ZSTD_v1_5_2, 0x714, "fd2c3ec61fa17a6a")]
+        [InlineData(CompressionAlgorithm.BZip2, CompressionType.SmallestSize, null, 0xe6f, "29d0774cc96ce8de")]
 #endif
         public void Text_ByteArray64KiB(CompressionAlgorithm algorithm, CompressionType type, string? version, int size, string expected)
         {
