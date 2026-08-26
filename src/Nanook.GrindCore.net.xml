@@ -671,12 +671,17 @@
             Returns true if any non-empty input has ever been provided.
             </summary>
         </member>
-        <member name="M:Nanook.GrindCore.BZip2.BZip2Decoder.#ctor(System.Boolean)">
+        <member name="M:Nanook.GrindCore.BZip2.BZip2Decoder.#ctor(System.Boolean,System.Boolean)">
             <summary>
             Initializes a new instance of the <see cref="T:Nanook.GrindCore.BZip2.BZip2Decoder"/> class.
             </summary>
             <param name="smallDecompress">
             When true, selects bzip2's reduced-memory decompression algorithm (~2.5x less memory, some speed cost).
+            </param>
+            <param name="tolerateErrors">
+            When true, BZ_DATA_ERROR after valid output is treated as end-of-stream rather than
+            throwing. Used when bzip2 data is embedded in archives where buffer overread may feed
+            non-bzip2 bytes to the decoder after the real stream end.
             </param>
             <exception cref="T:System.Exception">Thrown if the native decompression context cannot be created.</exception>
         </member>
@@ -786,6 +791,14 @@
         <member name="P:Nanook.GrindCore.BZip2.BZip2Stream.BufferSizeOutput">
             <summary>
             Gets the output buffer size for BZip2 operations.
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.BZip2.BZip2Stream.InternalBufferedBytes">
+            <summary>
+            Gets the number of bytes buffered internally by the BZip2 decoder that have been read
+            from the base stream but not yet consumed by the native decompressor. After BZ_STREAM_END,
+            these are overread bytes belonging to the next entry in an archive container.
+            Used by <see cref="P:Nanook.GrindCore.CompressionStream.BufferedBytesUnused"/> for stream position correction.
             </summary>
         </member>
         <member name="M:Nanook.GrindCore.BZip2.BZip2Stream.#ctor(System.IO.Stream,Nanook.GrindCore.CompressionOptions)">
@@ -1626,6 +1639,17 @@
             <para><strong>Impact:</strong> Useful primarily on memory-constrained targets; the memory
             saved scales with the BlockSize/level used at compression time, not with this setting
             itself.</para>
+            </summary>
+        </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.TolerateTruncation">
+            <summary>
+            Gets or sets whether bzip2 decompression tolerates truncated streams.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>BZip2:</strong> false/unset (default) = throw on truncation. true = treat
+            end-of-input at a block boundary as normal end-of-stream rather than an error.</para>
+            <para><strong>Impact:</strong> Allows decoding partial/truncated bzip2 streams (e.g., a sub-range
+            of blocks extracted for random access) that lack a stream footer. Per-block CRCs are still
+            validated; only the whole-stream combined CRC check (which requires the footer) is skipped.</para>
             </summary>
         </member>
         <member name="T:Nanook.GrindCore.CompressionResultCode">
