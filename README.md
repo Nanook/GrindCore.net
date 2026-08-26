@@ -127,6 +127,8 @@ GrindCore integrates robust solutions from several key projects:
   - The official bzip2/libbzip2 1.0.8 source, providing block-sorting compression with streaming and one-shot block APIs.
 - **[7zip mcmilk GitHub Repository](https://github.com/mcmilk/7-Zip-zstd):**
   - Contributes a comprehensive suite of hash functions, including SHA-1, SHA-2, SHA-3, MD2, MD4, MD5, and XXHash (32 and 64). More compression and hashing algorithms will be ported, benefiting from a uniform Make project structure that simplifies integration.
+- **[7-Zip Official](https://sourceforge.net/projects/sevenzip/):**
+  - LZMA and LZMA2 compression from the official 7-Zip source, along with Fast-LZMA2 from the mcmilk fork.
 - **[GrindCore.SharpCompress](https://github.com/Nanook/GrindCore.SharpCompress):**
   - Enhanced fork of SharpCompress leveraging GrindCore's native streams for improved performance and additional features like LZMA/2 level support.
 
