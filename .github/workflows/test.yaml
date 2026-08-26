@@ -4,24 +4,23 @@
 # PURPOSE: Validates the library across all supported platforms.
 #
 # WHEN IT RUNS:
-#   - Pull requests targeting main (protects main from untested code)
-#   - Manual dispatch (select which platforms to test)
+#   - Push to main (after merge — badges reflect main's state)
+#   - Manual dispatch (test any branch without affecting badges)
 #
 # BADGE NOTES:
-#   - README badges use ?branch=main&event=pull_request to reflect the
-#     last PR that targeted main. Manual dispatch runs don't affect badges.
+#   - README badges use ?branch=main so they only reflect main's state.
+#   - Manual dispatch runs on other branches don't affect badges.
 #
 # COST NOTES:
 #   - This is the most expensive workflow (8 platform runners).
-#   - It only runs when it matters: before merging to main.
-#   - Day-to-day pushes to feature branches do NOT trigger this.
+#   - Use manual dispatch to validate branches before merging.
 #   - Tag pushes do NOT trigger this (publish.yaml handles releases).
 # ============================================================================
 
 name: Run Unit Tests
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
