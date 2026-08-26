@@ -5,15 +5,17 @@
 #
 # WHEN IT RUNS:
 #   - Pull requests targeting main (protects main from untested code)
-#   - Tag pushes matching v* (validates before packaging a release)
 #   - Manual dispatch (select which platforms to test)
+#
+# BADGE NOTES:
+#   - README badges use ?branch=main&event=pull_request to reflect the
+#     last PR that targeted main. Manual dispatch runs don't affect badges.
 #
 # COST NOTES:
 #   - This is the most expensive workflow (8 platform runners).
-#   - It only runs when it matters: before merging to main, or before release.
+#   - It only runs when it matters: before merging to main.
 #   - Day-to-day pushes to feature branches do NOT trigger this.
-#   - If you've already validated via a tag, you can merge to main locally
-#     without triggering another test run.
+#   - Tag pushes do NOT trigger this (publish.yaml handles releases).
 # ============================================================================
 
 name: Run Unit Tests
@@ -22,10 +24,6 @@ on:
   pull_request:
     branches:
       - main
-
-  push:
-    tags:
-      - 'v*'
 
   workflow_dispatch:
     inputs:
