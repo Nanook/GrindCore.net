@@ -66,6 +66,16 @@ namespace Nanook.GrindCore
         public CompressionDictionaryOptions? Dictionary { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the base stream only supports async operations.
+        /// When true, the internal <c>_baseStreamAsyncOnly</c> flag is set proactively at construction
+        /// time so that even the very first write/flush uses async base stream APIs. Without this,
+        /// the flag is only set reactively after a successful async call — creating a cold-start gap
+        /// where a sync Flush() on a "write nothing then finish" sequence would hit the genuine
+        /// sync BaseStream.Write() path, which async-only streams reject.
+        /// </summary>
+        public bool BaseStreamAsyncOnly { get; set; }
+
+        /// <summary>
         /// Returns a <see cref="CompressionOptions"/> instance configured for decompression.
         /// </summary>
         public static CompressionOptions DefaultDecompress() => new CompressionOptions() { Type = CompressionType.Decompress };
