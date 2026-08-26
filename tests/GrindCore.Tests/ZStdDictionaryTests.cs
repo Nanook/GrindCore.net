@@ -132,13 +132,11 @@ namespace GrindCore.Tests
             Assert.True(dictSize < plainSize, $"Expected dictionary-primed compression ({dictSize} bytes) to beat plain compression ({plainSize} bytes) for dictionary-similar data");
         }
 
+#if !IS_32BIT_ARM
         [Theory]
         [InlineData("record-301", "explicit windowLog override, v1.5.7")]
         public void ZStdBlock_Dictionary_ExplicitWindowBits_RoundTrip(string id, string body)
         {
-#if IS_32BIT_ARM
-            return; // ARM32 under QEMU: ZSTD_createCDict_advanced2 with large windowLog causes heap corruption
-#endif
             // Regression coverage for the windowLog gap: ZSTD_createCDict()'s implicit sizing caps the
             // window at 8MB for any dictionary >256KB at level 19 and never grows further, no matter how
             // much bigger the dictionary actually gets - CreateCompressionDict now takes an explicit
@@ -177,9 +175,6 @@ namespace GrindCore.Tests
         [InlineData("record-302", "explicit windowLog override, v1.5.2")]
         public void ZStdBlock_Dictionary_V1_5_2_ExplicitWindowBits_RoundTrip(string id, string body)
         {
-#if IS_32BIT_ARM
-            return; // ARM32 under QEMU: same heap corruption issue as the v1.5.7 variant
-#endif
             // Same rationale as the v1.5.7 test above, exercised against the v1.5.2 advanced2 code path.
             byte[] data = buildRecord(id, body);
 
@@ -208,6 +203,7 @@ namespace GrindCore.Tests
                 Assert.Equal(data, decompressed);
             }
         }
+#endif
 
         [Theory]
         [InlineData("record-101", "delta payload for the streaming round trip")]
