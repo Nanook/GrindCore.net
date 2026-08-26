@@ -101,13 +101,22 @@ namespace GrindCore.Tests
                                     d.Dispose();
                                 testClassInstance = null;
 
-                                // Perform a single GC pass to encourage prompt cleanup. Repeated aggressive
-                                // collections can cause instability on some platforms; keep this minimal.
-                                GC.Collect();
-                                GC.WaitForPendingFinalizers();
-                                GC.Collect();
-                                GC.WaitForPendingFinalizers();
-                                GC.Collect();
+                                // Perform GC to encourage prompt cleanup. ARM32 under QEMU is
+                                // fragile — aggressive finalization triggers crashes in the
+                                // SharedArrayPool trimming callback, so limit to a single pass.
+                                if (System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture
+                                    == System.Runtime.InteropServices.Architecture.Arm)
+                                {
+                                    GC.Collect(0, GCCollectionMode.Default, false);
+                                }
+                                else
+                                {
+                                    GC.Collect();
+                                    GC.WaitForPendingFinalizers();
+                                    GC.Collect();
+                                    GC.WaitForPendingFinalizers();
+                                    GC.Collect();
+                                }
                             }
                         }
                     }
