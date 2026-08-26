@@ -15,7 +15,7 @@ namespace Nanook.GrindCore.BZip2
     /// </summary>
     internal unsafe sealed class BZip2Decoder : IDisposable
     {
-        private static readonly byte[] Bzip2MagicHeader = { (byte)'B', (byte)'Z', (byte)'h' };
+        private static readonly byte[] _bzip2MagicHeader = { (byte)'B', (byte)'Z', (byte)'h' };
 
         // Must live at a single, never-moving address for its entire lifetime - see
         // Interop.SZ_BZip2_v1_0_8_CompressionContext's doc comment (libbzip2 stores and validates
@@ -46,7 +46,7 @@ namespace Nanook.GrindCore.BZip2
         public BZip2Decoder(bool smallDecompress)
         {
             _small = smallDecompress ? 1 : 0;
-            _ctx = Marshal.AllocHGlobal(Marshal.SizeOf<SZ_BZip2_v1_0_8_DecompressionContext>());
+            _ctx = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(SZ_BZip2_v1_0_8_DecompressionContext)));
             init();
         }
 
@@ -133,7 +133,7 @@ namespace Nanook.GrindCore.BZip2
 
                 if (result == BZ_STREAM_END)
                 {
-                    if (inData.AvailableRead >= Bzip2MagicHeader.Length && looksLikeBzip2Header(inBase + inData.Pos))
+                    if (inData.AvailableRead >= _bzip2MagicHeader.Length && looksLikeBzip2Header(inBase + inData.Pos))
                     {
                         SZ_BZip2_v1_0_8_FreeDecompressionContext(_ctx);
                         init();
@@ -150,8 +150,8 @@ namespace Nanook.GrindCore.BZip2
 
         private static bool looksLikeBzip2Header(byte* p)
         {
-            for (int i = 0; i < Bzip2MagicHeader.Length; i++)
-                if (p[i] != Bzip2MagicHeader[i])
+            for (int i = 0; i < _bzip2MagicHeader.Length; i++)
+                if (p[i] != _bzip2MagicHeader[i])
                     return false;
             return true;
         }

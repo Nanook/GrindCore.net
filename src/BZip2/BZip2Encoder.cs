@@ -30,7 +30,7 @@ namespace Nanook.GrindCore.BZip2
         /// <exception cref="Exception">Thrown if the native compression context cannot be created.</exception>
         public BZip2Encoder(int blockSize100k, int workFactor)
         {
-            _ctx = Marshal.AllocHGlobal(Marshal.SizeOf<SZ_BZip2_v1_0_8_CompressionContext>());
+            _ctx = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(SZ_BZip2_v1_0_8_CompressionContext)));
             int result = SZ_BZip2_v1_0_8_CreateCompressionContext(_ctx, blockSize100k, workFactor);
             if (result != BZ_OK)
             {
