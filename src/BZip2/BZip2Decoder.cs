@@ -114,7 +114,7 @@ namespace Nanook.GrindCore.BZip2
             if (length == 0 || length > outData.AvailableWrite)
                 length = outData.AvailableWrite;
 
-            if (length == 0 || inData.AvailableRead == 0)
+            if (_finished || length == 0 || inData.AvailableRead == 0)
                 return 0;
 
             _nonEmptyInput = true;
@@ -137,7 +137,7 @@ namespace Nanook.GrindCore.BZip2
                     // (e.g., next archive entry in a Zip file). If tolerance mode is enabled
                     // and we've previously produced valid output, treat as implicit end-of-stream.
                     // The caller's rewind mechanism will correct the base stream position.
-                    if (_tolerateErrors && _nonEmptyInput && (result == BZ_DATA_ERROR || result == BZ_DATA_ERROR_MAGIC))
+                    if (_tolerateErrors && _nonEmptyInput && (result == BZ_DATA_ERROR || result == BZ_DATA_ERROR_MAGIC || result == BZ_SEQUENCE_ERROR))
                     {
                         _finished = true;
                         if (inSize > 0)
