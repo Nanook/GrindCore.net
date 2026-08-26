@@ -44,8 +44,8 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 ## Key Features
 
 - **Stream Position Correction**: Advanced buffer management for precise stream rewinding when overreading occurs
-- **Multi-Framework Support**: Compatible with .NET Framework 3.5 through .NET 10
-  `net10.0;net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35`
+- **Multi-Framework Support**: Compatible with .NET Framework 2.0 through .NET 10
+  `net10.0;net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35;net20`
 - **AOT Compatible**: Fully supports Ahead-of-Time compilation
 - **Native Performance**: Leverages native C libraries for optimal performance
 - **Seekable Compression**: ZStd seekable format for random access into compressed archives
