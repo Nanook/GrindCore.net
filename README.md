@@ -8,13 +8,12 @@ Published on **NuGet** as [GrindCore](https://www.nuget.org/packages/GrindCore) 
 
 - [Quick Start](#quick-start)
 - [Overview](#overview)
-- [Core Objectives](#core-objectives)
 - [Key Features](#key-features)
 - [Compression](#compression)
 - [Hashing](#hashing)
 - [Continuous Integration (CI) Status](#continuous-integration-ci-status)
 - [Key Project Integrations](#key-project-integrations)
-- [Addressing Current Issues](#addressing-current-issues)
+- [Why GrindCore?](#why-grindcore)
 - [To Do](#to-do)
 - [Conclusion](#conclusion)
 
@@ -35,11 +34,7 @@ dotnet add package GrindCore
 
 ## Overview
 
-GrindCore is an innovative library designed to streamline and enhance compression processes in dotnet applications. It aims to tackle prevalent issues such as performance degradation and outdated implementations when native code updates frequently. By unifying multiple C forks into a single, multiplatform library, GrindCore achieves a cohesive and efficient solution.
-
-## Core Objectives
-
-The primary goal of GrindCore is to deliver a maintainable compression and hashing solution for dotnet applications. Leveraging the exact method used to build C in the dotnet runtime ensures a robust approach. By preserving precise compression algorithms for key versions, GrindCore guarantees compatibility and reliability for projects requiring byte-perfect output.
+GrindCore delivers maintainable, high-performance compression and hashing for .NET by unifying multiple native C codecs into a single multiplatform library. It uses the same CMake build system as the dotnet runtime, preserving exact algorithm versions for byte-perfect, deterministic output where required.
 
 ## Key Features
 
@@ -110,14 +105,14 @@ A comprehensive list of test statuses for various platforms is available below. 
 
 | Platform            | Unit Test Status                                                                                      |
 |---------------------|-------------------------------------------------------------------------------------------------------|
-| **Linux ARM64**     | ![Linux ARM64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main)   |
-| **Linux ARM**       | ![Linux ARM Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main)       |
-| **Linux x64**       | ![Linux x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main)       |
-| **macOS x64**       | ![macOS x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main)         |
-| **macOS ARM64**     | ![macOS ARM64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main)     |
-| **Windows x86**     | ![Windows x86 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main)       |
-| **Windows x64**     | ![Windows x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main)       |
-| **Windows ARM64**   | ![Windows arm64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main)   |
+| **Linux ARM64**     | ![Linux ARM64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main&job=test_linux_arm64)   |
+| **Linux ARM**       | ![Linux ARM Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main&job=test_linux_arm)       |
+| **Linux x64**       | ![Linux x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main&job=test_linux_x64)       |
+| **macOS x64**       | ![macOS x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main&job=test_osx_x64)         |
+| **macOS ARM64**     | ![macOS ARM64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main&job=test_osx_arm64)     |
+| **Windows x86**     | ![Windows x86 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main&job=test_win_x86)       |
+| **Windows x64**     | ![Windows x64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main&job=test_win_x64)       |
+| **Windows ARM64**   | ![Windows arm64 Status](https://github.com/Nanook/GrindCore.net/actions/workflows/test.yaml/badge.svg?branch=main&job=test_win_arm64)   |
 
 ## Key Project Integrations
 
@@ -135,20 +130,13 @@ GrindCore integrates robust solutions from several key projects:
 - **[GrindCore.SharpCompress](https://github.com/Nanook/GrindCore.SharpCompress):**
   - Enhanced fork of SharpCompress leveraging GrindCore's native streams for improved performance and additional features like LZMA/2 level support.
 
-## Addressing Current Issues
+## Why GrindCore?
 
-GrindCore is designed to overcome several known complications in the dotnet ecosystem:
-
-- **Performance:**
-  - C# ports generally perform slower than native C, although the JIT offers powerful optimization capabilities.
-- **Up-to-date Implementations:**
-  - Leveraging well-maintained projects like dotnet Runtime and 7zip mcmilk ensures that the C algorithms can be updated easily.
-- **Cross-Platform Compatibility:**
-  - Through multiplatform C compilation via the dotnet CMake system, GrindCore ensures seamless functionality across different operating systems. The managed layer abstracts this, allowing it to be used as System.IO.Compression would be used.
-- **Consistency:**
-  - By preserving exact compression algorithms, the library is ideal for projects requiring checksummed output, ensuring consistent data results and reliability.
-- **Addressing Missing Functionality:**
-  - GrindCore aims to expose additional functionalities not available in other libraries, such as `compress2` from zlib/deflate, providing more options and flexibility for developers.
+- **Performance** — Native C outperforms C# ports; GrindCore gives you native speed with a managed API.
+- **Up-to-date** — Built from well-maintained upstream sources (dotnet runtime, Facebook ZStd, 7zip mcmilk) that are easy to update.
+- **Cross-platform** — Multiplatform C compilation via dotnet's CMake system. The managed layer abstracts this so it works like `System.IO.Compression`.
+- **Deterministic** — Preserves exact algorithm versions for byte-perfect checksummed output.
+- **Complete** — Exposes functionality missing from other libraries (e.g. `compress2` from zlib, LZMA levels, ZStd dictionaries and seekable format).
 
 ## To Do
 
