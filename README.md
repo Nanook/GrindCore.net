@@ -47,7 +47,7 @@ The primary goal of GrindCore is to deliver a maintainable compression and hashi
 - **Multi-Framework Support**: Compatible with .NET Framework 2.0 through .NET 10
   `net10.0;net9.0;net8.0;net7.0;net6.0;net5.0;netcoreapp3.1;netstandard2.1;netstandard2.0;net48;net47;net46;net45;net40;net35;net20`
 - **AOT Compatible**: Fully supports Ahead-of-Time compilation
-- **Native Performance**: Leverages native C libraries for optimal performance
+- **Native Performance**: Native C libraries compiled from source as part of this project — no third-party binary dependencies
 - **Seekable Compression**: ZStd seekable format for random access into compressed archives
 
 ### Compression  
