@@ -101,19 +101,13 @@ namespace GrindCore.Tests
                                     d.Dispose();
                                 testClassInstance = null;
 
-                                // Perform GC to encourage prompt cleanup of native resources.
-                                // On ARM32 under QEMU, WaitForPendingFinalizers can trigger
-                                // crashes in SharedArrayPool.Trim() due to emulation bugs,
-                                // so we catch and continue if that happens.
-                                try
-                                {
-                                    GC.Collect();
-                                    GC.WaitForPendingFinalizers();
-                                    GC.Collect();
-                                    GC.WaitForPendingFinalizers();
-                                    GC.Collect();
-                                }
-                                catch { }
+                                // Perform a single GC pass to encourage prompt cleanup. Repeated aggressive
+                                // collections can cause instability on some platforms; keep this minimal.
+                                GC.Collect();
+                                GC.WaitForPendingFinalizers();
+                                GC.Collect();
+                                GC.WaitForPendingFinalizers();
+                                GC.Collect();
                             }
                         }
                     }
