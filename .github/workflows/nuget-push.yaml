@@ -76,7 +76,7 @@ jobs:
           core.info(`Using run #${run.run_number} (${run.id}) from ${run.created_at} - ${run.display_title}`);
 
     - name: Download NuGet package artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: nuget-package
         path: ./artifacts
