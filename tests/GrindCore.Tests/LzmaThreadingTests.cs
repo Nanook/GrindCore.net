@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using GrindCore.Tests.Utility;
 using Nanook.GrindCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -159,7 +160,11 @@ namespace GrindCore.Tests
             }
         }
 
-        [Fact]
+        // A measurement: it asserts only round trips, which the tests above make at 1-8 threads on 3-20 MiB (16 threads is
+        // the same path as 8, with a larger batch). Its 16-thread step allocates about 1 GiB of batch buffers (the GrindCore
+        // audit's lzma.md 3.7.2), and beside the other classes it ran out of memory in 4 and 6 GiB containers. So it runs
+        // only with GRINDCORE_BENCHMARKS=1
+        [BenchmarkFact]
         public void Lzma2Stream_ThreadCount_Speed()
         {
 #if IS_32BIT
