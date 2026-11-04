@@ -17,6 +17,9 @@ namespace Nanook.GrindCore.Lzma
         private readonly LzmaEncoder _encoder;
         private readonly CompressionBuffer _buffer;
         private readonly CompressionBuffer _outBuffer;
+        private bool _ended; // the decoder found the end mark
+
+        private const int LzmaStatusFinishedWithMark = 1; // LZMA_STATUS_FINISHED_WITH_MARK (7-Zip's LzmaDec.h)
 
         /// <summary>
         /// Gets the input buffer size for LZMA operations.
@@ -93,7 +96,8 @@ namespace Nanook.GrindCore.Lzma
                 if (options.InitProperties == null)
                     throw new Exception("LZMA requires CompressionOptions.InitProperties to be set to an array when decompressing");
 
-                this.BufferSizeOutput = BufferThreshold;
+                // BufferSize 0 left no input buffer, so nothing was read (as Lzma2Stream, the GrindCore audit's lzma.md 3.6.1 L6)
+                this.BufferSizeOutput = Math.Max(BufferThreshold, 0x10000);
                 _decoder = new LzmaDecoder(options.InitProperties);
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
@@ -116,23 +120,25 @@ namespace Nanook.GrindCore.Lzma
                 throw new NotSupportedException("Not for Compression mode");
 
             bytesReadFromStream = 0;
-            int decoded = -1;
             int total = 0;
-            int read = -1;
 
             if (length == 0 || length > data.AvailableWrite)
                 length = data.AvailableWrite;
 
-            while (decoded != 0 && total < length)
+            // The stream ends at its end mark or where the source does. A call that writes nothing isn't the end: after a
+            // short read the decoder can take the bytes without output yet (the GrindCore audit's lzma.md 3.6.1 L1)
+            while (!_ended && total < length)
             {
                 cancel.ThrowIfCancellationRequested();
-                if (decoded <= 0 && _buffer.AvailableRead == 0)
-                    read = BaseRead(_buffer, _buffer.AvailableWrite);
-                if (_buffer.AvailableRead == 0)
-                    return total;
-                decoded = _decoder.DecodeData(_buffer, out var readSz, data, length - total, out var _);
+                if (_buffer.AvailableRead == 0 && BaseRead(_buffer, _buffer.AvailableWrite) == 0)
+                    break;
+                int decoded = _decoder.DecodeData(_buffer, out var readSz, data, length - total, out int status);
                 bytesReadFromStream += readSz;
                 total += decoded;
+                if (status == LzmaStatusFinishedWithMark)
+                    _ended = true;
+                else if (decoded == 0 && readSz == 0)
+                    break; // no progress
             }
             return total;
         }
@@ -231,23 +237,24 @@ namespace Nanook.GrindCore.Lzma
                 throw new NotSupportedException("Not for Compression mode");
 
             int bytesReadFromStream = 0;
-            int decoded = -1;
             int total = 0;
-            int read = -1;
 
             if (length == 0 || length > data.AvailableWrite)
                 length = data.AvailableWrite;
 
-            while (decoded != 0 && total < length)
+            // as OnRead
+            while (!_ended && total < length)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (decoded <= 0 && _buffer.AvailableRead == 0)
-                    read = await BaseReadAsync(_buffer, _buffer.AvailableWrite, cancellationToken).ConfigureAwait(false);
-                if (_buffer.AvailableRead == 0)
-                    return (total, bytesReadFromStream);
-                decoded = _decoder.DecodeData(_buffer, out var readSz, data, length - total, out var _);
+                if (_buffer.AvailableRead == 0 && await BaseReadAsync(_buffer, _buffer.AvailableWrite, cancellationToken).ConfigureAwait(false) == 0)
+                    break;
+                int decoded = _decoder.DecodeData(_buffer, out var readSz, data, length - total, out int status);
                 bytesReadFromStream += readSz;
                 total += decoded;
+                if (status == LzmaStatusFinishedWithMark)
+                    _ended = true;
+                else if (decoded == 0 && readSz == 0)
+                    break; // no progress
             }
             return (total, bytesReadFromStream);
         }

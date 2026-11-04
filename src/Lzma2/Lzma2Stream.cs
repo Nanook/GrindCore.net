@@ -16,6 +16,10 @@ namespace Nanook.GrindCore.Lzma
     /// </summary>
     public class Lzma2Stream : CompressionStream
     {
+        // Decoding: at least 64 KiB, as LzmaStream has; with none, a BufferSize of 0 left the output buffer empty, so
+        // nothing was decoded (the GrindCore audit's lzma.md 3.6.1 L6). Compression keeps its own sizing.
+        protected override int MinimumBufferThreshold => IsCompress ? 0 : 0x10000;
+
         private Lzma2Decoder _decoder;
         private Lzma2Encoder _encoder;
         private CompressionBuffer _buffer;
@@ -121,7 +125,9 @@ namespace Nanook.GrindCore.Lzma
 
                 this.Properties = options.InitProperties;
                 _decoder = new Lzma2Decoder(options.InitProperties[0]);
-                this.BufferSizeOutput = BufferThreshold + 0x200;
+                // the input buffer holds one whole chunk: up to 64 KiB of data plus its header (a BufferSize under that,
+                // or 0, decoded nothing or threw; the GrindCore audit's lzma.md 3.6.1 L6)
+                this.BufferSizeOutput = Math.Max(BufferThreshold, 0x10000) + 0x200;
                 _buffer = new CompressionBuffer(this.BufferSizeOutput);
             }
         }
@@ -143,41 +149,66 @@ namespace Nanook.GrindCore.Lzma
                 throw new NotSupportedException("Not for Compression mode");
             bytesReadFromStream = 0;
             int total = 0;
-            int read = -1;
-            int decoded = -1;
             if (length == 0 || length > data.AvailableWrite)
                 length = data.AvailableWrite;
 
-            while (!_ended && decoded != 0 && total < length)
+            // The stream ends where the decoder says so (the 0x00 end byte) or where the source does. A call that
+            // writes nothing isn't the end: the decoder may have taken input without output yet (the GrindCore audit's
+            // lzma.md 3.6.1 L2, L3)
+            while (!_ended && total < length)
             {
-                read = 0;
                 cancel.ThrowIfCancellationRequested();
-                if (_buffer.AvailableRead == 0)
-                {
-                    read = BaseRead(_buffer, 1);
-                    if (read == 1)
-                    {
-                        if (_buffer.Data[_buffer.Size - 1] != 0)
-                        {
-                            int hdrSz = _decoder.GetHeaderSize(_buffer.Data[_buffer.Size - 1]);
-                            read += BaseRead(_buffer, hdrSz - 1);
-                            Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read), hdrSz);
-                            if (info.BlockSize > read)
-                                read += BaseRead(_buffer, info.BlockSize - read);
-                        }
-                        else // even the 7zip app will insert nulls mid stream!! Took a while to deduce that one
-                            _ended = true;
-                    }
-                }
-                if (_buffer.AvailableRead == 0)
-                    return total;
+                if (_buffer.AvailableRead == 0 && !readChunk())
+                    break;
                 int inSz = _buffer.AvailableRead;
-                decoded = _decoder.DecodeData(_buffer, ref inSz, data, length - total, out var _);
+                int decoded = _decoder.DecodeData(_buffer, ref inSz, data, length - total, out int status);
                 bytesReadFromStream += inSz;
                 total += decoded;
-                _ended = _ended && decoded == 0;
+                if (status == LzmaStatusFinishedWithMark)
+                    _ended = true;
+                else if (decoded == 0 && inSz == 0)
+                    break; // no progress
             }
             return total;
+        }
+
+        private const int LzmaStatusFinishedWithMark = 1; // LZMA_STATUS_FINISHED_WITH_MARK (7-Zip's LzmaDec.h)
+
+        // BaseRead returns what one Read of the source gives, which can be less than asked for (a network stream, a
+        // pipe, SharpCompress's BufferedSubStream at each refill), so this reads until there are n bytes or the source ends
+        private int readFully(int n)
+        {
+            int total = 0;
+            while (total < n)
+            {
+                int r = BaseRead(_buffer, n - total);
+                if (r == 0)
+                    break;
+                total += r;
+            }
+            return total;
+        }
+
+        // Reads the next chunk whole into _buffer: its control byte, the rest of its header, then its data (the 0x00 end
+        // byte has neither). Exactly one chunk, so the source isn't read past the stream's end byte. False when the source
+        // has nothing more.
+        private bool readChunk()
+        {
+            if (readFully(1) == 0)
+                return false;
+            byte control = _buffer.Data[_buffer.Size - 1];
+            if (control != 0)
+            {
+                int hdrSz = _decoder.GetHeaderSize(control);
+                int read = 1 + readFully(hdrSz - 1);
+                if (read == hdrSz) // else the source ended in the header: the decoder gets what there is
+                {
+                    Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read), hdrSz);
+                    if (info.BlockSize > read)
+                        readFully(info.BlockSize - read);
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -270,41 +301,58 @@ namespace Nanook.GrindCore.Lzma
 
             int bytesReadFromStream = 0;
             int total = 0;
-            int read = -1;
-            int decoded = -1;
             if (length == 0 || length > data.AvailableWrite)
                 length = data.AvailableWrite;
 
-            while (!_ended && decoded != 0 && total < length)
+            // as OnRead
+            while (!_ended && total < length)
             {
-                read = 0;
                 cancellationToken.ThrowIfCancellationRequested();
-                if (_buffer.AvailableRead == 0)
-                {
-                    read = await BaseReadAsync(_buffer, 1, cancellationToken).ConfigureAwait(false);
-                    if (read == 1)
-                    {
-                        if (_buffer.Data[_buffer.Size - 1] != 0)
-                        {
-                            int hdrSz = _decoder.GetHeaderSize(_buffer.Data[_buffer.Size - 1]);
-                            read += await BaseReadAsync(_buffer, hdrSz - 1, cancellationToken).ConfigureAwait(false);
-                            Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read), hdrSz);
-                            if (info.BlockSize > read)
-                                read += await BaseReadAsync(_buffer, info.BlockSize - read, cancellationToken).ConfigureAwait(false);
-                        }
-                        else
-                            _ended = true;
-                    }
-                }
-                if (_buffer.AvailableRead == 0)
-                    return (total, bytesReadFromStream);
+                if (_buffer.AvailableRead == 0 && !await readChunkAsync(cancellationToken).ConfigureAwait(false))
+                    break;
                 int inSz = _buffer.AvailableRead;
-                decoded = _decoder.DecodeData(_buffer, ref inSz, data, length - total, out var _);
+                int decoded = _decoder.DecodeData(_buffer, ref inSz, data, length - total, out int status);
                 bytesReadFromStream += inSz;
                 total += decoded;
-                _ended = _ended && decoded == 0;
+                if (status == LzmaStatusFinishedWithMark)
+                    _ended = true;
+                else if (decoded == 0 && inSz == 0)
+                    break; // no progress
             }
             return (total, bytesReadFromStream);
+        }
+
+        // as readFully and readChunk
+        private async System.Threading.Tasks.ValueTask<int> readFullyAsync(int n, System.Threading.CancellationToken cancellationToken)
+        {
+            int total = 0;
+            while (total < n)
+            {
+                int r = await BaseReadAsync(_buffer, n - total, cancellationToken).ConfigureAwait(false);
+                if (r == 0)
+                    break;
+                total += r;
+            }
+            return total;
+        }
+
+        private async System.Threading.Tasks.ValueTask<bool> readChunkAsync(System.Threading.CancellationToken cancellationToken)
+        {
+            if (await readFullyAsync(1, cancellationToken).ConfigureAwait(false) == 0)
+                return false;
+            byte control = _buffer.Data[_buffer.Size - 1];
+            if (control != 0)
+            {
+                int hdrSz = _decoder.GetHeaderSize(control);
+                int read = 1 + await readFullyAsync(hdrSz - 1, cancellationToken).ConfigureAwait(false);
+                if (read == hdrSz)
+                {
+                    Lzma2BlockInfo info = _decoder.ReadSubBlockInfo(_buffer.Data, (ulong)(_buffer.Size - read), hdrSz);
+                    if (info.BlockSize > read)
+                        await readFullyAsync(info.BlockSize - read, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            return true;
         }
 
         /// <summary>
