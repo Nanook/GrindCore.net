@@ -9,12 +9,16 @@
 # PREREQUISITES:
 #   - A successful "Build NuGet Package" workflow run must exist (either from
 #     a tag push or manual dispatch of publish.yaml).
-#   - The NUGET_API_KEY secret must be configured in the repository.
+#   - A Trusted Publishing policy must be configured on nuget.org:
+#       Repository Owner : Nanook
+#       Repository       : GrindCore.net
+#       Workflow File    : nuget-push.yaml
+#     No API key secret is required — a short-lived OIDC token is used instead.
 #
 # RELEASE WORKFLOW:
 #   1. Develop on a feature/release branch
 #   2. Use manual dispatch of test.yaml to validate on all platforms
-#   3. Tag the validated commit (e.g. v0.9.0) — triggers publish.yaml to
+#   3. Tag the validated commit (e.g. v0.10.0) — triggers publish.yaml to
 #      build the NuGet package from that exact commit
 #   4. Continue with any non-code changes (docs, CI tweaks) on the branch
 #   5. PR/merge to main — tests run automatically, badges update
@@ -41,6 +45,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # required for OIDC token issuance (NuGet Trusted Publishing)
 
     steps:
     - name: Checkout code
@@ -86,12 +92,18 @@ jobs:
     - name: List downloaded artifacts
       run: ls -la ./artifacts
 
+    - name: NuGet login (OIDC → short-lived API key)
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: Nanook
+
     - name: Push to NuGet
       run: |
         for package in ./artifacts/*.nupkg; do
           echo "Publishing: $(basename "$package")"
           dotnet nuget push "$package" \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
         done
