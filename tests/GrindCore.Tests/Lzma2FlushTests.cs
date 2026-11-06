@@ -7,6 +7,7 @@ using Xunit;
 
 namespace GrindCore.Tests
 {
+#if !IS_32BIT_ARM // all tests in this class cause a GC stack overflow in QEMU arm32 (SharedArrayPool.Trim recursion)
     /// <summary>
     /// Writing after Flush() on Lzma2Stream in solid mode (the GrindCore audit's lzma.md 3.1, NDZ's report). Before the
     /// native fix, everything written after the first flush was lost: the native match finder latched the end of its
@@ -83,6 +84,7 @@ namespace GrindCore.Tests
             Assert.Equal(a.Concat(a).ToArray(), Decode(stream, props));
         }
 
+
         [Theory]
         [InlineData(CompressionType.Level1)]
         [InlineData(CompressionType.Level5)]
@@ -121,4 +123,5 @@ namespace GrindCore.Tests
             Assert.Equal(data, Decode(stream, props));
         }
     }
+#endif
 }

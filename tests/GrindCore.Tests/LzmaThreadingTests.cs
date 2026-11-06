@@ -6,7 +6,6 @@ using System.Text;
 using GrindCore.Tests.Utility;
 using Nanook.GrindCore;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace GrindCore.Tests
 {
@@ -18,8 +17,6 @@ namespace GrindCore.Tests
     /// </summary>
     public sealed class LzmaThreadingTests
     {
-        private readonly ITestOutputHelper _out;
-        public LzmaThreadingTests(ITestOutputHelper output) { _out = output; }
 
         /// <summary>Text with stretches of noise: compressible and incompressible blocks.</summary>
         private static byte[] Mixed(int n, int seed)
@@ -180,8 +177,8 @@ namespace GrindCore.Tests
                 var (c, p) = Encode(data, o, 1 << 20);
                 double sec = sw.Elapsed.TotalSeconds;
                 bool ok = Decode(c, p).AsSpan().SequenceEqual(data);
-                _out.WriteLine($"ThreadCount {o.ThreadCount?.ToString() ?? "-"}, BlockSize {block?.ToString() ?? "-"}: {sec:F2} s, " +
-                               $"{data.Length / sec / (1 << 20):F1} MiB/s, ratio {(double)c.Length / data.Length:F5}, decodes {ok}");
+                Console.WriteLine($"ThreadCount {o.ThreadCount?.ToString() ?? "-"}, BlockSize {block?.ToString() ?? "-"}: {sec:F2} s, " +
+                                  $"{data.Length / sec / (1 << 20):F1} MiB/s, ratio {(double)c.Length / data.Length:F5}, decodes {ok}");
                 Assert.True(ok);
             }
         }
@@ -200,7 +197,7 @@ namespace GrindCore.Tests
                 int n = dst.Length;
                 var sw = Stopwatch.StartNew();
                 Assert.Equal(CompressionResultCode.Success, block.Compress(data, 0, data.Length, dst, 0, ref n));
-                _out.WriteLine($"{alg} ThreadCount {threads?.ToString() ?? "-"}: {sw.Elapsed.TotalSeconds:F2} s, {n} bytes");
+                Console.WriteLine($"{alg} ThreadCount {threads?.ToString() ?? "-"}: {sw.Elapsed.TotalSeconds:F2} s, {n} bytes");
                 byte[] output = dst.AsSpan(0, n).ToArray();
                 first ??= output;
                 Assert.True(output.AsSpan().SequenceEqual(first), $"ThreadCount {threads} changed the output");
