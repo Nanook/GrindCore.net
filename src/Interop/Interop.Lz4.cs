@@ -120,13 +120,19 @@ namespace Nanook.GrindCore
                 int dstCapacity,
                 int acceleration);
 
+            /// <summary>
+            /// Compresses as much of <paramref name="src"/> as fits in <paramref name="targetSize"/> bytes (LZ4 "destSize").
+            /// <paramref name="srcSize"/> is in/out: bytes available on entry, bytes consumed on return. Returns the
+            /// compressed size (&gt; 0) or a negative error code. The block is independent and the stream is reset afterwards.
+            /// </summary>
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lz4_v1_10_0_CompressPartial(
                 ref SZ_Lz4_v1_10_0_Stream stream,
                 byte* src,
                 IntPtr dst,
-                int srcSize,
-                int targetSize);
+                ref int srcSize,
+                int targetSize,
+                int acceleration);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lz4_v1_10_0_DecompressSafeContinue(

@@ -17,6 +17,32 @@ namespace Nanook.GrindCore.ZStd
         protected GCHandle _outputPinned;
         protected IntPtr _outputPtr;
         protected int _compressionLevel;
+        protected string? _error; // the first zstd error; after it nothing more goes to the native encoder
+
+        // zstd returns its errors as large size_t values, and these were ignored, which lost the data: a threaded encoder
+        // that couldn't get a worker's memory reset its session, and the calls after it wrote an empty frame and reported
+        // success. With 1.5.2 those calls could also crash the process, while a worker of the failed session was still
+        // finishing. So every result is checked, and the first error ends the stream (audit/zstd.md 2.2).
+        protected UIntPtr Check(UIntPtr res)
+        {
+            if (IsError(res))
+            {
+                _error = GetErrorName(res);
+                ThrowIfFailed();
+            }
+            return res;
+        }
+
+        protected void ThrowIfFailed()
+        {
+            if (_error != null)
+                throw new Exception($"ZStd compression failed: {_error}");
+        }
+
+        protected virtual bool IsError(UIntPtr res) => Interop.ZStd.SZ_ZStd_v1_5_7_IsError(res) != 0;
+
+        protected virtual string GetErrorName(UIntPtr res) =>
+            Marshal.PtrToStringAnsi(Interop.ZStd.SZ_ZStd_v1_5_7_GetErrorName(res)) ?? "Unknown error";
 
         /// <summary>
         /// Gets the recommended input buffer size for ZStd compression.
@@ -88,6 +114,7 @@ namespace Nanook.GrindCore.ZStd
                 throw new ArgumentException($"inData should have a Pos of 0");
             if (outData.Size != 0)
                 throw new ArgumentException($"outData should have a Size of 0");
+            ThrowIfFailed();
 
             int totalCompressed = 0;
 
@@ -104,12 +131,12 @@ namespace Nanook.GrindCore.ZStd
                 {
                     byte* srcPtr = inputPtr + inData.Pos;
 
-                    Interop.ZStd.SZ_ZStd_v1_5_7_CompressStream(
+                    Check(Interop.ZStd.SZ_ZStd_v1_5_7_CompressStream(
                         ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize,
                         srcPtr, (UIntPtr)srcCapacity,
-                        out inSize, out outSize);
+                        out inSize, out outSize));
 
-                    // Non-zero return is normal for MT (indicates internal buffering) — not an error.
+                    // A non-zero result that isn't an error is normal for MT (indicates internal buffering).
                     // Buffered data will be drained during Flush/End operations.
 
                     inData.Read((int)inSize);
@@ -130,6 +157,7 @@ namespace Nanook.GrindCore.ZStd
         /// </summary>
         public virtual long Flush(CompressionBuffer outData)
         {
+            ThrowIfFailed();
             long totalFlushed = 0;
             byte[] buff = new byte[1];
             long inSize;
@@ -142,7 +170,7 @@ namespace Nanook.GrindCore.ZStd
                 UIntPtr res;
                 do
                 {
-                    res = Interop.ZStd.SZ_ZStd_v1_5_7_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize);
+                    res = Check(Interop.ZStd.SZ_ZStd_v1_5_7_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize));
                     if (outSize > 0)
                     {
                         outData.Write(_outputBuffer, 0, (int)outSize);
@@ -153,7 +181,7 @@ namespace Nanook.GrindCore.ZStd
                 // End: finalize the frame, draining any remaining output
                 do
                 {
-                    res = Interop.ZStd.SZ_ZStd_v1_5_7_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize);
+                    res = Check(Interop.ZStd.SZ_ZStd_v1_5_7_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize));
                     if (outSize > 0)
                     {
                         outData.Write(_outputBuffer, 0, (int)outSize);
@@ -238,6 +266,11 @@ namespace Nanook.GrindCore.ZStd
             _outputPtr = _outputPinned.AddrOfPinnedObject();
         }
 
+        protected override bool IsError(UIntPtr res) => Interop.ZStd.SZ_ZStd_v1_5_2_IsError(res) != 0;
+
+        protected override string GetErrorName(UIntPtr res) =>
+            Marshal.PtrToStringAnsi(Interop.ZStd.SZ_ZStd_v1_5_2_GetErrorName(res)) ?? "Unknown error";
+
         public override long EncodeData(CompressionBuffer inData, CompressionBuffer outData, bool final, CancellableTask cancel)
         {
             inData.Tidy();
@@ -247,6 +280,7 @@ namespace Nanook.GrindCore.ZStd
                 throw new ArgumentException($"inData should have a Pos of 0");
             if (outData.Size != 0)
                 throw new ArgumentException($"outData should have a Size of 0");
+            ThrowIfFailed();
 
             int totalCompressed = 0;
 
@@ -263,12 +297,12 @@ namespace Nanook.GrindCore.ZStd
                 {
                     byte* srcPtr = inputPtr + inData.Pos;
 
-                    Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressStream(
+                    Check(Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressStream(
                         ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize,
                         srcPtr, (UIntPtr)srcCapacity,
-                        out inSize, out outSize);
+                        out inSize, out outSize));
 
-                    // Non-zero return is normal for MT — not an error.
+                    // A non-zero result that isn't an error is normal for MT.
                     // Buffered data will be drained during Flush/End operations.
 
                     inData.Read((int)inSize);
@@ -286,6 +320,7 @@ namespace Nanook.GrindCore.ZStd
 
         public override long Flush(CompressionBuffer outData)
         {
+            ThrowIfFailed();
             long totalFlushed = 0;
             byte[] buff = new byte[1];
             long inSize;
@@ -298,7 +333,7 @@ namespace Nanook.GrindCore.ZStd
                 UIntPtr res;
                 do
                 {
-                    res = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize);
+                    res = Check(Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FlushStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize));
                     if (outSize > 0)
                     {
                         outData.Write(_outputBuffer, 0, (int)outSize);
@@ -309,7 +344,7 @@ namespace Nanook.GrindCore.ZStd
                 // End: finalize the frame, draining any remaining output
                 do
                 {
-                    res = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize);
+                    res = Check(Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_EndStream(ctxPtr, _outputPtr, (UIntPtr)OutputBufferSize, inputPtr, (UIntPtr)0, out inSize, out outSize));
                     if (outSize > 0)
                     {
                         outData.Write(_outputBuffer, 0, (int)outSize);

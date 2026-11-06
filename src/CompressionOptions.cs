@@ -606,6 +606,18 @@ namespace Nanook.GrindCore
         /// </summary>
         public int? WriteEndMark { get; set; }
 
+        /// <summary>
+        /// Gets or sets whether a zstd frame header records the content size.
+        /// <para><strong>Algorithms:</strong></para>
+        /// <para>• <strong>ZStd (<c>ZStdBlock</c>):</strong> true = write it (zstd's default), false = leave it out,
+        /// null = unchanged (true)</para>
+        /// <para><strong>Impact:</strong> Without it, the header holds the window size in its place, as zstd's advanced API
+        /// and python-zstandard write a frame with the content size off: one byte smaller for blocks of 256 B to 64 KiB,
+        /// up to 8 bytes for larger ones. The data decodes the same, but a decoder can no longer read its size from the
+        /// header. A zstd stream doesn't know its size in advance, so it never writes it, whatever this says.</para>
+        /// </summary>
+        public bool? WriteContentSize { get; set; }
+
         // === TIER 4: Algorithm-Specific Advanced Options ===
 
         /// <summary>

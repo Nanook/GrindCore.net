@@ -24,12 +24,15 @@ namespace GrindCore.Tests
         [InlineData(CompressionType.Fastest, 4, 512 * 1024, null)]
         [InlineData(CompressionType.Optimal, 2, 512 * 1024, null)]
         [InlineData(CompressionType.Optimal, 4, 512 * 1024, null)]
-        [InlineData(CompressionType.SmallestSize, 2, 512 * 1024, null)]
         [InlineData(CompressionType.Fastest, 2, 512 * 1024, "1.5.2")]
         [InlineData(CompressionType.Fastest, 4, 512 * 1024, "1.5.2")]
         [InlineData(CompressionType.Optimal, 2, 512 * 1024, "1.5.2")]
         [InlineData(CompressionType.Optimal, 4, 512 * 1024, "1.5.2")]
+
+#if !IS_32BIT // level 22 needs about 710 MiB per worker, mostly one 512 MiB table, and the x86 test host has no two such free blocks (the GrindCore audit's zstd.md 2.2)
+        [InlineData(CompressionType.SmallestSize, 2, 512 * 1024, null)]
         [InlineData(CompressionType.SmallestSize, 2, 512 * 1024, "1.5.2")]
+#endif
         public void ZStd_MultiThread_RoundTrips(CompressionType type, int threadCount, int streamLen, string? version)
         {
             int bufferSize = 128 * 1024;

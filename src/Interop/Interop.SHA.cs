@@ -99,8 +99,9 @@ namespace Nanook.GrindCore
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern void SZ_Sha1_Final(CSha1* p, byte* digest);
 
+            /// <summary>Returns 0, or -1 if <paramref name="size"/> is not a multiple of 4 no larger than 52 (block untouched).</summary>
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_Sha1_PrepareBlock(CSha1* p, byte* block, uint size);
+            public static extern int SZ_Sha1_PrepareBlock(CSha1* p, byte* block, uint size);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern void SZ_Sha1_GetBlockDigest(CSha1* p, byte* data, byte* destDigest);
@@ -148,8 +149,9 @@ namespace Nanook.GrindCore
             public static extern void SZ_SHA512_Final(byte* res, SHA512_CTX* ctx);
 
             // SHA3
+            /// <summary>Returns 0, or -1 if <paramref name="bitSize"/> is not 224, 256, 384 or 512 (context left as a harmless 0-bit digest).</summary>
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
-            public static extern void SZ_SHA3_Init(SHA3_CTX* ctx, uint bitSize);
+            public static extern int SZ_SHA3_Init(SHA3_CTX* ctx, uint bitSize);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern void SZ_SHA3_Update(SHA3_CTX* ctx, byte* bufIn, nuint len);

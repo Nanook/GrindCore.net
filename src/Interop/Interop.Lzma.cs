@@ -184,8 +184,14 @@ namespace Nanook.GrindCore
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCallPrepare(IntPtr p);
 
+            // init is a set of flags: bit 0 re-sets the input stream (not needed, pass 0); Lzma2SyncFlush marks the calls
+            // that drain the input for a sync flush, so that the stream can go on with its dictionary (the GrindCore
+            // audit's lzma.md 3.1).
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern int SZ_Lzma2_v25_01_Enc_EncodeMultiCall(IntPtr p, byte* dest, UIntPtr* destLen, ref CBufferInStream srcStream, uint init);
+
+            /// <summary>The <c>init</c> flag of <see cref="SZ_Lzma2_v25_01_Enc_EncodeMultiCall"/> for a sync flush.</summary>
+            public const uint Lzma2SyncFlush = 2;
 
 
 

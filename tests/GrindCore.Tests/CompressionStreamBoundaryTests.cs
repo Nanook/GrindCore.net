@@ -70,7 +70,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x20c3, "e22ce1d8b9a7a23d", "a76186667bccb5e6")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x1534a, "e22ce1d8b9a7a23d", "532a8eba4082cb70")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0xd67, "e22ce1d8b9a7a23d", "087f8295dab7ddc4")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x329b, "e22ce1d8b9a7a23d", "db8e877bed89ec65")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x3293, "e22ce1d8b9a7a23d", "48bcb21a593eaced")] // LZMA2 (BlockSize set): blocks now end exactly every BlockSize bytes, not wherever a write's buffer ended (lzma.md 3.7)
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x255db, "e22ce1d8b9a7a23d", "378b342d377b690e")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x40a17, "e22ce1d8b9a7a23d", "59651dff4e3b8922")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x916, "e22ce1d8b9a7a23d", "3763b14f06732584")]
@@ -81,7 +81,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1362, "e22ce1d8b9a7a23d", "bfbb5c3a61ddc7ae")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Optimal, 0x33489, "e22ce1d8b9a7a23d", "97477534f19906b8")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0xd67, "e22ce1d8b9a7a23d", "7190f212225d8c46")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x329c, "e22ce1d8b9a7a23d", "3c8653ca725fd694")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x3299, "e22ce1d8b9a7a23d", "8e75767a6c72e018")] // LZMA2 (BlockSize set): blocks now end exactly every BlockSize bytes, not wherever a write's buffer ended (lzma.md 3.7)
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x16785, "e22ce1d8b9a7a23d", "642e1d1b214b2412")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x167a9, "e22ce1d8b9a7a23d", "cf23a2bd3bfd2f6f")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x916, "e22ce1d8b9a7a23d", "63860edf5917614a")]
@@ -92,7 +92,7 @@ namespace GrindCore.Tests
         // too slow [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x1362, "e22ce1d8b9a7a23d", "27f7b816fd7d9898")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.SmallestSize, 0x33489, "e22ce1d8b9a7a23d", "97477534f19906b8")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0xd67, "e22ce1d8b9a7a23d", "7190f212225d8c46")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x329c, "e22ce1d8b9a7a23d", "3c8653ca725fd694")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x3299, "e22ce1d8b9a7a23d", "8e75767a6c72e018")] // LZMA2 (BlockSize set): blocks now end exactly every BlockSize bytes, not wherever a write's buffer ended (lzma.md 3.7)
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0x16785, "e22ce1d8b9a7a23d", "6978328d38f6a954")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0x16785, "e22ce1d8b9a7a23d", "6978328d38f6a954")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x878, "e22ce1d8b9a7a23d", "a3646178807c3262")]
@@ -125,7 +125,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Fastest, 0x20c3, "e22ce1d8b9a7a23d", "a76186667bccb5e6")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Fastest, 0x1534a, "e22ce1d8b9a7a23d", "532a8eba4082cb70")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Fastest, 0xd67, "e22ce1d8b9a7a23d", "087f8295dab7ddc4")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x329b, "e22ce1d8b9a7a23d", "db8e877bed89ec65")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Fastest, 0x3293, "e22ce1d8b9a7a23d", "48bcb21a593eaced")] // LZMA2 (BlockSize set): blocks now end exactly every BlockSize bytes, not wherever a write's buffer ended (lzma.md 3.7)
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Fastest, 0x255db, "e22ce1d8b9a7a23d", "378b342d377b690e")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Fastest, 0x40a17, "e22ce1d8b9a7a23d", "59651dff4e3b8922")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Fastest, 0x916, "e22ce1d8b9a7a23d", "3763b14f06732584")]
@@ -136,7 +136,7 @@ namespace GrindCore.Tests
         [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.Optimal, 0x1362, "e22ce1d8b9a7a23d", "bfbb5c3a61ddc7ae")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.Optimal, 0x33489, "e22ce1d8b9a7a23d", "97477534f19906b8")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.Optimal, 0xd67, "e22ce1d8b9a7a23d", "7190f212225d8c46")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x329c, "e22ce1d8b9a7a23d", "3c8653ca725fd694")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.Optimal, 0x3299, "e22ce1d8b9a7a23d", "8e75767a6c72e018")] // LZMA2 (BlockSize set): blocks now end exactly every BlockSize bytes, not wherever a write's buffer ended (lzma.md 3.7)
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.Optimal, 0x16785, "e22ce1d8b9a7a23d", "642e1d1b214b2412")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.Optimal, 0x167a9, "e22ce1d8b9a7a23d", "cf23a2bd3bfd2f6f")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.Optimal, 0x916, "e22ce1d8b9a7a23d", "63860edf5917614a")]
@@ -147,7 +147,7 @@ namespace GrindCore.Tests
         // too slow [InlineData(CompressionAlgorithm.FastLzma2, CompressionType.SmallestSize, 0x1362, "e22ce1d8b9a7a23d", "27f7b816fd7d9898")]
         [InlineData(CompressionAlgorithm.Lz4, CompressionType.SmallestSize, 0x33489, "e22ce1d8b9a7a23d", "97477534f19906b8")]
         [InlineData(CompressionAlgorithm.Lzma, CompressionType.SmallestSize, 0xd67, "e22ce1d8b9a7a23d", "7190f212225d8c46")]
-        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x329c, "e22ce1d8b9a7a23d", "3c8653ca725fd694")]
+        [InlineData(CompressionAlgorithm.Lzma2, CompressionType.SmallestSize, 0x3299, "e22ce1d8b9a7a23d", "8e75767a6c72e018")] // LZMA2 (BlockSize set): blocks now end exactly every BlockSize bytes, not wherever a write's buffer ended (lzma.md 3.7)
         [InlineData(CompressionAlgorithm.ZLib, CompressionType.SmallestSize, 0x16785, "e22ce1d8b9a7a23d", "6978328d38f6a954")]
         [InlineData(CompressionAlgorithm.ZLibNg, CompressionType.SmallestSize, 0x16785, "e22ce1d8b9a7a23d", "6978328d38f6a954")]
         [InlineData(CompressionAlgorithm.ZStd, CompressionType.SmallestSize, 0x878, "e22ce1d8b9a7a23d", "a3646178807c3262")]

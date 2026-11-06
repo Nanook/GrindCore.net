@@ -14,6 +14,9 @@ namespace Nanook.GrindCore.ZStd
         private Interop.SZ_ZStd_v1_5_7_DecompressionDict? _ddict;
         private Interop.SZ_ZStd_v1_5_2_CompressionDict? _cdict152;
         private Interop.SZ_ZStd_v1_5_2_DecompressionDict? _ddict152;
+        // CompressionDictionaryOptions.WriteContentSize: with a value, the frame flags go to the native ...Advanced
+        // block functions; without one, the plain functions run, as before (and as native builds without them need)
+        private readonly bool? _writeContentSize;
 
         /// <summary>
         /// Gets the required output buffer size for compression, as determined by the ZStd algorithm.
@@ -31,6 +34,7 @@ namespace Nanook.GrindCore.ZStd
 
             // Determine compression level: prefer Dictionary.Strategy when provided; otherwise use CompressionType resolved by base.
             _compressionLevel = options.Dictionary?.Strategy ?? (int)this.CompressionType;
+            _writeContentSize = options.Dictionary?.WriteContentSize;
 
             // Raw content dictionary (e.g. a prefix dictionary built from the data's own content), same convention as
             // ZStdStream/ZStdEncoder: supplied via CompressionOptions.InitProperties. Digest it once here and reuse the
@@ -129,13 +133,21 @@ namespace Nanook.GrindCore.ZStd
                     if (_cdict.HasValue)
                     {
                         var cdict = _cdict.Value;
-                        compressedSize = Interop.ZStd.SZ_ZStd_v1_5_7_CompressBlockWithDict(
-                            &ctx, &cdict, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length);
+                        compressedSize = _writeContentSize.HasValue
+                            ? Interop.ZStd.SZ_ZStd_v1_5_7_CompressBlockWithDictAdvanced(
+                                &ctx, &cdict, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length,
+                                _writeContentSize.Value ? 1 : 0, 0, 1)
+                            : Interop.ZStd.SZ_ZStd_v1_5_7_CompressBlockWithDict(
+                                &ctx, &cdict, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length);
                     }
                     else
                     {
-                        compressedSize = Interop.ZStd.SZ_ZStd_v1_5_7_CompressBlock(
-                            &ctx, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length, _compressionLevel);
+                        compressedSize = _writeContentSize.HasValue
+                            ? Interop.ZStd.SZ_ZStd_v1_5_7_CompressBlockAdvanced(
+                                &ctx, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length, _compressionLevel,
+                                _writeContentSize.Value ? 1 : 0, 0, 1)
+                            : Interop.ZStd.SZ_ZStd_v1_5_7_CompressBlock(
+                                &ctx, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length, _compressionLevel);
                     }
 
                     Interop.ZStd.SZ_ZStd_v1_5_7_FreeCompressionContext(&ctx);
@@ -158,13 +170,21 @@ namespace Nanook.GrindCore.ZStd
                     if (_cdict152.HasValue)
                     {
                         var cdict152 = _cdict152.Value;
-                        compressedSize = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressBlockWithDict(
-                            &ctx, &cdict152, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length);
+                        compressedSize = _writeContentSize.HasValue
+                            ? Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressBlockWithDictAdvanced(
+                                &ctx, &cdict152, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length,
+                                _writeContentSize.Value ? 1 : 0, 0, 1)
+                            : Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressBlockWithDict(
+                                &ctx, &cdict152, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length);
                     }
                     else
                     {
-                        compressedSize = Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressBlock(
-                            &ctx, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length, _compressionLevel);
+                        compressedSize = _writeContentSize.HasValue
+                            ? Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressBlockAdvanced(
+                                &ctx, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length, _compressionLevel,
+                                _writeContentSize.Value ? 1 : 0, 0, 1)
+                            : Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_CompressBlock(
+                                &ctx, (IntPtr)dstPtr, (UIntPtr)dstCount, srcPtr, (UIntPtr)srcData.Length, _compressionLevel);
                     }
 
                     Interop.ZStd_v1_5_2.SZ_ZStd_v1_5_2_FreeCompressionContext(&ctx);

@@ -22,10 +22,11 @@
 	<PropertyGroup>
 		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">WIN_X64,TRACE</DefineConstants>
 		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'linux-arm' or '$(RuntimeIdentifier)' == 'linux-x86' ">IS_32BIT</DefineConstants>
+		<DefineConstants Condition=" '$(RuntimeIdentifier)' == 'linux-arm' ">$(DefineConstants);IS_32BIT_ARM</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="xunit.v3.extensibility.core" Version="4.0.0" />
+		<PackageReference Include="xunit.v3.extensibility.core" Version="4.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>

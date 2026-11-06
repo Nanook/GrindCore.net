@@ -100,8 +100,10 @@ namespace Nanook.GrindCore.Lzma
             }
 
             // Thread count: explicit override wins, otherwise force single-threaded for LZMA
-            // LZMA native code is compiled for single-threading only (LZMA2 is different and supports multithreading)
-            props.numThreads = 1; // Force single-threaded for all LZMA levels
+            // One thread, always: LZMA's only parallelism is 7-Zip's match-finder thread, which reads input ahead of the
+            // encoder on its own; the multi-call API tops input up per call, so that thread would see the end of what's
+            // there as the end of the stream (the audit/lzma.md 3.1 latch). LzmaBlock (all input at once) can use it.
+            props.numThreads = 1;
 
             _encoder = SZ_Lzma_v25_01_Enc_Create();
 

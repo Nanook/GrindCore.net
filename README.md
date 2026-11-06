@@ -81,6 +81,7 @@ All native compression algorithms are directly built into the [GrindCore Native]
 **Notes:**
 - Multiple versions of some algorithms (e.g., ZStd, ZLib/ZLib-NG) are included to support applications that require pinned or frozen versions, most commonly for scenarios demanding byte-perfect, deterministic outputs.
 - ZStd supports multithreaded compression via `ThreadCount` in `CompressionOptions`, enabling parallel compression using multiple worker threads for significantly higher throughput on multicore systems.
+- LZMA2 supports multithreaded block encoding via `ThreadCount`. Setting `ThreadCount > 1` enables parallel block compression; combine with `BlockSize` for best throughput.
 - ZStd supports pre-trained dictionaries via `InitProperties` in `CompressionOptions` for improved compression of small data.
 - The set of supported algorithms will continue to expand.
 - Both blocking and asynchronous methods are available, allowing flexible compression workflows.
@@ -154,3 +155,11 @@ Several enhancements and additional features could be introduced to further impr
 ## Conclusion
 
 GrindCore is on a journey to create a more reliable and efficient compression solution for dotnet. The community's contributions and collaboration are welcomed.
+
+---
+
+## Support
+
+If you find GrindCore useful, you can support me on Ko-fi:
+- **Sponsor Me**: [ko-fi.com/nanook_/tiers](http://ko-fi.com/nanook_/tiers)
+- **Buy Me a Beer** 🍺: [ko-fi.com/nanook_](https://ko-fi.com/nanook_)

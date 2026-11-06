@@ -1560,6 +1560,18 @@
             API defaults to 0 (off) because the caller controls stream boundaries.</para>
             </summary>
         </member>
+        <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.WriteContentSize">
+            <summary>
+            Gets or sets whether a zstd frame header records the content size.
+            <para><strong>Algorithms:</strong></para>
+            <para>• <strong>ZStd (<c>ZStdBlock</c>):</strong> true = write it (zstd's default), false = leave it out,
+            null = unchanged (true)</para>
+            <para><strong>Impact:</strong> Without it, the header holds the window size in its place, as zstd's advanced API
+            and python-zstandard write a frame with the content size off: one byte smaller for blocks of 256 B to 64 KiB,
+            up to 8 bytes for larger ones. The data decodes the same, but a decoder can no longer read its size from the
+            header. A zstd stream doesn't know its size in advance, so it never writes it, whatever this says.</para>
+            </summary>
+        </member>
         <member name="P:Nanook.GrindCore.CompressionDictionaryOptions.MemoryLevel">
             <summary>
             Gets or sets the memory usage level for ZLib family algorithms.
@@ -4545,6 +4557,22 @@
             <param name="nbThreads"></param>
             <returns></returns>
         </member>
+        <member name="M:Nanook.GrindCore.Interop.Lz4.SZ_Lz4_v1_10_0_CompressPartial(Nanook.GrindCore.Interop.SZ_Lz4_v1_10_0_Stream@,System.Byte*,System.IntPtr,System.Int32@,System.Int32,System.Int32)">
+            <summary>
+            Compresses as much of <paramref name="src"/> as fits in <paramref name="targetSize"/> bytes (LZ4 "destSize").
+            <paramref name="srcSize"/> is in/out: bytes available on entry, bytes consumed on return. Returns the
+            compressed size (&gt; 0) or a negative error code. The block is independent and the stream is reset afterwards.
+            </summary>
+        </member>
+        <member name="F:Nanook.GrindCore.Interop.Lzma.Lzma2SyncFlush">
+            <summary>The <c>init</c> flag of <see cref="M:Nanook.GrindCore.Interop.Lzma.SZ_Lzma2_v25_01_Enc_EncodeMultiCall(System.IntPtr,System.Byte*,System.UIntPtr*,Nanook.GrindCore.Interop.CBufferInStream@,System.UInt32)"/> for a sync flush.</summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Interop.SHA.SZ_Sha1_PrepareBlock(Nanook.GrindCore.Interop.CSha1*,System.Byte*,System.UInt32)">
+            <summary>Returns 0, or -1 if <paramref name="size"/> is not a multiple of 4 no larger than 52 (block untouched).</summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Interop.SHA.SZ_SHA3_Init(Nanook.GrindCore.Interop.SHA3_CTX*,System.UInt32)">
+            <summary>Returns 0, or -1 if <paramref name="bitSize"/> is not 224, 256, 384 or 512 (context left as a harmless 0-bit digest).</summary>
+        </member>
         <member name="T:Nanook.GrindCore.Interop.ZStream">
             <summary>
             ZLib stream descriptor data structure
@@ -5225,17 +5253,30 @@
             <param name="minBufferSize">The minimum buffer size to use (default is 0).</param>
             <exception cref="T:System.Exception">Thrown if the encoder context or buffer cannot be allocated or configured.</exception>
         </member>
-        <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,Nanook.GrindCore.CancellableTask)">
+        <member name="P:Nanook.GrindCore.Lzma.Lzma2Encoder.BatchOutputBound">
+            <summary>
+            Block mode: the most output one batch can produce, which the output buffer passed to <see cref="M:Nanook.GrindCore.Lzma.Lzma2Encoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,System.Boolean,Nanook.GrindCore.CancellableTask)"/>
+            must hold. 7-Zip's bound is block + block/1024 + 16 per block (Lzma2Enc.c); this rounds up generously.
+            0 in solid mode.
+            </summary>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.EncodeData(Nanook.GrindCore.CompressionBuffer,Nanook.GrindCore.CompressionBuffer,System.Boolean,System.Boolean,Nanook.GrindCore.CancellableTask)">
             <summary>
             Encodes data from the input buffer into the output buffer using LZMA2 compression.
             </summary>
             <param name="inData">The input buffer containing data to compress.</param>
             <param name="outData">The output buffer to write compressed data to.</param>
             <param name="final">Indicates if this is the final block of data.</param>
+            <param name="syncFlush">With <paramref name="final"/>: a Flush() rather than the end. In solid mode the stream
+            then goes on after the flushed data with its dictionary (the native sync flush, audit/lzma.md 3.1); block mode
+            ends its blocks either way.</param>
             <param name="cancel">A cancellable task for cooperative cancellation.</param>
             <returns>The total number of bytes written to the output buffer.</returns>
             <exception cref="T:System.ArgumentException">Thrown if <paramref name="inData"/> or <paramref name="outData"/> is not at the correct position.</exception>
             <exception cref="T:System.Exception">Thrown if compression fails.</exception>
+        </member>
+        <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.encodeBatch(Nanook.GrindCore.CompressionBuffer)">
+            <summary>One Lzma2Enc_Encode2 call on the pending batch; its 0x00 end byte is dropped (the stream writes one).</summary>
         </member>
         <member name="M:Nanook.GrindCore.Lzma.Lzma2Encoder.Dispose">
             <summary>
