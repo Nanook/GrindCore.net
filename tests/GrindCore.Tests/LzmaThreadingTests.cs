@@ -9,6 +9,7 @@ using Xunit;
 
 namespace GrindCore.Tests
 {
+#if !IS_32BIT_ARM // segfault in QEMU arm32 (LZMA2 multi-thread memory pressure)
     /// <summary>
     /// ThreadCount for LZMA/LZMA2 (the GrindCore audit's lzma.md 3.7). Lzma2Stream with ThreadCount &gt; 1 encodes batches
     /// of whole 7-Zip blocks through Lzma2Enc_Encode2 (7-Zip's own threaded encoder), so its output depends on the
@@ -208,4 +209,5 @@ namespace GrindCore.Tests
             }
         }
     }
+#endif
 }
