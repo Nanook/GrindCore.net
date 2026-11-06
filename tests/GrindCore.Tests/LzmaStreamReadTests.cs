@@ -8,6 +8,7 @@ using Xunit;
 
 namespace GrindCore.Tests
 {
+#if !IS_32BIT_ARM // stack overflow in QEMU arm32 (MemoryStream.EnsureCapacity recursion via GC)
     /// <summary>
     /// Reading LZMA and LZMA2 streams from a source that returns less than asked for, as a pipe, a network stream or
     /// SharpCompress's BufferedSubStream (the source of every 7z coder) do (the GrindCore audit's lzma.md 3.6.1 L1-L3,
@@ -272,4 +273,5 @@ namespace GrindCore.Tests
             Assert.True(ReadAll(() => Decoder(alg, new MemoryStream(c), props, bufferSize)).AsSpan().SequenceEqual(data));
         }
     }
+#endif
 }
