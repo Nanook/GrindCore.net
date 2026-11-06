@@ -49,7 +49,11 @@ namespace Nanook.GrindCore.Lzma
 
             // Configure threading
             props.lzmaProps.numThreads = -1; // Let LZMA2 handle this internally
-            props.numBlockThreads_Max = threads;
+            // Let 7-Zip split the threads (numTotalThreads only), as it does itself. Setting numBlockThreads_Max to the
+            // total made Lzma2EncProps_Normalize turn the match-finder thread off, and a block smaller than 7-Zip's
+            // automatic block size (4 x the dictionary) is one 7-Zip block, so ThreadCount did nothing. Now 2+ threads
+            // run the two-thread match finder: byte-identical output, 1.3-2.2x faster (audit/lzma.md 3.7).
+            props.numBlockThreads_Max = threads > 1 ? -1 : threads;
             props.numBlockThreads_Reduced = -1;
             props.numTotalThreads = threads;
             props.numThreadGroups = 0; // For 25.01 compatibility

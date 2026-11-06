@@ -19,7 +19,7 @@ GrindCore is designed to follow the familiar `System.IO.Compression` patterns, m
 
 Key features:
 - **Platforms**: win-x64, win-x86, win-arm64, linux-x64, linux-arm64, linux-arm, osx-x64 and osx-arm64
-- **Frameworks**: .NET 9/8/7/6/5, .NET Core 3.1, .NET Standard 2.1/2.0, and .NET Framework 4.x/3.5
+- **Frameworks**: .NET 10/9/8/7/6/5, .NET Core 3.1, .NET Standard 2.1/2.0, and .NET Framework 4.x/3.5/2.0
 - **Stream compression and hashing**
 - **Block compression**
 - **Synchronous and asynchronous patterns**
@@ -40,7 +40,7 @@ All stream classes in GrindCore follow a standardized pattern, making them easy 
   - `Position`: Bytes read or written to the base (compressed) stream.
   - `PositionFullSize`: Bytes read or written in uncompressed form.
 - **CompressionOptions**:
-  - `Algorithm`: - Copy, Brotli, Deflate, DeflateNg, FastLzma2, GZip, GZipNg, Lz4, Lzma, Lzma2, ZLib, ZLibNg and ZStd
+  - `Algorithm`: - Copy, Brotli, BZip2, Deflate, DeflateNg, FastLzma2, GZip, GZipNg, Lz4, Lzma, Lzma2, ZLib, ZLibNg and ZStd
   - `Type`: Set to a compression level for compression, or `Decompress` for decompression.
   - `Version`: Pin to a specific algorithm version for byte-perfect output.
   - `LeaveOpen`: Leave the base/source stream open on dispose.
@@ -63,8 +63,8 @@ Common useful fields for the LZMA family:
 - `FastBytes` — encoder lookahead / fast-match length.
 - `LiteralContextBits`, `LiteralPositionBits`, `PositionBits` — map to LZMA's lc/lp/pb settings.
 - `Algorithm`, `BinaryTreeMode`, `HashBytes`, `MatchCycles`, `SearchDepth` — various match-finder and algorithm-mode knobs.
-- `Strategy` — used by some wrappers to indicate compression level/variant for hybrid encoders (Fast?LZMA2 maps Strategy ? compression level).
-- `ThreadCount` (on `CompressionOptions`) — used where the native encoder supports multithreading (e.g., ZStd, Fast-LZMA2, block-based LZMA2). Note: LZMA uses single-threading for stability; LZMA2, Fast-LZMA2, and ZStd support true multithreading.
+- `Strategy` — used by some wrappers to indicate compression level/variant for hybrid encoders (Fast-LZMA2 maps Strategy to compression level).
+- `ThreadCount` (on `CompressionOptions`) — used where the native encoder supports multithreading (e.g., ZStd, Fast-LZMA2, block-based LZMA2). LZMA2 now supports true multi-threaded block encoding: set `ThreadCount > 1` to compress in parallel blocks; combine with `BlockSize` for maximum throughput. An explicit `BlockSize = -1` keeps solid (single-thread) mode. ZStd and Fast-LZMA2 also support `ThreadCount` for parallel compression.
 
 Best practice:
 - Set tuning via `CompressionOptions.WithLzmaDictionary(...)`, `WithLzma2Dictionary(...)` or `WithFastLzma2Dictionary(...)` helpers where provided.
@@ -120,6 +120,25 @@ using var brotliStream = new BrotliStream(inputStream,
   CompressionOptions.DefaultDecompress());
 ```
 
+### LZMA2 Multithreaded Compression
+
+LZMA2 now supports true multi-threaded block encoding. Set `ThreadCount > 1` to compress in parallel blocks. Pair with `BlockSize` for the best throughput — each block is split into `BlockSize / ThreadCount` 7-Zip blocks internally:
+
+```csharp
+var opts = new CompressionOptions
+{
+    Type = CompressionType.Optimal,
+    ThreadCount = 8,
+    BlockSize = 32 * 1024 * 1024  // 32 MiB blocks
+};
+
+using var lzma2 = new Lzma2Stream(outputStream, opts);
+lzma2.Write(data, 0, data.Length);
+lzma2.Complete();
+```
+
+Without a `BlockSize`, `ThreadCount > 1` uses automatic blocks of one dictionary each. To force solid (single-pass) mode regardless of thread count, set `BlockSize = -1`.
+
 ### ZStd Multithreaded Compression
 
 ZStd supports multithreaded compression via `ThreadCount`. The streaming API remains unchanged — parallelism is handled internally:
@@ -152,6 +171,30 @@ var opts = new CompressionOptions
 
 using var zstd = new ZStdStream(outputStream, opts);
 zstd.Write(data, 0, data.Length);
+```
+
+### ZStd Block Content Size
+
+For block compression, `CompressionDictionaryOptions.WriteContentSize` controls whether the content size is written to the frame header:
+
+- `false` — omits the content size, producing frames 1 byte smaller for blocks between 256 B and 64 KiB. This matches the output of tools like NDZ and python-zstandard, which use zstd's advanced API with `contentSizeFlag = 0`. Decoders that rely on reading the size from the header cannot do so.
+- `true` — forces the content size (zstd's default).
+- `null` (default) — preserves existing behaviour (uses the plain block API).
+
+This applies to `ZStdBlock` only — stream compression never writes a content size because the total size is unknown in advance.
+
+```csharp
+var opts = new CompressionOptions
+{
+    Type = CompressionType.Optimal,
+    BlockSize = 65536
+};
+opts.Dictionary = new CompressionDictionaryOptions
+{
+    WriteContentSize = false  // omit content size for smaller frames
+};
+
+var block = new ZStdBlock(opts);
 ```
 
 ## ZStd Seekable Stream
@@ -275,7 +318,7 @@ GrindCore provides high-performance block compression classes for one-shot compr
 - **Unified API**: All block compressors inherit from `CompressionBlock` and use `CompressionOptions`.
 - **Stateless and Thread-Safe**: Block classes are stateless and can be used concurrently across threads.
 - **Flexible Creation**: Blocks can be instantiated directly (`new Lz4Block(options)`) or via factory (`CompressionBlockFactory.Create()`).
-- **Supported Algorithms**: Copy, Brotli, Deflate, FastLzma2, GZip, Lz4, Lzma, Lzma2, ZLib, ZStd.
+- **Supported Algorithms**: Copy, Brotli, BZip2, Deflate, FastLzma2, GZip, Lz4, Lzma, Lzma2, ZLib, ZStd.
 - **CompressionOptions**:
   - `Type`: Set to a compression level (never `Decompress`) for compression. Use `Decompress()` for decompression.
   - `BlockSize`: Required for most block compressors; determines the input size per operation.
@@ -416,3 +459,11 @@ ulong hashValue = xxh64.HashAsType<ulong>();
 ## Future Features
 
 As the library name reflects, this library implements computationaly intensive algorithms that are primarily written in C. It may have other algorithms added if required. E.g. audio compression etc.
+
+---
+
+## Support
+
+If you find GrindCore useful, you can support me on Ko-fi:
+- **Sponsor Me**: [ko-fi.com/nanook_/tiers](http://ko-fi.com/nanook_/tiers)
+- **Buy Me a Beer** 🍺: [ko-fi.com/nanook_](https://ko-fi.com/nanook_)

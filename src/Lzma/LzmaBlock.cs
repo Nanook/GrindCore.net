@@ -123,8 +123,10 @@ namespace Nanook.GrindCore.Lzma
                     _props.writeEndMark = (uint)mergedDict.WriteEndMark.Value;
             }
 
-            // Apply explicit thread count override
-            _props.numThreads = 1;
+            // A single LZMA stream can't be split; its only parallelism is 7-Zip's two-thread match finder (LzFindMt, levels
+            // 5-9), which gives byte-identical output and is 1.5x faster (audit/lzma.md 3.7). MemEncode has all the input,
+            // so the match-finder thread can read ahead safely; LzmaStream can't use it (its multi-call input).
+            _props.numThreads = (options.ThreadCount ?? 1) >= 2 ? 2 : 1;
 
             // Note: We don't call SZ_Lzma_v25_01_EncProps_Normalize here because LzmaEncoder 
             // does normalization in SZ_Lzma_v25_01_Enc_SetProps during OnCompress

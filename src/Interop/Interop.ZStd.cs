@@ -186,6 +186,24 @@ namespace Nanook.GrindCore
                 IntPtr dst, UIntPtr dstCapacity,
                 byte* src, UIntPtr srcSize);
 
+            // CompressBlock and CompressBlockWithDict with zstd's frame flags, 0 or 1 each (the plain ones are 1, 0, 1):
+            // the content size, a checksum, the dictionary's ID. GrindCore audit/native-fixes (the GrindCore audit's
+            // zstd.md 2.3); absent from earlier native builds, so they're called only when an option asks for them.
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern UIntPtr SZ_ZStd_v1_5_7_CompressBlockAdvanced(
+                SZ_ZStd_v1_5_7_CompressionContext* ctx,
+                IntPtr dst, UIntPtr dstCapacity,
+                byte* src, UIntPtr srcSize,
+                int compressionLevel, int contentSizeFlag, int checksumFlag, int dictIDFlag);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern UIntPtr SZ_ZStd_v1_5_7_CompressBlockWithDictAdvanced(
+                SZ_ZStd_v1_5_7_CompressionContext* ctx,
+                SZ_ZStd_v1_5_7_CompressionDict* dict,
+                IntPtr dst, UIntPtr dstCapacity,
+                byte* src, UIntPtr srcSize,
+                int contentSizeFlag, int checksumFlag, int dictIDFlag);
+
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern UIntPtr SZ_ZStd_v1_5_7_DecompressBlockWithDict(
                 SZ_ZStd_v1_5_7_DecompressionContext* ctx,
@@ -424,6 +442,22 @@ namespace Nanook.GrindCore
                 SZ_ZStd_v1_5_2_CompressionDict* dict,
                 IntPtr dst, UIntPtr dstCapacity,
                 byte* src, UIntPtr srcSize);
+
+            // as SZ_ZStd_v1_5_7_CompressBlockAdvanced and ..._CompressBlockWithDictAdvanced
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern UIntPtr SZ_ZStd_v1_5_2_CompressBlockAdvanced(
+                SZ_ZStd_v1_5_2_CompressionContext* ctx,
+                IntPtr dst, UIntPtr dstCapacity,
+                byte* src, UIntPtr srcSize,
+                int compressionLevel, int contentSizeFlag, int checksumFlag, int dictIDFlag);
+
+            [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
+            public static extern UIntPtr SZ_ZStd_v1_5_2_CompressBlockWithDictAdvanced(
+                SZ_ZStd_v1_5_2_CompressionContext* ctx,
+                SZ_ZStd_v1_5_2_CompressionDict* dict,
+                IntPtr dst, UIntPtr dstCapacity,
+                byte* src, UIntPtr srcSize,
+                int contentSizeFlag, int checksumFlag, int dictIDFlag);
 
             [DllImport(Libraries.GrindCoreLib, CallingConvention = CallingConvention.Cdecl)]
             public static extern UIntPtr SZ_ZStd_v1_5_2_DecompressBlockWithDict(
